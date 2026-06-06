@@ -82,13 +82,45 @@ export class TenantSeedService {
     const eventRepo = ds.getRepository(TempleEventEntity);
     const brahmotsavam = await eventRepo.save(
       eventRepo.create({
+        id: 'evt-brahmotsavam-2026',
         name: 'Brahmotsavam 2026', type: 'festival', stage: 'confirmed',
         startDate: new Date('2026-06-08'), endDate: new Date('2026-06-15'),
         venues: ['Main Hall', 'Kalyana Mandapam', 'Open Ground'],
         expectedFootfall: 4200, budgetPlanned: 82000, revenueTarget: 95000,
+        volunteerCategory: 'festival', volunteersNeeded: 36,
+        volunteerRoles: [
+          { role: 'setup', slotsNeeded: 10, description: 'Festival setup' },
+          { role: 'kitchen', slotsNeeded: 8, description: 'Annadanam service' },
+          { role: 'parking', slotsNeeded: 8, description: 'Parking & queue' },
+        ],
         checklistProgress: { done: 6, total: 10 },
       }),
     );
+
+    const navaratri = await eventRepo.save(
+      eventRepo.create({
+        id: 'evt-navaratri-2026',
+        name: 'Navaratri 2026', type: 'festival', stage: 'confirmed',
+        startDate: new Date('2026-09-20'), endDate: new Date('2026-09-28'),
+        venues: ['Main Hall', 'Open Ground'],
+        expectedFootfall: 2500, volunteerCategory: 'setup', volunteersNeeded: 14,
+        checklistProgress: { done: 1, total: 4 },
+      }),
+    );
+
+    const sundayAnnadanam = await eventRepo.save(
+      eventRepo.create({
+        id: 'evt-sunday-annadanam',
+        name: 'Sunday Annadanam', type: 'community', stage: 'in_progress',
+        startDate: new Date('2026-01-01'), endDate: new Date('2026-12-31'),
+        venues: ['Community Kitchen', 'Dining Hall'],
+        volunteerCategory: 'annadanam', volunteersNeeded: 14,
+        checklistProgress: { done: 2, total: 2 },
+      }),
+    );
+
+    void navaratri;
+    void sundayAnnadanam;
 
     const checklistRepo = ds.getRepository(EventChecklistEntity);
     await checklistRepo.save([
@@ -168,7 +200,43 @@ export class TenantSeedService {
     ]);
 
     const shiftRepo = ds.getRepository(VolunteerShiftEntity);
+    const pastCheckIn = new Date('2026-03-15T09:05:00').toISOString();
+    const pastCheckOut = new Date('2026-03-15T12:45:00').toISOString();
+    const pastHours =
+      Math.round(
+        ((new Date(pastCheckOut).getTime() - new Date(pastCheckIn).getTime()) /
+          (1000 * 60 * 60)) *
+          10,
+      ) / 10;
+
     await shiftRepo.save([
+      shiftRepo.create({
+        id: 'vol-shift-past-001',
+        title: 'Spring Festival Cleanup',
+        date: '2026-03-15',
+        startTime: '09:00',
+        endTime: '13:00',
+        slots: 6,
+        role: 'general',
+        category: 'festival',
+        location: 'Temple Grounds',
+        description: 'Post-festival cleanup and storage.',
+        eventId: brahmotsavam.id,
+        eventName: 'Spring Utsav 2026',
+        coordinator: 'Ravi Kumar',
+        signups: [
+          {
+            userId: 'user-volunteer-001',
+            userName: 'Volunteer Priya',
+            signedUpAt: '2026-03-10T10:00:00.000Z',
+            checkedIn: true,
+            checkedInAt: pastCheckIn,
+            checkedOut: true,
+            checkedOutAt: pastCheckOut,
+            hoursLogged: pastHours,
+          },
+        ],
+      }),
       shiftRepo.create({
         id: 'vol-shift-001',
         title: 'Brahmotsavam Setup',
@@ -176,6 +244,13 @@ export class TenantSeedService {
         startTime: '09:00',
         endTime: '13:00',
         slots: 10,
+        role: 'setup',
+        category: 'festival',
+        location: 'Main Hall',
+        description: 'Stage setup, garlands, and altar preparation.',
+        eventId: brahmotsavam.id,
+        eventName: 'Brahmotsavam 2026',
+        coordinator: 'Priya Sharma',
         signups: [],
       }),
       shiftRepo.create({
@@ -185,6 +260,13 @@ export class TenantSeedService {
         startTime: '11:00',
         endTime: '14:00',
         slots: 6,
+        role: 'kitchen',
+        category: 'annadanam',
+        location: 'Community Kitchen',
+        description: 'Serve meals and manage serving lines.',
+        eventId: brahmotsavam.id,
+        eventName: 'Brahmotsavam 2026',
+        coordinator: 'Lakshmi Devi',
         signups: [],
       }),
       shiftRepo.create({
@@ -194,6 +276,63 @@ export class TenantSeedService {
         startTime: '08:00',
         endTime: '13:00',
         slots: 8,
+        role: 'parking',
+        category: 'festival',
+        location: 'North Lot',
+        description: 'Direct traffic and assist devotees at entry.',
+        eventId: brahmotsavam.id,
+        eventName: 'Brahmotsavam 2026',
+        coordinator: 'Arun Patel',
+        signups: [],
+      }),
+      shiftRepo.create({
+        id: 'vol-shift-004',
+        title: 'Kids Activity Zone',
+        date: '2026-06-11',
+        startTime: '10:00',
+        endTime: '14:00',
+        slots: 4,
+        role: 'kids',
+        category: 'cultural',
+        location: 'Youth Center',
+        description: 'Supervise crafts and story time for children.',
+        eventId: brahmotsavam.id,
+        eventName: 'Brahmotsavam 2026',
+        coordinator: 'Meena Rao',
+        signups: [],
+      }),
+      shiftRepo.create({
+        id: 'vol-shift-nav-001',
+        title: 'Navaratri Decoration',
+        date: '2026-09-20',
+        startTime: '10:00',
+        endTime: '14:00',
+        slots: 8,
+        role: 'decoration',
+        category: 'setup',
+        location: 'Main Hall',
+        description: 'Golu display, flowers, and garland arrangements.',
+        eventId: navaratri.id,
+        eventName: 'Navaratri 2026',
+        coordinator: 'Sunita Iyer',
+        signups: [],
+      }),
+      shiftRepo.create({
+        id: 'vol-shift-recurring-001',
+        title: 'Sunday Annadanam — Kitchen',
+        date: '2026-06-08',
+        startTime: '09:00',
+        endTime: '13:00',
+        slots: 6,
+        role: 'kitchen',
+        category: 'annadanam',
+        location: 'Community Kitchen',
+        description: 'Weekly annadanam seva — cooking and serving.',
+        eventId: sundayAnnadanam.id,
+        eventName: 'Sunday Annadanam',
+        coordinator: 'Lakshmi Devi',
+        isRecurringTemplate: true,
+        templateKey: 'sunday-annadanam',
         signups: [],
       }),
     ]);

@@ -189,6 +189,8 @@ export default function AdminEventsPage() {
   const [formOk, setFormOk] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stageMsg, setStageMsg] = useState<string | null>(null);
+  const [volunteerMsg, setVolunteerMsg] = useState<string | null>(null);
+  const [generatingShifts, setGeneratingShifts] = useState(false);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
@@ -229,6 +231,14 @@ export default function AdminEventsPage() {
     [selectedIdForApi],
   );
 
+  const { data: eventShifts, refetch: refetchEventShifts } = useApi(
+    async (ep) => {
+      if (!selectedIdForApi) return { data: [] };
+      return ep.getVolunteerShiftsByEvent(selectedIdForApi);
+    },
+    [selectedIdForApi],
+  );
+
   async function handleCreate() {
     setSaving(true);
     setFormMsg(null);
@@ -252,6 +262,26 @@ export default function AdminEventsPage() {
       setFormMsg(err instanceof Error ? err.message : 'Create failed');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleGenerateShifts() {
+    if (!selectedIdForApi) return;
+    setGeneratingShifts(true);
+    setVolunteerMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      const result = await ep.generateEventVolunteerShifts(selectedIdForApi);
+      setVolunteerMsg(
+        result.created.length > 0
+          ? `Created ${result.created.length} volunteer shift(s).`
+          : 'All default shifts already exist for this event.',
+      );
+      refetchEventShifts();
+    } catch (err) {
+      setVolunteerMsg(err instanceof Error ? err.message : 'Could not generate shifts');
+    } finally {
+      setGeneratingShifts(false);
     }
   }
 
@@ -590,6 +620,56 @@ export default function AdminEventsPage() {
                   </div>
                 </>
               )}
+            </div>
+            <div className="divider" />
+            <div className="sectionLabel">Volunteer Coordination</div>
+            <div className="formGrid">
+              <div className="formGroup">
+                <label>Volunteers Needed</label>
+                <div>{selectedEvent?.volunteersNeeded ?? '—'}</div>
+              </div>
+              <div className="formGroup">
+                <label>Seva Category</label>
+                <div style={{ textTransform: 'capitalize' }}>
+                  {selectedEvent?.volunteerCategory ?? '—'}
+                </div>
+              </div>
+              <div className="formGroup">
+                <label>Shifts Linked</label>
+                <div>{eventShifts?.data?.length ?? 0} shifts</div>
+              </div>
+            </div>
+            {eventShifts && eventShifts.data.length > 0 && (
+              <div className={styles.checklist}>
+                {eventShifts.data.map((shift) => {
+                  const filled = shift.signups.filter(
+                    (s) => (s.status ?? 'confirmed') === 'confirmed',
+                  ).length;
+                  return (
+                    <div key={shift.id} className="flexBetween tms-t2">
+                      <span>
+                        {shift.title} · {formatShortDate(shift.date)} · {shift.startTime}
+                      </span>
+                      <Badge variant={filled >= shift.slots ? 'ok' : 'pending'}>
+                        {filled}/{shift.slots}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {volunteerMsg && (
+              <p className="tms-t3 mt1" style={{ color: 'var(--gr)' }}>{volunteerMsg}</p>
+            )}
+            <div className="flexRow flexWrap mt1">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleGenerateShifts}
+                disabled={generatingShifts || !selectedIdForApi}
+              >
+                {generatingShifts ? 'Generating…' : 'Add volunteer shifts'}
+              </Button>
             </div>
             <div className="divider" />
             <div className="flexRow flexWrap">

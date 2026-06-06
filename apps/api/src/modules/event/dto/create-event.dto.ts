@@ -9,7 +9,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { TempleEvent } from '@tms/types';
+import { TempleEvent, VolunteerCategory, VolunteerRoleNeed } from '@tms/types';
 
 const EVENT_TYPES = [
   'festival',
@@ -69,4 +69,22 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   clientContact?: string;
+
+  @ApiPropertyOptional({ example: 'festival', enum: ['festival', 'pooja', 'annadanam', 'setup', 'cultural', 'general'] })
+  @IsOptional()
+  @IsString()
+  volunteerCategory?: VolunteerCategory;
+
+  @ApiPropertyOptional({ example: 36 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  volunteersNeeded?: number;
+
+  @ApiPropertyOptional({
+    example: [{ role: 'kitchen', slotsNeeded: 8, description: 'Annadanam service' }],
+  })
+  @IsOptional()
+  @IsArray()
+  volunteerRoles?: VolunteerRoleNeed[];
 }

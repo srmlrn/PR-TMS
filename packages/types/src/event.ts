@@ -1,5 +1,6 @@
 import { Currency, EventLifecycleStage } from './enums';
 import { TenantScoped, Timestamps } from './common';
+import type { VolunteerCategory, VolunteerRoleNeed } from './volunteer';
 
 export interface TempleEvent extends TenantScoped, Timestamps {
   id: string;
@@ -15,6 +16,9 @@ export interface TempleEvent extends TenantScoped, Timestamps {
   clientName?: string;
   clientContact?: string;
   checklistProgress?: { done: number; total: number };
+  volunteerCategory?: VolunteerCategory;
+  volunteersNeeded?: number;
+  volunteerRoles?: VolunteerRoleNeed[];
 }
 
 export interface EventChecklistItem extends TenantScoped {
@@ -34,4 +38,7 @@ export interface CreateEventInput {
   venues: string[];
   expectedFootfall?: number;
   budgetPlanned?: number;
+  volunteerCategory?: VolunteerCategory;
+  volunteersNeeded?: number;
+  volunteerRoles?: VolunteerRoleNeed[];
 }

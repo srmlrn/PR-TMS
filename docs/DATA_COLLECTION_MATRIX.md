@@ -125,12 +125,34 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Admin prasadam | List + `GET /prasadam/availability` | Calendar, sankalpa form, payment, kitchen | P1 — availability API done |
 | Admin events | Pipeline + `PATCH /events/:id/checklist/:itemId` | Create event, checklist, deposits | P1 — checklist toggle done |
 | Kiosk | Book + donate (`channel=kiosk`) + i18n titles (`lang=`) | Touch booking, donate, token, language | P2 — i18n titles done |
-| Volunteer | Static demo | Sign-up, check-in, hours | P2 |
+| Volunteer | Shifts, opportunities, waitlist, in-app notifications | Sign-up, waitlist, event-linked shifts, reminders, coordinator roster | P1 — event linkage + waitlist + notifications done |
 | Accountant | Read finance | Tax export triggers, vendor pay workflow | P2 |
 
 ---
 
-## 7. Implementation roadmap (from this audit)
+## 7. Volunteer / Seva Coordination
+
+| Field / capability | Industry (SignUpGenius, VolunteerHub, temple tools) | Our API | Our UI | Status |
+|--------------------|---------------------------------------------------|---------|--------|--------|
+| Shift list + role/location | Required | ✅ `GET /volunteer/shifts` | ✅ `/volunteer/shifts` | OK |
+| Event-linked shifts (`eventId`) | Required for festivals | ✅ | ✅ Admin event detail | OK |
+| Opportunity discovery by event | Required | ✅ `GET /volunteer/opportunities` | ✅ Events needing volunteers panel | OK |
+| Category filter (festival/pooja/annadanam…) | Common | ✅ `?category=` | ✅ Category chips | OK |
+| Sign up / cancel | Required | ✅ | ✅ | OK |
+| Waitlist when full | SignUpGenius, church apps | ✅ auto-waitlist + promote | ✅ Waitlist tab + badge | OK |
+| Check-in / check-out + hours | VolunteerHub, Planning Center | ✅ | ✅ | OK |
+| Badge / recognition tiers | Gamification (Zelos, VolunteerHub) | ✅ `GET /volunteer/stats` | ✅ Stat tiles | OK |
+| In-app notifications | Church apps, Better Impact | ✅ `GET /notifications/in-app` | ✅ Notifications card | OK |
+| Email/SMS on signup | Standard | ✅ stub via `NotificationsService` | 👁 | Partial — logs only |
+| Admin: generate shifts from event | Temple festival playbooks | ✅ `POST /volunteer/events/:id/generate-shifts` | ✅ Admin events | OK |
+| Recurring weekly seva templates | Sunday annadanam sheets | ✅ `GET /volunteer/templates` | ✅ Weekly seva card | OK |
+| Volunteer preferences (roles/categories) | JustServe filters, Better Impact | ✅ `GET/PATCH /volunteer/preferences` | ❌ | Partial — API only |
+| Scheduled reminders (day-before) | All major tools | 🟡 templates exist | ❌ | Deferred — no cron job |
+| Coordinator roster export | Common | 👁 coordinator field on shift | ❌ | Partial |
+
+---
+
+## 8. Implementation roadmap (from this audit)
 
 ### Sprint A — Industry-minimum ritual data (this pass)
 - [x] Document matrix (this file)
@@ -161,11 +183,16 @@ Cross-check of **what data we collect per screen** against major temple manageme
 - [x] Counter POS totals + print routes (`token-print`, `receipt-print`)
 - [x] Admin dashboard analytics (`GET /analytics/dashboard`)
 - [x] Notifications stub (`POST /notifications/send`, reminder queue)
+- [x] Volunteer: event-linked shifts (`eventId`), opportunities API, waitlist, in-app notifications
+- [x] Admin events: generate default volunteer shifts per event category
+- [x] Recurring seva templates (Sunday annadanam)
+- [ ] Volunteer preferences UI (API done; stretch)
+- [ ] Scheduled shift reminders (cron/job — in-app + email stub only on signup)
 - [ ] Full POS / receipt printer hardware integration
 
 ---
 
-## 8. Screen → minimum required fields (target state)
+## 9. Screen → minimum required fields (target state)
 
 Use this as the **acceptance checklist** when building or reviewing any screen:
 

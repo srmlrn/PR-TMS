@@ -1,3 +1,63 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.categoryBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.oppHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.roleChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notifItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.6rem 0;
+  border: none;
+  border-bottom: 1px solid var(--b);
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  width: 100%;
+}
+
+.notifItem:last-child {
+  border-bottom: none;
+}
+
+.notifRead {
+  opacity: 0.65;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -11,10 +71,18 @@
   margin-bottom: 0.75rem;
 }
 
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .shiftActions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .shifts {
@@ -26,13 +94,42 @@
 .shift {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0.65rem 0;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
   border-bottom: 1px solid var(--b);
 }
 
 .shift:last-child {
   border-bottom: none;
+}
+
+.shiftMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.shiftMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.shiftDesc {
+  margin-top: 0.35rem;
+  color: var(--t2);
+}
+
+.capacity {
+  margin-top: 0.5rem;
+  max-width: 12rem;
+}
+
+.capacityLabel {
+  display: block;
+  margin-bottom: 0.25rem;
 }
 
 .eventRow {
@@ -47,11 +144,20 @@
   border-bottom: none;
 }
 
+.emptyState {
+  color: var(--t2);
+}
+
 .mt1 {
   margin-top: 1rem;
 }
 
+.mb2 {
+  margin-bottom: 1rem;
+}
+
 @media (max-width: 960px) {
+  .stats,
   .grid,
   .formGrid {
     grid-template-columns: 1fr;

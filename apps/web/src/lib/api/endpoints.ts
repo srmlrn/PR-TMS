@@ -41,6 +41,12 @@ import type {
   Staff,
   VolunteerShift,
   CreateVolunteerShiftInput,
+  VolunteerStats,
+  VolunteerOpportunity,
+  VolunteerCategory,
+  VolunteerPreferences,
+  GenerateEventShiftsResult,
+  InAppNotification,
 } from '@tms/types';
 import type { ApiClient } from './client';
 
@@ -381,17 +387,51 @@ export function createEndpoints(client: ApiClient) {
     getStaff: (params?: { role?: Staff['role'] }) =>
       client.get<{ data: Staff[] }>('/staff', { params }),
 
-    getVolunteerShifts: () =>
-      client.get<{ data: VolunteerShift[] }>('/volunteer/shifts'),
+    getVolunteerShifts: (params?: { category?: VolunteerCategory }) =>
+      client.get<{ data: VolunteerShift[] }>('/volunteer/shifts', { params }),
+
+    getVolunteerOpportunities: (params?: { category?: VolunteerCategory }) =>
+      client.get<{ data: VolunteerOpportunity[] }>('/volunteer/opportunities', { params }),
+
+    getVolunteerShiftsByEvent: (eventId: string) =>
+      client.get<{ data: VolunteerShift[] }>(`/volunteer/shifts/event/${eventId}`),
+
+    getVolunteerRecurringTemplates: () =>
+      client.get<{ data: VolunteerShift[] }>('/volunteer/templates'),
+
+    getVolunteerStats: () => client.get<VolunteerStats>('/volunteer/stats'),
+
+    getVolunteerPreferences: () => client.get<VolunteerPreferences>('/volunteer/preferences'),
+
+    updateVolunteerPreferences: (body: Partial<Omit<VolunteerPreferences, 'userId'>>) =>
+      client.patch<VolunteerPreferences>('/volunteer/preferences', body),
 
     createVolunteerShift: (body: CreateVolunteerShiftInput) =>
       client.post<VolunteerShift>('/volunteer/shifts', body),
 
+    generateEventVolunteerShifts: (eventId: string) =>
+      client.post<GenerateEventShiftsResult>(`/volunteer/events/${eventId}/generate-shifts`, {}),
+
     signupVolunteerShift: (id: string) =>
       client.post<VolunteerShift>(`/volunteer/shifts/${id}/signup`, {}),
 
+    cancelVolunteerSignup: (id: string) =>
+      client.post<VolunteerShift>(`/volunteer/shifts/${id}/cancel-signup`, {}),
+
     checkinVolunteerShift: (id: string) =>
       client.post<VolunteerShift>(`/volunteer/shifts/${id}/checkin`, {}),
+
+    checkoutVolunteerShift: (id: string) =>
+      client.post<VolunteerShift>(`/volunteer/shifts/${id}/checkout`, {}),
+
+    getInAppNotifications: () =>
+      client.get<{ data: InAppNotification[] }>('/notifications/in-app'),
+
+    markInAppNotificationRead: (id: string) =>
+      client.patch<InAppNotification>(`/notifications/in-app/${id}/read`, {}),
+
+    markAllInAppNotificationsRead: () =>
+      client.patch<{ updated: number }>('/notifications/in-app/read-all', {}),
   };
 }
 

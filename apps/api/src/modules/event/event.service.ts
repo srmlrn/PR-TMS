@@ -141,6 +141,9 @@ export class EventService
         revenueTarget: dto.revenueTarget,
         clientName: dto.clientName,
         clientContact: dto.clientContact,
+        volunteerCategory: dto.volunteerCategory ?? null,
+        volunteersNeeded: dto.volunteersNeeded ?? null,
+        volunteerRoles: dto.volunteerRoles ?? null,
         checklistProgress: { done: 0, total: 0 },
       });
       const saved = await repo.save(entity);
@@ -159,6 +162,9 @@ export class EventService
       revenueTarget: dto.revenueTarget,
       clientName: dto.clientName,
       clientContact: dto.clientContact,
+      volunteerCategory: dto.volunteerCategory,
+      volunteersNeeded: dto.volunteersNeeded,
+      volunteerRoles: dto.volunteerRoles,
       checklistProgress: { done: 0, total: 0 },
     });
   }
@@ -177,6 +183,9 @@ export class EventService
         ...(dto.revenueTarget !== undefined && { revenueTarget: dto.revenueTarget }),
         ...(dto.clientName !== undefined && { clientName: dto.clientName }),
         ...(dto.clientContact !== undefined && { clientContact: dto.clientContact }),
+        ...(dto.volunteerCategory !== undefined && { volunteerCategory: dto.volunteerCategory }),
+        ...(dto.volunteersNeeded !== undefined && { volunteersNeeded: dto.volunteersNeeded }),
+        ...(dto.volunteerRoles !== undefined && { volunteerRoles: dto.volunteerRoles }),
         ...(dto.startDate !== undefined && { startDate: new Date(dto.startDate) }),
         ...(dto.endDate !== undefined && { endDate: new Date(dto.endDate) }),
       });
@@ -194,6 +203,9 @@ export class EventService
     if (dto.revenueTarget !== undefined) patch.revenueTarget = dto.revenueTarget;
     if (dto.clientName !== undefined) patch.clientName = dto.clientName;
     if (dto.clientContact !== undefined) patch.clientContact = dto.clientContact;
+    if (dto.volunteerCategory !== undefined) patch.volunteerCategory = dto.volunteerCategory;
+    if (dto.volunteersNeeded !== undefined) patch.volunteersNeeded = dto.volunteersNeeded;
+    if (dto.volunteerRoles !== undefined) patch.volunteerRoles = dto.volunteerRoles;
 
     if (dto.startDate !== undefined) patch.startDate = new Date(dto.startDate);
     if (dto.endDate !== undefined) patch.endDate = new Date(dto.endDate);
@@ -381,6 +393,9 @@ export class EventService
       clientName: row.clientName,
       clientContact: row.clientContact,
       checklistProgress: row.checklistProgress,
+      volunteerCategory: row.volunteerCategory as TempleEvent['volunteerCategory'],
+      volunteersNeeded: row.volunteersNeeded ?? undefined,
+      volunteerRoles: row.volunteerRoles as TempleEvent['volunteerRoles'],
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -398,12 +413,23 @@ export class EventService
     };
   }
 
+  private seedEntityWithId(
+    tenantId: string,
+    id: string,
+    data: Omit<EventEntity, 'id' | 'tenantId' | 'createdAt' | 'updatedAt'>,
+  ): EventEntity {
+    const now = new Date();
+    const entity = { ...data, id, tenantId, createdAt: now, updatedAt: now };
+    this.store.set(id, entity);
+    return entity;
+  }
+
   private seedDemoData(): void {
     if (this.scoped(DEMO_TENANT).length > 0) {
       return;
     }
 
-    const brahmotsavam = this.createEntity(DEMO_TENANT, {
+    const brahmotsavam = this.seedEntityWithId(DEMO_TENANT, 'evt-brahmotsavam-2026', {
       name: 'Brahmotsavam 2026',
       type: 'festival',
       stage: EventLifecycleStage.CONFIRMED,
@@ -413,7 +439,39 @@ export class EventService
       expectedFootfall: 4200,
       budgetPlanned: 82_000,
       revenueTarget: 95_000,
+      volunteerCategory: 'festival',
+      volunteersNeeded: 36,
+      volunteerRoles: [
+        { role: 'setup', slotsNeeded: 10, description: 'Festival setup' },
+        { role: 'kitchen', slotsNeeded: 8, description: 'Annadanam service' },
+        { role: 'parking', slotsNeeded: 8, description: 'Parking & queue' },
+      ],
       checklistProgress: { done: 3, total: 6 },
+    });
+
+    this.seedEntityWithId(DEMO_TENANT, 'evt-navaratri-2026', {
+      name: 'Navaratri 2026',
+      type: 'festival',
+      stage: EventLifecycleStage.CONFIRMED,
+      startDate: new Date('2026-09-20'),
+      endDate: new Date('2026-09-28'),
+      venues: ['Main Hall', 'Open Ground'],
+      expectedFootfall: 2500,
+      volunteerCategory: 'setup',
+      volunteersNeeded: 14,
+      checklistProgress: { done: 1, total: 4 },
+    });
+
+    this.seedEntityWithId(DEMO_TENANT, 'evt-sunday-annadanam', {
+      name: 'Sunday Annadanam',
+      type: 'community',
+      stage: EventLifecycleStage.IN_PROGRESS,
+      startDate: new Date('2026-01-01'),
+      endDate: new Date('2026-12-31'),
+      venues: ['Community Kitchen', 'Dining Hall'],
+      volunteerCategory: 'annadanam',
+      volunteersNeeded: 14,
+      checklistProgress: { done: 2, total: 2 },
     });
 
     const checklistItems: Omit<EventChecklistItem, 'id' | 'tenantId'>[] = [

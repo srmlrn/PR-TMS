@@ -41,6 +41,15 @@ export class TempleEventEntity {
   @Column({ name: 'checklist_progress', type: 'jsonb', nullable: true })
   checklistProgress?: { done: number; total: number };
 
+  @Column({ name: 'volunteer_category', length: 32, nullable: true })
+  volunteerCategory?: string | null;
+
+  @Column({ name: 'volunteers_needed', type: 'int', nullable: true })
+  volunteersNeeded?: number | null;
+
+  @Column({ name: 'volunteer_roles', type: 'jsonb', nullable: true })
+  volunteerRoles?: { role: string; slotsNeeded: number; description?: string }[] | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

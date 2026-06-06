@@ -1,5 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
+  InAppNotification,
+  InAppNotificationType,
   NotificationTemplate,
   SendNotificationInput,
   SendNotificationResult,
@@ -46,11 +48,47 @@ const TEMPLATES: NotificationTemplate[] = [
     name: 'Queue token',
     body: 'Your darshan token is {{tokenNumber}}. Est. wait ~{{wait}} min.',
   },
+  {
+    id: 'volunteer-signup-confirmed',
+    channel: 'email',
+    name: 'Volunteer shift confirmation',
+    subject: 'Seva confirmed — {{shift}}',
+    body: 'Namaste {{name}},\n\nYou are confirmed for {{shift}} on {{date}} at {{time}}.\n\nLocation: {{location}}\nCoordinator: {{coordinator}}',
+  },
+  {
+    id: 'volunteer-waitlisted',
+    channel: 'email',
+    name: 'Volunteer waitlist',
+    subject: 'Waitlisted — {{shift}}',
+    body: 'Namaste {{name}},\n\n{{shift}} on {{date}} is full. You are #{{position}} on the waitlist. We will notify you if a spot opens.',
+  },
+  {
+    id: 'volunteer-shift-reminder',
+    channel: 'sms',
+    name: 'Volunteer shift reminder',
+    body: 'Reminder: {{shift}} tomorrow {{date}} at {{time}}. Location: {{location}}. Reply if you cannot attend.',
+  },
+  {
+    id: 'volunteer-checkin-reminder',
+    channel: 'sms',
+    name: 'Volunteer check-in reminder',
+    body: 'Your seva shift {{shift}} starts in 1 hour. Please check in at {{location}} when you arrive.',
+  },
+  {
+    id: 'volunteer-new-opportunity',
+    channel: 'email',
+    name: 'New volunteer opportunity',
+    subject: 'Volunteers needed — {{event}}',
+    body: 'Namaste {{name}},\n\n{{event}} needs volunteers. {{slotsRemaining}} slots open across {{shiftsOpen}} shifts.\n\nSign up in the temple app under Volunteering.',
+  },
 ];
+
+type InAppRecord = InAppNotification & { tenantId: string };
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
+  private readonly inAppStore = new Map<string, InAppRecord>();
 
   getTemplates(): NotificationTemplate[] {
     return TEMPLATES;
@@ -92,6 +130,64 @@ export class NotificationsService {
     }
 
     return result;
+  }
+
+  createInApp(
+    tenantId: string,
+    userId: string,
+    type: InAppNotificationType,
+    title: string,
+    body: string,
+    metadata?: Record<string, string>,
+  ): InAppNotification {
+    const record: InAppRecord = {
+      id: uuidv4(),
+      tenantId,
+      userId,
+      type,
+      title,
+      body,
+      read: false,
+      createdAt: new Date().toISOString(),
+      ...(metadata ? { metadata } : {}),
+    };
+    this.inAppStore.set(record.id, record);
+    this.logger.log(`[in-app] user=${userId} type=${type} title="${title}"`);
+    return this.toInApp(record);
+  }
+
+  listInAppForUser(tenantId: string, userId: string): InAppNotification[] {
+    return [...this.inAppStore.values()]
+      .filter((n) => n.tenantId === tenantId && n.userId === userId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((n) => this.toInApp(n));
+  }
+
+  markInAppRead(tenantId: string, userId: string, id: string): InAppNotification {
+    const record = this.inAppStore.get(id);
+    if (!record || record.tenantId !== tenantId || record.userId !== userId) {
+      throw new NotFoundException(`Notification ${id} not found`);
+    }
+    record.read = true;
+    this.inAppStore.set(id, record);
+    return this.toInApp(record);
+  }
+
+  markAllInAppRead(tenantId: string, userId: string): { updated: number } {
+    let updated = 0;
+    for (const [id, record] of this.inAppStore) {
+      if (record.tenantId === tenantId && record.userId === userId && !record.read) {
+        record.read = true;
+        this.inAppStore.set(id, record);
+        updated += 1;
+      }
+    }
+    return { updated };
+  }
+
+  private toInApp(record: InAppRecord): InAppNotification {
+    const { tenantId: _t, ...notification } = record;
+    return notification;
   }
 
   private renderTemplate(

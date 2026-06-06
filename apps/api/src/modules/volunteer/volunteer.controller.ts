@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -6,11 +6,21 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserRole, VolunteerShift, AuthUser } from '@tms/types';
+import {
+  AuthUser,
+  GenerateEventShiftsResult,
+  UserRole,
+  VolunteerCategory,
+  VolunteerOpportunity,
+  VolunteerPreferences,
+  VolunteerShift,
+  VolunteerStats,
+} from '@tms/types';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateVolunteerShiftDto } from './dto/create-volunteer-shift.dto';
+import { UpdateVolunteerPreferencesDto } from './dto/update-volunteer-preferences.dto';
 import { VolunteerService } from './volunteer.service';
 
 @ApiTags('volunteer')
@@ -23,9 +33,79 @@ export class VolunteerController {
   @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
   @ApiOperation({ summary: 'List volunteer shifts' })
   @ApiOkResponse({ description: 'Volunteer shifts with signups' })
-  async findAll(@TenantId() tenantId: string): Promise<{ data: VolunteerShift[] }> {
-    const data = await this.volunteerService.findAll(tenantId);
+  async findAll(
+    @TenantId() tenantId: string,
+    @Query('category') category?: VolunteerCategory,
+  ): Promise<{ data: VolunteerShift[] }> {
+    const data = await this.volunteerService.findAll(tenantId, category);
     return { data };
+  }
+
+  @Get('opportunities')
+  @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'Upcoming events needing volunteers with slot counts' })
+  @ApiOkResponse({ description: 'Volunteer opportunities aggregated by event' })
+  async getOpportunities(
+    @TenantId() tenantId: string,
+    @Query('category') category?: VolunteerCategory,
+  ): Promise<{ data: VolunteerOpportunity[] }> {
+    const data = await this.volunteerService.getOpportunities(tenantId, category);
+    return { data };
+  }
+
+  @Get('shifts/event/:eventId')
+  @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'List volunteer shifts for a specific event' })
+  @ApiOkResponse({ description: 'Shifts linked to event' })
+  async findByEvent(
+    @TenantId() tenantId: string,
+    @Param('eventId') eventId: string,
+  ): Promise<{ data: VolunteerShift[] }> {
+    const data = await this.volunteerService.findByEvent(tenantId, eventId);
+    return { data };
+  }
+
+  @Get('templates')
+  @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'Recurring seva shift templates (e.g. Sunday annadanam)' })
+  @ApiOkResponse({ description: 'Recurring template shifts' })
+  async getTemplates(@TenantId() tenantId: string): Promise<{ data: VolunteerShift[] }> {
+    const data = await this.volunteerService.getRecurringTemplates(tenantId);
+    return { data };
+  }
+
+  @Get('stats')
+  @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'Volunteer hours and badge stats for current user' })
+  @ApiOkResponse({ description: 'Volunteer recognition stats' })
+  async getStats(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<VolunteerStats> {
+    return this.volunteerService.getStats(tenantId, user);
+  }
+
+  @Get('preferences')
+  @Roles(UserRole.VOLUNTEER, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Volunteer notification and role preferences' })
+  @ApiOkResponse({ description: 'User volunteer preferences' })
+  getPreferences(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): VolunteerPreferences {
+    return this.volunteerService.getPreferences(tenantId, user.id);
+  }
+
+  @Patch('preferences')
+  @Roles(UserRole.VOLUNTEER, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update volunteer preferences' })
+  @ApiOkResponse({ description: 'Updated preferences' })
+  updatePreferences(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateVolunteerPreferencesDto,
+  ): VolunteerPreferences {
+    return this.volunteerService.updatePreferences(tenantId, user.id, dto);
   }
 
   @Post('shifts')
@@ -39,9 +119,21 @@ export class VolunteerController {
     return this.volunteerService.create(tenantId, dto);
   }
 
+  @Post('events/:eventId/generate-shifts')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Auto-generate default volunteer shifts for an event' })
+  @ApiCreatedResponse({ description: 'Generated shifts' })
+  async generateEventShifts(
+    @TenantId() tenantId: string,
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<GenerateEventShiftsResult> {
+    return this.volunteerService.generateEventShifts(tenantId, eventId, user);
+  }
+
   @Post('shifts/:id/signup')
   @Roles(UserRole.VOLUNTEER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Sign up for a volunteer shift' })
+  @ApiOperation({ summary: 'Sign up for a volunteer shift (waitlist if full)' })
   @ApiOkResponse({ description: 'Shift with updated signups' })
   async signup(
     @TenantId() tenantId: string,
@@ -49,6 +141,18 @@ export class VolunteerController {
     @CurrentUser() user: AuthUser,
   ): Promise<VolunteerShift> {
     return this.volunteerService.signup(tenantId, id, user);
+  }
+
+  @Post('shifts/:id/cancel-signup')
+  @Roles(UserRole.VOLUNTEER, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Withdraw from a volunteer shift' })
+  @ApiOkResponse({ description: 'Shift with signup removed' })
+  async cancelSignup(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<VolunteerShift> {
+    return this.volunteerService.cancelSignup(tenantId, id, user);
   }
 
   @Post('shifts/:id/checkin')
@@ -61,5 +165,17 @@ export class VolunteerController {
     @CurrentUser() user: AuthUser,
   ): Promise<VolunteerShift> {
     return this.volunteerService.checkin(tenantId, id, user);
+  }
+
+  @Post('shifts/:id/checkout')
+  @Roles(UserRole.VOLUNTEER, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Check out and log hours for a volunteer shift' })
+  @ApiOkResponse({ description: 'Shift with checkout and hours logged' })
+  async checkout(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<VolunteerShift> {
+    return this.volunteerService.checkout(tenantId, id, user);
   }
 }
