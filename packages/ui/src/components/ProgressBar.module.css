@@ -1,0 +1,41 @@
+.track {
+  height: 5px;
+  background: var(--ink4);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.4rem 0;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s;
+}
+
+.amber {
+  background: var(--amber);
+}
+
+.green {
+  background: var(--gr);
+}
+
+.blue {
+  background: var(--bl);
+}
+
+.red {
+  background: var(--red);
+}
+
+.platinum {
+  background: linear-gradient(90deg, #e5c100, var(--amber));
+}
+
+.silver {
+  background: #9ba3b5;
+}
+
+.purple {
+  background: #a78bfa;
+}

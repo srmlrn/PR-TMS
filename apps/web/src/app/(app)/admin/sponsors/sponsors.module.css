@@ -1,0 +1,59 @@
+.tierList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.searchPill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--glass2);
+  border: 1px solid var(--b);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  min-width: 160px;
+}
+
+.searchPill input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--txt);
+  font-size: 0.8rem;
+  width: 100%;
+  font-family: inherit;
+}
+
+.searchPill input::placeholder {
+  color: var(--txt3);
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.statusDone {
+  color: var(--gr);
+}
+
+.statusPartial {
+  color: var(--amber);
+}
+
+@media (max-width: 680px) {
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.apiBanner {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--amber);
+  font-size: 0.85rem;
+}

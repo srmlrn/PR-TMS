@@ -1,0 +1,96 @@
+.tile {
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--b);
+  border-radius: var(--r);
+  padding: 1.3rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.tile:hover {
+  border-color: rgba(245, 166, 35, 0.25);
+  transform: translateY(-2px);
+}
+
+.icon {
+  font-size: 1.6rem;
+  margin-bottom: 0.65rem;
+  display: block;
+}
+
+.label {
+  font-size: 0.71rem;
+  color: var(--txt2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+}
+
+.value {
+  font-size: 2.1rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0.2rem 0;
+}
+
+.valueSm {
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+}
+
+.change {
+  font-size: 0.76rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.up {
+  color: var(--gr);
+}
+
+.down {
+  color: var(--red);
+}
+
+.neutral {
+  color: var(--txt2);
+}
+
+.spark {
+  margin-top: 0.7rem;
+  width: 100%;
+  height: 32px;
+}
+
+.amber::before,
+.green::before,
+.blue::before,
+.red::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.amber::before {
+  background: linear-gradient(180deg, var(--amber), transparent);
+}
+
+.green::before {
+  background: linear-gradient(180deg, var(--gr), transparent);
+}
+
+.blue::before {
+  background: linear-gradient(180deg, var(--bl), transparent);
+}
+
+.red::before {
+  background: linear-gradient(180deg, var(--red), transparent);
+}

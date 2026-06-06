@@ -1,0 +1,270 @@
+@import '@tms/ui/tokens.css';
+
+.landing {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6vh 2rem 5rem;
+}
+
+.landingHero {
+  text-align: center;
+  padding: 2rem 0 2.5rem;
+  max-width: 640px;
+}
+
+.landingIcon {
+  font-size: 5.5rem;
+  display: block;
+  animation: sacred-pulse 3s ease-in-out infinite;
+}
+
+.landingEyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin: 0.9rem 0 0.5rem;
+  opacity: 0.85;
+}
+
+.landingTitle {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.landingShine {
+  background: linear-gradient(
+    135deg,
+    var(--amber2) 0%,
+    var(--amber) 40%,
+    var(--gold) 70%,
+    var(--amber2) 100%
+  );
+  background-size: 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shine 4s linear infinite;
+}
+
+.landingSub {
+  color: var(--txt2);
+  font-size: 1.05rem;
+  margin: 0.85rem 0 0.4rem;
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.landingMeta {
+  color: var(--txt3);
+  font-size: 0.78rem;
+}
+
+.landingRoles {
+  width: 100%;
+  max-width: 1080px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.roleCard {
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--b);
+  border-radius: var(--r);
+  padding: 1.7rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.roleCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--adim), transparent 60%);
+  opacity: 0;
+  transition: 0.3s;
+  border-radius: inherit;
+}
+
+.roleCard:hover {
+  border-color: var(--amber);
+  transform: translateY(-7px);
+  box-shadow: 0 24px 60px rgba(245, 166, 35, 0.13);
+}
+
+.roleCard:hover::before {
+  opacity: 1;
+}
+
+.roleEmoji {
+  font-size: 2.8rem;
+  display: block;
+  margin-bottom: 0.85rem;
+  transition: transform 0.3s;
+}
+
+.roleCard:hover .roleEmoji {
+  transform: scale(1.1);
+}
+
+.roleTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.roleDesc {
+  font-size: 0.78rem;
+  color: var(--txt2);
+  line-height: 1.4;
+}
+
+.appContent {
+  min-height: 100vh;
+  padding: calc(var(--topbar-height) + 1.5rem) var(--content-padding-x) 2.5rem
+    var(--content-offset-left);
+  position: relative;
+  z-index: 1;
+  animation: fadeUp 0.25s ease both;
+}
+
+.kioskMode .dock,
+.kioskMode .topbar {
+  display: none;
+}
+
+.kioskMode .appContent {
+  padding: 0;
+}
+
+.sectionLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--txt3);
+  margin-bottom: 0.85rem;
+}
+
+.flexRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flexRowLg {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.flexBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flexWrap {
+  flex-wrap: wrap;
+}
+
+.mb1 {
+  margin-bottom: 0.5rem;
+}
+
+.mb2 {
+  margin-bottom: 1rem;
+}
+
+.mt1 {
+  margin-top: 0.5rem;
+}
+
+.mt2 {
+  margin-top: 1rem;
+}
+
+.divider {
+  height: 1px;
+  background: var(--b);
+  margin: 0.85rem 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.formGroup {
+  margin-bottom: 0.85rem;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: var(--txt2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.3rem;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 0.55rem 0.88rem;
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  color: var(--txt);
+  font-size: 0.86rem;
+  outline: none;
+  transition: border 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  border-color: rgba(245, 166, 35, 0.45);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.09);
+}
+
+.calloutAmber {
+  background: rgba(245, 166, 35, 0.07);
+  border: 1px solid rgba(245, 166, 35, 0.18);
+  border-radius: var(--rs);
+  padding: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.calloutRed {
+  background: rgba(248, 113, 113, 0.06);
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  border-radius: var(--rs);
+  padding: 1rem;
+}
+
+@media (max-width: 680px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}

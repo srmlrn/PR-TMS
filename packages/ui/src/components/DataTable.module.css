@@ -1,0 +1,49 @@
+.wrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.th {
+  padding: 0.6rem 1rem;
+  text-align: left;
+  color: var(--txt3);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--b);
+  background: rgba(12, 14, 24, 0.5);
+  font-weight: 700;
+}
+
+.td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.row:last-child .td {
+  border-bottom: none;
+}
+
+.row:hover .td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.amountGreen {
+  color: var(--gr);
+  font-weight: 700;
+}
+
+.amountAmber {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.amountRed {
+  color: var(--red);
+  font-weight: 700;
+}

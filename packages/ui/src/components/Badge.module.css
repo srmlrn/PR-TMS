@@ -1,0 +1,106 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.17rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.69rem;
+  font-weight: 700;
+}
+
+.badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.chip {
+  background: var(--adim);
+  color: var(--amber);
+  border: 1px solid rgba(245, 166, 35, 0.2);
+  border-radius: 999px;
+  padding: 0.15rem 0.58rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chipGreen {
+  background: var(--grdim);
+  color: var(--gr);
+  border: 1px solid rgba(15, 185, 129, 0.2);
+  border-radius: 999px;
+  padding: 0.15rem 0.58rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chipBlue {
+  background: var(--bldim);
+  color: var(--bl);
+  border: 1px solid rgba(95, 164, 249, 0.2);
+  border-radius: 999px;
+  padding: 0.15rem 0.58rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ok {
+  background: rgba(15, 185, 129, 0.1);
+  color: var(--gr);
+}
+
+.pending {
+  background: rgba(245, 166, 35, 0.1);
+  color: var(--amber);
+}
+
+.info {
+  background: rgba(95, 164, 249, 0.1);
+  color: var(--bl);
+}
+
+.error {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--red);
+}
+
+.envProd {
+  font-size: 0.66rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(15, 185, 129, 0.11);
+  color: var(--gr);
+  border: 1px solid rgba(15, 185, 129, 0.28);
+}
+
+.envUat {
+  font-size: 0.66rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(245, 166, 35, 0.11);
+  color: var(--amber);
+  border: 1px solid rgba(245, 166, 35, 0.28);
+}
+
+.envDev {
+  font-size: 0.66rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(95, 164, 249, 0.11);
+  color: var(--bl);
+  border: 1px solid rgba(95, 164, 249, 0.28);
+}

@@ -1,0 +1,102 @@
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0.7rem 1.5rem 0.7rem var(--content-offset-left);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(7, 9, 15, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brand {
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--amber), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sep {
+  color: var(--txt3);
+  font-size: 0.85rem;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.searchPill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--glass2);
+  border: 1px solid var(--b);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  min-width: 200px;
+}
+
+.searchIcon {
+  color: var(--txt3);
+  font-size: 0.9rem;
+}
+
+.searchInput {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--txt);
+  font-size: 0.8rem;
+  width: 100%;
+  font-family: inherit;
+}
+
+.searchInput::placeholder {
+  color: var(--txt3);
+}
+
+.select {
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.33rem 0.65rem;
+  color: var(--txt);
+  font-size: 0.78rem;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--amber), var(--crimson));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}

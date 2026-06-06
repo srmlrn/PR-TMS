@@ -1,0 +1,20 @@
+{
+  "name": "pr-tms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Temple Management System — multi-tenant SaaS monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @tms/api",
+    "dev:web": "npm run dev -w @tms/web",
+    "build": "npm run build -w @tms/types && npm run build -w @tms/ui && npm run build -w @tms/api && npm run build -w @tms/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

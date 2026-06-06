@@ -1,0 +1,49 @@
+.assetList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.assetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  border-radius: var(--rs);
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  transition: 0.15s;
+}
+
+.assetRow:hover {
+  border-color: var(--b2);
+}
+
+.assetName {
+  font-size: 0.85rem;
+}
+
+.invoiceRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.15rem 0;
+  font-size: 0.84rem;
+  color: var(--txt2);
+}
+
+.invoiceTotal {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid rgba(248, 113, 113, 0.25);
+  margin: 0.5rem 0;
+  padding-top: 0.4rem;
+}
+
+.apiBanner {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--amber);
+  font-size: 0.85rem;
+}

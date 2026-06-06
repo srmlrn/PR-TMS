@@ -1,0 +1,36 @@
+.sparkline {
+  width: 100%;
+  height: 32px;
+}
+
+.barChart {
+  display: block;
+}
+
+.donutRow {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.apiBanner {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--amber);
+  font-size: 0.85rem;
+}

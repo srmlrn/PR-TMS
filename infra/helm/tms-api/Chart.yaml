@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tms-api
+description: Temple Management System API — per tenant-environment deployment
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,165 @@
+/* ────────────────────── TOKENS (mockui-sn46) ────────────────────── */
+:root {
+  --ink: #07090f;
+  --ink2: #0c0e18;
+  --ink3: #121522;
+  --ink4: #181c2e;
+  --glass: rgba(255, 255, 255, 0.042);
+  --glass2: rgba(255, 255, 255, 0.07);
+  --b: rgba(255, 255, 255, 0.08);
+  --b2: rgba(255, 255, 255, 0.14);
+  --amber: #f5a623;
+  --amber2: #ffd07a;
+  --adim: rgba(245, 166, 35, 0.13);
+  --aglow: rgba(245, 166, 35, 0.32);
+  --crimson: #b02040;
+  --cdim: rgba(176, 32, 64, 0.14);
+  --gold: #c89c10;
+  --txt: #ede9e3;
+  --txt2: #8e97a8;
+  --txt3: #454d66;
+  --gr: #0fb981;
+  --grdim: rgba(15, 185, 129, 0.1);
+  --bl: #5fa4f9;
+  --bldim: rgba(95, 164, 249, 0.1);
+  --red: #f87171;
+  --reddim: rgba(248, 113, 113, 0.1);
+  --r: 14px;
+  --rs: 8px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --dock-width: 60px;
+  --topbar-height: 3.25rem;
+  --content-padding-x: 1.5rem;
+  --content-offset-left: calc(var(--dock-width) + 2.25rem);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--ink);
+  color: var(--txt);
+  overflow-x: hidden;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ────────────────────── BACKGROUND ORBS ────────────────────── */
+.orbs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  animation: drift 18s ease-in-out infinite alternate;
+}
+
+.orb-a {
+  width: 750px;
+  height: 750px;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.14) 0%, transparent 70%);
+  top: -280px;
+  right: -180px;
+  animation-duration: 20s;
+}
+
+.orb-b {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(176, 32, 64, 0.12) 0%, transparent 70%);
+  bottom: -220px;
+  left: -80px;
+  animation-delay: -9s;
+  animation-duration: 25s;
+}
+
+.orb-c {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(95, 164, 249, 0.06) 0%, transparent 70%);
+  top: 40%;
+  left: 42%;
+  animation-delay: -14s;
+  filter: blur(110px);
+}
+
+@keyframes drift {
+  to {
+    transform: translate(50px, 40px) scale(1.1);
+  }
+}
+
+@keyframes sacred-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 20px rgba(245, 166, 35, 0.4))
+      drop-shadow(0 0 50px rgba(245, 166, 35, 0.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(245, 166, 35, 0.8))
+      drop-shadow(0 0 90px rgba(245, 166, 35, 0.3));
+  }
+}
+
+@keyframes shine {
+  to {
+    background-position: 200%;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ────────────────────── SCROLLBAR ────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e2035;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2d48;
+}
+
+/* ────────────────────── UTILITY TEXT ────────────────────── */
+.tms-t2 {
+  color: var(--txt2);
+  font-size: 0.84rem;
+}
+
+.tms-t3 {
+  color: var(--txt3);
+  font-size: 0.78rem;
+}
