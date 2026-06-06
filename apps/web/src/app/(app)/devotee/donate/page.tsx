@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, ProgressBar } from '@tms/ui';
-import { Currency, DonationFrequency } from '@tms/types';
+import { Currency, DonationFrequency, type PaymentProvider, type TaxReceipt } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
-import { checkoutAndPay } from '@/lib/payment-flow';
+import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
+import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './donate.module.css';
 
 const AMOUNTS_USD = [25, 51, 101, 251, 501, 1001];
@@ -23,8 +25,13 @@ const TAX_ID_LABEL: Record<Currency, string> = {
 export default function DonatePage() {
   const { user } = useAuth();
   const { api } = useTenant();
+  const searchParams = useSearchParams();
+  const channel = (searchParams.get('channel') as 'app' | 'kiosk' | 'counter') ?? 'app';
   const [fxHint, setFxHint] = useState<string | null>(null);
-  const [lastReceiptId, setLastReceiptId] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<TaxReceipt | null>(null);
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
+    defaultPaymentProvider(Currency.USD, channel),
+  );
   const [amount, setAmount] = useState(101);
   const [currency, setCurrency] = useState<Currency>(Currency.USD);
   const [frequency, setFrequency] = useState<DonationFrequency>(
@@ -37,6 +44,10 @@ export default function DonatePage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const { data: campaigns, loading, error } = useApi((ep) => ep.getCampaigns());
+
+  useEffect(() => {
+    setPaymentProvider(defaultPaymentProvider(currency, channel));
+  }, [currency, channel]);
 
   useEffect(() => {
     const ep = createEndpoints(api);
@@ -64,7 +75,7 @@ export default function DonatePage() {
         currency,
         purpose,
         devoteeId: user.devoteeId,
-        provider: currency === Currency.INR ? 'razorpay' : 'stripe',
+        provider: paymentProvider,
       });
 
       const donation = await ep.createDonation({
@@ -78,7 +89,8 @@ export default function DonatePage() {
         paymentSessionId,
       }) as { id: string; receiptNumber?: string };
 
-      setLastReceiptId(donation.id);
+      const receiptData = await ep.getDonationReceipt(donation.id);
+      setReceipt(receiptData);
       setMessage(
         `Thank you! ${formatMoney(amount, currency)} recorded. Receipt ${donation.receiptNumber ?? donation.id.slice(0, 8)}.`,
       );
@@ -192,27 +204,70 @@ export default function DonatePage() {
             />
           </div>
           {fxHint && <p className="tms-t3 mt1">{fxHint}</p>}
+          <PaymentProviderPicker
+            value={paymentProvider}
+            onChange={setPaymentProvider}
+            currency={currency}
+            channel={channel}
+          />
           <Button onClick={handleDonate} disabled={submitting} fullWidth className="mt1">
             {submitting ? 'Processing…' : `Donate ${formatMoney(amount, currency)}`}
           </Button>
           {message && <p className="tms-t2 mt1">{message}</p>}
-          {lastReceiptId && (
-            <Button
-              variant="outline"
-              className="mt1"
-              onClick={async () => {
-                const ep = createEndpoints(api);
-                const receipt = await ep.getDonationReceipt(lastReceiptId);
-                const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `receipt-${receipt.receiptNumber}.json`;
-                a.click();
-              }}
-            >
-              Download tax receipt
-            </Button>
+          {receipt && (
+            <GlassCard title="Tax Receipt" className="mt1">
+              <dl className="formGrid">
+                <div className="formGroup">
+                  <dt className="tms-t3">Receipt #</dt>
+                  <dd>{receipt.receiptNumber}</dd>
+                </div>
+                <div className="formGroup">
+                  <dt className="tms-t3">Amount</dt>
+                  <dd>{formatMoney(receipt.amount, receipt.currency)}</dd>
+                </div>
+                <div className="formGroup">
+                  <dt className="tms-t3">Purpose</dt>
+                  <dd>{receipt.purpose}</dd>
+                </div>
+                <div className="formGroup">
+                  <dt className="tms-t3">Temple</dt>
+                  <dd>{receipt.templeName}</dd>
+                </div>
+                <div className="formGroup">
+                  <dt className="tms-t3">Issued</dt>
+                  <dd>{new Date(receipt.issuedAt).toLocaleString()}</dd>
+                </div>
+                {receipt.taxDocType && (
+                  <div className="formGroup">
+                    <dt className="tms-t3">Tax document</dt>
+                    <dd>{receipt.taxDocType}</dd>
+                  </div>
+                )}
+                {receipt.taxId && (
+                  <div className="formGroup">
+                    <dt className="tms-t3">Tax ID</dt>
+                    <dd>{receipt.taxId}</dd>
+                  </div>
+                )}
+              </dl>
+              <Button
+                variant="outline"
+                className="mt1"
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(receipt, null, 2)], {
+                    type: 'application/json',
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `receipt-${receipt.receiptNumber}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Download receipt (JSON)
+              </Button>
+            </GlassCard>
           )}
         </GlassCard>
       </div>

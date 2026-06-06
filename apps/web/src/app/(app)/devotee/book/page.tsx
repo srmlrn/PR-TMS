@@ -1,16 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, Chip } from '@tms/ui';
-import { Currency } from '@tms/types';
+import { Currency, type PaymentProvider } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { formatMoney } from '@/lib/api/endpoints';
 import { ApiBanner } from '@/components/ApiBanner';
-import { checkoutAndPay } from '@/lib/payment-flow';
+import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
+import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './book.module.css';
 
 export default function BookSevaPage() {
@@ -26,6 +27,9 @@ export default function BookSevaPage() {
   const [nakshatra, setNakshatra] = useState('');
   const [occasion, setOccasion] = useState('');
   const [beneficiaryName, setBeneficiaryName] = useState('');
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
+    defaultPaymentProvider(Currency.USD, channel),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -43,6 +47,12 @@ export default function BookSevaPage() {
     () => services?.find((s) => s.id === serviceId),
     [services, serviceId],
   );
+
+  useEffect(() => {
+    if (selectedService) {
+      setPaymentProvider(defaultPaymentProvider(selectedService.currency, channel));
+    }
+  }, [selectedService, channel]);
 
   async function handleBook() {
     if (!user?.devoteeId || !serviceId || !slot) {
@@ -62,6 +72,7 @@ export default function BookSevaPage() {
         currency: svc.currency,
         purpose: `Seva: ${svc.name}`,
         devoteeId: user.devoteeId,
+        provider: paymentProvider,
       });
 
       const booking = await ep.createBooking({
@@ -181,9 +192,17 @@ export default function BookSevaPage() {
             </div>
           </div>
           {selectedService && (
-            <p className="tms-t2 mt1">
-              Total: {formatMoney(selectedService.price, selectedService.currency)}
-            </p>
+            <>
+              <p className="tms-t2 mt1">
+                Total: {formatMoney(selectedService.price, selectedService.currency)}
+              </p>
+              <PaymentProviderPicker
+                value={paymentProvider}
+                onChange={setPaymentProvider}
+                currency={selectedService.currency}
+                channel={channel}
+              />
+            </>
           )}
           <Button onClick={handleBook} disabled={submitting} className="mt1">
             {submitting ? 'Booking…' : 'Confirm Booking'}

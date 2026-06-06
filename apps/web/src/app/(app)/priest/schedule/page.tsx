@@ -48,6 +48,7 @@ function devoteeName(devotees: Devotee[] | undefined, devoteeId: string): string
 export default function PriestSchedulePage() {
   const { api } = useTenant();
   const [completing, setCompleting] = useState<string | null>(null);
+  const [completeError, setCompleteError] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
 
   const { data, loading, error, refetch } = useApi((ep) =>
@@ -66,13 +67,17 @@ export default function PriestSchedulePage() {
   const devotees = data?.devotees?.data;
   const confirmed = bookings.filter((b) => b.status === BookingStatus.CONFIRMED).length;
   const honorariumTotal = data?.honorarium?.total ?? 0;
+  const honorariumCurrency = data?.honorarium?.currency ?? 'USD';
 
   async function markComplete(id: string) {
     setCompleting(id);
+    setCompleteError(null);
     try {
       const ep = createEndpoints(api);
       await ep.updateBookingStatus(id, BookingStatus.COMPLETED);
-      refetch();
+      await refetch();
+    } catch (err) {
+      setCompleteError(err instanceof Error ? err.message : 'Could not mark seva complete');
     } finally {
       setCompleting(null);
     }
@@ -102,11 +107,17 @@ export default function PriestSchedulePage() {
         <StatTile label="Confirmed" value={String(confirmed)} icon="✅" />
         <StatTile
           label="Honorarium (completed)"
-          value={formatMoney(honorariumTotal)}
+          value={formatMoney(honorariumTotal, honorariumCurrency)}
           icon="💰"
-          change="Today"
+          change="Live from API"
         />
       </div>
+
+      {completeError && (
+        <p className="tms-t2 mb1" style={{ color: 'var(--red)' }}>
+          {completeError}
+        </p>
+      )}
 
       <GlassCard title="Pooja Schedule" noBodyPadding>
         <DataTable
@@ -121,7 +132,9 @@ export default function PriestSchedulePage() {
               key: 'status',
               header: 'Status',
               render: (r) => (
-                <Badge variant={r.status === 'completed' ? 'ok' : 'pending'}>{r.status}</Badge>
+                <Badge variant={r.status === BookingStatus.COMPLETED ? 'ok' : 'pending'}>
+                  {r.status}
+                </Badge>
               ),
             },
             { key: 'amount', header: 'Dakshina', render: (r) => r.amount, align: 'right' },

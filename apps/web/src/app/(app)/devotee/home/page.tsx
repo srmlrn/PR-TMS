@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import {
   BentoGrid,
@@ -143,9 +144,9 @@ export default function DevoteeHomePage() {
             <BentoItem span={6}>
               <GlassCard title="Quick Actions">
                 <div className={`flexRow flexWrap ${styles.quickActions}`}>
-                  <Button variant="primary">🙏 Book Seva</Button>
-                  <Button variant="primary">💝 Donate</Button>
-                  <Button>📄 Tax Docs</Button>
+                  <Link href="/devotee/book"><Button variant="primary">🙏 Book Seva</Button></Link>
+                  <Link href="/devotee/donate"><Button variant="primary">💝 Donate</Button></Link>
+                  <Link href="/devotee/profile"><Button>👤 My Profile</Button></Link>
                   <Button>📺 Watch Live</Button>
                 </div>
               </GlassCard>

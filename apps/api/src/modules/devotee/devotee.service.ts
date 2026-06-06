@@ -1,6 +1,12 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
   CreateDevoteeInput,
+  CreateDevoteeResponse,
   Currency,
   Devotee,
   DevoteeDuplicateCheck,
@@ -155,20 +161,44 @@ export class DevoteeService
     return result;
   }
 
-  async create(tenantId: string, input: CreateDevoteeInput): Promise<DevoteeRecord> {
+  async create(
+    tenantId: string,
+    input: CreateDevoteeInput,
+    options?: { blockOnDuplicate?: boolean },
+  ): Promise<CreateDevoteeResponse> {
+    const duplicates = await this.checkDuplicates(
+      tenantId,
+      input.phone,
+      input.email,
+    );
+
+    if (options?.blockOnDuplicate && duplicates.phoneMatch) {
+      throw new ConflictException({
+        message: 'A devotee with this phone number already exists',
+        duplicate: duplicates.phoneMatch,
+      });
+    }
+
     const payload = this.buildDevoteePayload(input);
+    let devotee: DevoteeRecord;
 
     if (this.usePostgres) {
       const repo = await this.tenantData.devotees();
       const entity = repo.create({ ...payload, status: 'active' });
       const saved = await repo.save(entity);
-      return this.toDevotee(saved);
+      devotee = this.toDevotee(saved);
+    } else {
+      devotee = this.createEntity(tenantId, {
+        ...payload,
+        status: 'active',
+      });
     }
 
-    return this.createEntity(tenantId, {
-      ...payload,
-      status: 'active',
-    });
+    if (duplicates.phoneMatch || duplicates.emailMatch) {
+      return { ...devotee, duplicateWarning: duplicates };
+    }
+
+    return devotee;
   }
 
   async update(
@@ -344,7 +374,25 @@ export class DevoteeService
       communicationOptIn: input.communicationOptIn ?? true,
       preferredLanguage: input.preferredLanguage,
       importantDates: input.importantDates,
-      address: input.address,
+      address: this.normalizeAddress(input.address, input.country),
+    };
+  }
+
+  private normalizeAddress(
+    address: CreateDevoteeInput['address'],
+    fallbackCountry: string,
+  ): Devotee['address'] | undefined {
+    if (!address?.line1) {
+      return undefined;
+    }
+
+    return {
+      line1: address.line1,
+      line2: address.line2,
+      city: address.city ?? '',
+      state: address.state,
+      postalCode: address.postalCode,
+      country: address.country ?? fallbackCountry,
     };
   }
 

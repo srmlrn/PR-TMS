@@ -149,6 +149,7 @@ export default function AdminSponsorsPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formMsg, setFormMsg] = useState<string | null>(null);
+  const [formOk, setFormOk] = useState(false);
   const [form, setForm] = useState({
     name: '',
     type: 'corporate' as Sponsor['type'],
@@ -167,9 +168,11 @@ export default function AdminSponsorsPage() {
       const ep = createEndpoints(api);
       await ep.createSponsor(form);
       setShowForm(false);
+      setFormOk(true);
+      setFormMsg(`Sponsor "${form.name}" created.`);
       refetch();
-      setFormMsg('Sponsor created.');
     } catch (err) {
+      setFormOk(false);
       setFormMsg(err instanceof Error ? err.message : 'Create failed');
     } finally {
       setSaving(false);
@@ -194,6 +197,12 @@ export default function AdminSponsorsPage() {
         }
       />
 
+      {formMsg && (
+        <p className="tms-t2 mb2" style={{ color: formOk ? 'var(--gr)' : 'var(--red)' }}>
+          {formMsg}
+        </p>
+      )}
+
       {showForm && (
         <GlassCard title="New sponsor" className="mb2">
           <div className="formGrid">
@@ -211,7 +220,6 @@ export default function AdminSponsorsPage() {
             </div>
             <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
               <Button onClick={handleCreate} disabled={saving}>{saving ? 'Saving…' : 'Create sponsor'}</Button>
-              {formMsg && <p className="tms-t2 mt1">{formMsg}</p>}
             </div>
           </div>
         </GlassCard>

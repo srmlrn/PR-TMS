@@ -6,7 +6,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { FxRates, PaymentSession, UserRole } from '@tms/types';
+import {
+  FxRates,
+  PaymentProvidersResponse,
+  PaymentSession,
+  UserRole,
+} from '@tms/types';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreatePaymentSessionDto } from './dto/create-payment-session.dto';
@@ -29,6 +34,19 @@ export class PaymentController {
   @ApiResponse({ status: 200, description: 'FX rate table' })
   getFxRates(): FxRates {
     return this.paymentService.getFxRates();
+  }
+
+  @Get('providers')
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.DEVOTEE,
+    UserRole.FRONT_DESK,
+    UserRole.ACCOUNTANT,
+  )
+  @ApiOperation({ summary: 'List payment providers available per currency' })
+  @ApiResponse({ status: 200, description: 'Provider map by currency' })
+  getProviders(): PaymentProvidersResponse {
+    return this.paymentService.getProvidersByCurrency();
   }
 
   @Post('sessions')

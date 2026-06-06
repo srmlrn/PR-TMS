@@ -117,12 +117,13 @@ export class BookingService
 
     let paymentStatus = PaymentStatus.PAID;
     if (input.paymentSessionId) {
-      this.paymentService.assertPaidSession(
+      const session = this.paymentService.assertPaidSession(
         tenantId,
         input.paymentSessionId,
         service.price,
         service.currency,
       );
+      paymentStatus = session.status;
     }
 
     if (this.usePostgres) {

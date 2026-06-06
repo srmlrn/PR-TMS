@@ -15,9 +15,51 @@
   margin-top: 1rem;
 }
 
+.walkInForm {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--b2);
+}
+
+.walkInGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.paymentRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.paymentChip {
+  flex: 1;
+  min-width: 7rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--b2);
+  border-radius: var(--r);
+  background: var(--glass);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.paymentChipActive {
+  border-color: var(--amber);
+  background: rgba(245, 166, 35, 0.12);
+}
+
 @media (max-width: 768px) {
   .stats,
   .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .walkInGrid {
     grid-template-columns: 1fr;
   }
 }

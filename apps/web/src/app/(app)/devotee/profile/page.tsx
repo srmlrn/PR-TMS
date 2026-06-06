@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button, GlassCard, PageHeader } from '@tms/ui';
-import type { Devotee, DevoteeGender } from '@tms/types';
+import type { Devotee, DevoteeGender, ImportantDate, ImportantDateType } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
@@ -38,6 +38,7 @@ export default function DevoteeProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [importantDates, setImportantDates] = useState<ImportantDate[]>([]);
 
   useEffect(() => {
     if (!user?.devoteeId) {
@@ -68,6 +69,7 @@ export default function DevoteeProfilePage() {
           state: d.address?.state ?? '',
           postalCode: d.address?.postalCode ?? '',
         });
+        setImportantDates(d.importantDates ?? []);
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
@@ -105,6 +107,7 @@ export default function DevoteeProfilePage() {
               country: form.country,
             }
           : undefined,
+        importantDates: importantDates.filter((d) => d.label && d.date),
       });
       setMessage('Profile saved.');
     } catch (err) {
@@ -197,6 +200,80 @@ export default function DevoteeProfilePage() {
               <input type="checkbox" checked={form.communicationOptIn} onChange={(e) => setForm({ ...form, communicationOptIn: e.target.checked })} /> Email/SMS updates
             </label>
           </div>
+
+          <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+            <h3 className="tms-t1">Important dates</h3>
+            <p className="tms-t3">Birthdays, anniversaries, and star days for personalised reminders.</p>
+          </div>
+          {importantDates.map((row, index) => (
+            <div key={index} className="formGrid" style={{ gridColumn: '1 / -1' }}>
+              <div className="formGroup">
+                <label htmlFor={`date-label-${index}`}>Label</label>
+                <input
+                  id={`date-label-${index}`}
+                  value={row.label}
+                  onChange={(e) => {
+                    const next = [...importantDates];
+                    next[index] = { ...row, label: e.target.value };
+                    setImportantDates(next);
+                  }}
+                  placeholder="Spouse birthday"
+                />
+              </div>
+              <div className="formGroup">
+                <label htmlFor={`date-value-${index}`}>Date</label>
+                <input
+                  id={`date-value-${index}`}
+                  type="date"
+                  value={row.date}
+                  onChange={(e) => {
+                    const next = [...importantDates];
+                    next[index] = { ...row, date: e.target.value };
+                    setImportantDates(next);
+                  }}
+                />
+              </div>
+              <div className="formGroup">
+                <label htmlFor={`date-type-${index}`}>Type</label>
+                <select
+                  id={`date-type-${index}`}
+                  value={row.type}
+                  onChange={(e) => {
+                    const next = [...importantDates];
+                    next[index] = { ...row, type: e.target.value as ImportantDateType };
+                    setImportantDates(next);
+                  }}
+                >
+                  <option value="birthday">Birthday</option>
+                  <option value="anniversary">Anniversary</option>
+                  <option value="star_day">Star day</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="formGroup" style={{ alignSelf: 'end' }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImportantDates(importantDates.filter((_, i) => i !== index))}
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          ))}
+          <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setImportantDates([...importantDates, { label: '', date: '', type: 'birthday' }])
+              }
+            >
+              + Add date
+            </Button>
+          </div>
+
           <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
             <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save profile'}</Button>
             {message && <p className="tms-t2 mt1">{message}</p>}

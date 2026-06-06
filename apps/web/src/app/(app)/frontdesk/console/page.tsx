@@ -2,22 +2,35 @@
 
 import { useState } from 'react';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
-import { Currency, type DevoteeLookupResult } from '@tms/types';
+import { Currency, type DevoteeLookupResult, type PaymentProvider } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
-import { checkoutAndPay } from '@/lib/payment-flow';
+import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
+import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './console.module.css';
+
+const EMPTY_WALK_IN = {
+  firstName: '',
+  lastName: '',
+  gotram: '',
+  nakshatra: '',
+};
 
 export default function FrontDeskConsolePage() {
   const { api } = useTenant();
   const [phone, setPhone] = useState('');
   const [lookup, setLookup] = useState<DevoteeLookupResult | null>(null);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
+  const [walkIn, setWalkIn] = useState(EMPTY_WALK_IN);
+  const [registering, setRegistering] = useState(false);
   const [tokenResult, setTokenResult] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [donateAmount, setDonateAmount] = useState(51);
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
+    defaultPaymentProvider(Currency.USD, 'counter'),
+  );
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   const { data: stats, loading, error, refetch } = useApi((ep) => ep.getQueueStats());
@@ -29,17 +42,55 @@ export default function FrontDeskConsolePage() {
     setLookupMessage(null);
     setTokenResult(null);
     setActionMsg(null);
+    setWalkIn(EMPTY_WALK_IN);
     try {
       const ep = createEndpoints(api);
       const result = await ep.frontDeskLookup(phone);
       setLookup(result);
       if (!result.found) {
-        setLookupMessage('No devotee found — register walk-in in Devotee CRM.');
+        setLookupMessage('No devotee found — register walk-in below.');
       }
     } catch (err) {
       setLookupMessage(err instanceof Error ? err.message : 'Lookup failed');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleRegisterWalkIn() {
+    if (!walkIn.firstName.trim() || !walkIn.lastName.trim() || !phone.trim()) {
+      setLookupMessage('First name, last name, and phone are required.');
+      return;
+    }
+    setRegistering(true);
+    setLookupMessage(null);
+    try {
+      const ep = createEndpoints(api);
+      const created = await ep.createDevotee({
+        firstName: walkIn.firstName.trim(),
+        lastName: walkIn.lastName.trim(),
+        phone: phone.trim(),
+        country: 'US',
+        gotram: walkIn.gotram.trim() || undefined,
+        nakshatra: walkIn.nakshatra.trim() || undefined,
+      });
+      const name = `${created.firstName} ${created.lastName}`;
+      setLookup({
+        found: true,
+        devotee: {
+          id: created.id,
+          name,
+          phone: created.phone,
+          gotram: created.gotram,
+          nakshatra: created.nakshatra,
+        },
+      });
+      setLookupMessage(`Walk-in registered — ${name}`);
+      setWalkIn(EMPTY_WALK_IN);
+    } catch (err) {
+      setLookupMessage(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setRegistering(false);
     }
   }
 
@@ -66,7 +117,7 @@ export default function FrontDeskConsolePage() {
   async function handleQuickDonate() {
     const devoteeId = lookup?.devotee?.id;
     if (!devoteeId) {
-      setActionMsg('Look up a devotee first.');
+      setActionMsg('Look up or register a devotee first.');
       return;
     }
     setBusy(true);
@@ -78,7 +129,7 @@ export default function FrontDeskConsolePage() {
         currency: Currency.USD,
         purpose: 'Counter donation',
         devoteeId,
-        provider: 'cash',
+        provider: paymentProvider,
       });
       const donation = await ep.createDonation({
         devoteeId,
@@ -87,7 +138,9 @@ export default function FrontDeskConsolePage() {
         purpose: 'Counter — General Hundi',
         paymentSessionId,
       }) as { receiptNumber?: string };
-      setActionMsg(`Donation recorded · ${donation.receiptNumber ?? 'receipt issued'}`);
+      setActionMsg(
+        `Donation recorded (${paymentProvider}) · ${donation.receiptNumber ?? 'receipt issued'}`,
+      );
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Donation failed');
     } finally {
@@ -114,7 +167,7 @@ export default function FrontDeskConsolePage() {
         currency: service.currency,
         purpose: `Counter: ${service.name}`,
         devoteeId,
-        provider: 'cash',
+        provider: paymentProvider,
       });
       const booking = await ep.createBooking({
         devoteeId,
@@ -128,7 +181,9 @@ export default function FrontDeskConsolePage() {
           nakshatra: lookup?.devotee?.nakshatra,
         },
       });
-      setActionMsg(`Booked ${service.name} · ${booking.receiptNumber ?? booking.id.slice(0, 8)}`);
+      setActionMsg(
+        `Booked ${service.name} (${paymentProvider}) · ${booking.receiptNumber ?? booking.id.slice(0, 8)}`,
+      );
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Booking failed');
     } finally {
@@ -137,6 +192,7 @@ export default function FrontDeskConsolePage() {
   }
 
   const devotee = lookup?.devotee;
+  const showWalkInForm = lookup && !lookup.found;
 
   return (
     <>
@@ -163,7 +219,11 @@ export default function FrontDeskConsolePage() {
           <Button onClick={handleLookup} disabled={busy || !phone}>
             Look up
           </Button>
-          {lookupMessage && <p className="tms-t2 mt1">{lookupMessage}</p>}
+          {lookupMessage && (
+            <p className="tms-t2 mt1" style={devotee ? { color: 'var(--gr)' } : undefined}>
+              {lookupMessage}
+            </p>
+          )}
           {devotee && (
             <div className="calloutAmber mt1">
               <strong>{devotee.name}</strong>
@@ -180,6 +240,48 @@ export default function FrontDeskConsolePage() {
               )}
             </div>
           )}
+          {showWalkInForm && (
+            <div className={styles.walkInForm}>
+              <p className="tms-t3 mb1">Quick walk-in registration</p>
+              <div className={styles.walkInGrid}>
+                <div className="formGroup">
+                  <label htmlFor="wiFirst">First name</label>
+                  <input
+                    id="wiFirst"
+                    value={walkIn.firstName}
+                    onChange={(e) => setWalkIn({ ...walkIn, firstName: e.target.value })}
+                  />
+                </div>
+                <div className="formGroup">
+                  <label htmlFor="wiLast">Last name</label>
+                  <input
+                    id="wiLast"
+                    value={walkIn.lastName}
+                    onChange={(e) => setWalkIn({ ...walkIn, lastName: e.target.value })}
+                  />
+                </div>
+                <div className="formGroup">
+                  <label htmlFor="wiGotram">Gotram</label>
+                  <input
+                    id="wiGotram"
+                    value={walkIn.gotram}
+                    onChange={(e) => setWalkIn({ ...walkIn, gotram: e.target.value })}
+                  />
+                </div>
+                <div className="formGroup">
+                  <label htmlFor="wiNakshatra">Nakshatra</label>
+                  <input
+                    id="wiNakshatra"
+                    value={walkIn.nakshatra}
+                    onChange={(e) => setWalkIn({ ...walkIn, nakshatra: e.target.value })}
+                  />
+                </div>
+              </div>
+              <Button onClick={handleRegisterWalkIn} disabled={registering || busy}>
+                {registering ? 'Registering…' : 'Register walk-in'}
+              </Button>
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard title="Issue Darshan Token">
@@ -193,6 +295,12 @@ export default function FrontDeskConsolePage() {
         </GlassCard>
 
         <GlassCard title="Quick Donate (counter)">
+          <PaymentProviderPicker
+            value={paymentProvider}
+            onChange={setPaymentProvider}
+            currency={Currency.USD}
+            channel="counter"
+          />
           <div className="formGroup">
             <label htmlFor="donateAmt">Amount (USD)</label>
             <input
@@ -209,6 +317,12 @@ export default function FrontDeskConsolePage() {
         </GlassCard>
 
         <GlassCard title="Quick Book (counter)">
+          <PaymentProviderPicker
+            value={paymentProvider}
+            onChange={setPaymentProvider}
+            currency={services?.[0]?.currency ?? Currency.USD}
+            channel="counter"
+          />
           <p className="tms-t3">
             Books next available {services?.[0]?.name ?? 'seva'} for looked-up devotee.
           </p>

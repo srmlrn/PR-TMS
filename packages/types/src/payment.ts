@@ -29,6 +29,14 @@ export interface FxRates {
   asOf: string;
 }
 
+export interface CurrencyPaymentProviders {
+  currency: Currency;
+  providers: PaymentProvider[];
+  defaultProvider: PaymentProvider;
+}
+
+export type PaymentProvidersResponse = CurrencyPaymentProviders[];
+
 export interface TaxReceipt {
   receiptNumber: string;
   amount: number;

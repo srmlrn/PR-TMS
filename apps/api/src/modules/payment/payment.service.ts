@@ -9,6 +9,7 @@ import {
   Currency,
   FxRates,
   PaymentProvider,
+  PaymentProvidersResponse,
   PaymentSession,
   PaymentStatus,
 } from '@tms/types';
@@ -23,6 +24,14 @@ const FX_RATES: Record<Currency, number> = {
   [Currency.GBP]: 0.79,
 };
 
+/** Card PSP per currency; demo/cash are always available for local and counter flows. */
+const PROVIDERS_BY_CURRENCY: Record<Currency, PaymentProvider[]> = {
+  [Currency.USD]: ['stripe', 'demo', 'cash'],
+  [Currency.INR]: ['razorpay', 'demo', 'cash'],
+  [Currency.CAD]: ['stripe', 'demo', 'cash'],
+  [Currency.GBP]: ['stripe', 'demo', 'cash'],
+};
+
 @Injectable()
 export class PaymentService {
   private readonly sessions = new Map<string, SessionRecord>();
@@ -33,6 +42,14 @@ export class PaymentService {
       rates: FX_RATES,
       asOf: new Date().toISOString(),
     };
+  }
+
+  getProvidersByCurrency(): PaymentProvidersResponse {
+    return Object.values(Currency).map((currency) => ({
+      currency,
+      providers: PROVIDERS_BY_CURRENCY[currency],
+      defaultProvider: this.getProviderForCurrency(currency),
+    }));
   }
 
   convertAmount(amount: number, from: Currency, to: Currency): number {
@@ -59,6 +76,12 @@ export class PaymentService {
       updatedAt: now,
     };
     this.sessions.set(session.id, session);
+
+    // Counter cash sessions skip PSP confirmation.
+    if (input.provider === 'cash') {
+      return this.confirmSession(tenantId, session.id);
+    }
+
     return session;
   }
 
@@ -69,12 +92,8 @@ export class PaymentService {
       return session;
     }
 
-    if (session.provider === 'cash') {
-      session.status = PaymentStatus.PAID;
-    } else {
-      session.status = PaymentStatus.PAID;
-    }
-
+    // Demo mode: no Stripe/Razorpay call — mark paid immediately (local/dev/UAT only).
+    session.status = PaymentStatus.PAID;
     session.updatedAt = new Date();
     this.sessions.set(session.id, session);
     return session;

@@ -62,3 +62,8 @@ export interface DevoteeDuplicateCheck {
   phoneMatch?: Pick<Devotee, 'id' | 'firstName' | 'lastName' | 'phone' | 'email'>;
   emailMatch?: Pick<Devotee, 'id' | 'firstName' | 'lastName' | 'phone' | 'email'>;
 }
+
+/** POST /devotees — devotee fields plus optional duplicate warning (non-blocking by default). */
+export type CreateDevoteeResponse = Devotee & {
+  duplicateWarning?: DevoteeDuplicateCheck;
+};

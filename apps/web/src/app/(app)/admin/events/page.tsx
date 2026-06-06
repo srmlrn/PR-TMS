@@ -166,6 +166,8 @@ export default function AdminEventsPage() {
   const { api } = useTenant();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formMsg, setFormMsg] = useState<string | null>(null);
+  const [formOk, setFormOk] = useState(false);
   const [form, setForm] = useState({
     name: '',
     type: 'festival' as TempleEvent['type'],
@@ -178,6 +180,7 @@ export default function AdminEventsPage() {
 
   async function handleCreate() {
     setSaving(true);
+    setFormMsg(null);
     try {
       const ep = createEndpoints(api);
       await ep.createEvent({
@@ -188,7 +191,12 @@ export default function AdminEventsPage() {
         venues: form.venues.split(',').map((v) => v.trim()).filter(Boolean),
       });
       setShowForm(false);
+      setFormOk(true);
+      setFormMsg(`Event "${form.name}" created.`);
       refetch();
+    } catch (err) {
+      setFormOk(false);
+      setFormMsg(err instanceof Error ? err.message : 'Create failed');
     } finally {
       setSaving(false);
     }
@@ -215,6 +223,12 @@ export default function AdminEventsPage() {
       />
 
       <ApiBanner loading={loading} error={error} />
+
+      {formMsg && (
+        <p className="tms-t2 mb2" style={{ color: formOk ? 'var(--gr)' : 'var(--red)' }}>
+          {formMsg}
+        </p>
+      )}
 
       {showForm && (
         <GlassCard title="New event" className="mb2">

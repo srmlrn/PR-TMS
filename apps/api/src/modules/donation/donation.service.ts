@@ -172,12 +172,13 @@ export class DonationService
 
     let paymentStatus = PaymentStatus.PAID;
     if (input.paymentSessionId) {
-      this.paymentService.assertPaidSession(
+      const session = this.paymentService.assertPaidSession(
         tenantId,
         input.paymentSessionId,
         input.amount,
         input.currency,
       );
+      paymentStatus = session.status;
     }
 
     if (this.usePostgres) {

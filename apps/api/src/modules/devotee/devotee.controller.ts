@@ -12,10 +12,11 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Devotee, PaginatedResponse, UserRole } from '@tms/types';
+import { CreateDevoteeResponse, Devotee, PaginatedResponse, UserRole } from '@tms/types';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateDevoteeDto } from './dto/create-devotee.dto';
@@ -77,25 +78,39 @@ export class DevoteeController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
   @ApiOperation({ summary: 'Create a new devotee profile' })
+  @ApiQuery({
+    name: 'blockDuplicate',
+    required: false,
+    description: 'When true, return 409 if phone already exists',
+    type: Boolean,
+  })
   @ApiResponse({ status: 201, description: 'Devotee created' })
+  @ApiResponse({ status: 409, description: 'Phone duplicate blocked' })
   async create(
     @TenantId() tenantId: string,
     @Body() dto: CreateDevoteeDto,
-  ): Promise<Devotee> {
+    @Query('blockDuplicate') blockDuplicate?: string,
+  ): Promise<CreateDevoteeResponse> {
     const { address, ...rest } = dto;
-    return this.devoteeService.create(tenantId, {
-      ...rest,
-      address: address?.line1
-        ? {
-            line1: address.line1,
-            line2: address.line2,
-            city: address.city ?? '',
-            state: address.state,
-            postalCode: address.postalCode,
-            country: address.country ?? rest.country,
-          }
-        : undefined,
-    });
+    return this.devoteeService.create(
+      tenantId,
+      {
+        ...rest,
+        address: address?.line1
+          ? {
+              line1: address.line1,
+              line2: address.line2,
+              city: address.city ?? '',
+              state: address.state,
+              postalCode: address.postalCode,
+              country: address.country ?? rest.country,
+            }
+          : undefined,
+      },
+      {
+        blockOnDuplicate: blockDuplicate === 'true' || blockDuplicate === '1',
+      },
+    );
   }
 
   @Patch(':id')

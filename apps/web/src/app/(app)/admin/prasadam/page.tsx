@@ -149,6 +149,8 @@ export default function AdminPrasadamPage() {
   const { api } = useTenant();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formMsg, setFormMsg] = useState<string | null>(null);
+  const [formOk, setFormOk] = useState(false);
   const [form, setForm] = useState({
     devoteeId: 'dev-rajan-krishnamurthy',
     deity: 'Lord Venkateswara',
@@ -161,6 +163,7 @@ export default function AdminPrasadamPage() {
 
   async function handleCreate() {
     setSaving(true);
+    setFormMsg(null);
     try {
       const ep = createEndpoints(api);
       await ep.createPrasadamSponsorship({
@@ -175,7 +178,12 @@ export default function AdminPrasadamPage() {
         },
       });
       setShowForm(false);
+      setFormOk(true);
+      setFormMsg(`Prasadam sponsorship for ${form.sponsorName} created.`);
       refetch();
+    } catch (err) {
+      setFormOk(false);
+      setFormMsg(err instanceof Error ? err.message : 'Create failed');
     } finally {
       setSaving(false);
     }
@@ -205,6 +213,12 @@ export default function AdminPrasadamPage() {
       />
 
       <ApiBanner loading={loading} error={error} />
+
+      {formMsg && (
+        <p className="tms-t2 mb2" style={{ color: formOk ? 'var(--gr)' : 'var(--red)' }}>
+          {formMsg}
+        </p>
+      )}
 
       {showForm && (
         <GlassCard title="Book prasadam sponsorship" className="mb2">
