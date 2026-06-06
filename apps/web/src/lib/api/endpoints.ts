@@ -8,6 +8,7 @@ import type {
   DevoteeDuplicateCheck,
   DevoteeGender,
   DevoteeLookupResult,
+  DevoteeProfile,
   DonationCampaign,
   EventChecklistItem,
   EventLifecycleStage,
@@ -338,6 +339,9 @@ export function createEndpoints(client: ApiClient) {
 
     frontDeskLookup: (params: { phone?: string; name?: string }) =>
       client.get<DevoteeLookupResult>('/frontdesk/lookup', { params }),
+
+    getDevoteeProfile: (id: string) =>
+      client.get<DevoteeProfile>(`/frontdesk/devotee-profile/${id}`),
 
     checkInBooking: (bookingId: string) =>
       client.post<{ checkedIn: true }>('/frontdesk/check-in', { bookingId }),

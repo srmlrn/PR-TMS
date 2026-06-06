@@ -2,16 +2,15 @@
 
 import { useMemo } from 'react';
 import { getTenantBranding, type TenantBranding } from '@tms/types';
+import { getDefaultTenantId } from './tenant-selection';
 import { useAuth } from './auth-context';
 import { useTenant } from './tenant-context';
-import { readSelectedTenantId } from './tenant-selection';
-
-/** Active tenant id from session, context, or local selection */
+/** Active tenant id from session or tenant context (storage syncs after mount). */
 export function resolveActiveTenantId(
   userTenantId?: string | null,
   contextTenantId?: string,
 ): string {
-  return userTenantId ?? contextTenantId ?? readSelectedTenantId();
+  return userTenantId ?? contextTenantId ?? getDefaultTenantId();
 }
 
 export function getTenantSite(tenantId: string): TenantBranding {

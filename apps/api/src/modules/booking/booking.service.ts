@@ -10,6 +10,7 @@ import {
   BookingStatus,
   CreateBookingInput,
   Currency,
+  GANESHA_TEMPLE_ID,
   PaginatedResponse,
   PaymentStatus,
   TaxReceipt,
@@ -445,53 +446,97 @@ export class BookingService
   }
 
   private seedDemoBookings(): void {
-    if (this.scoped(DEMO_TENANT).length > 0) {
-      return;
-    }
-
     const now = new Date();
 
-    const seedBookings: Array<Omit<BookingRecord, 'createdAt' | 'updatedAt'>> = [
-      {
-        id: 'bkg-archana-rajan',
-        tenantId: DEMO_TENANT,
-        devoteeId: 'dev-rajan-krishnamurthy',
-        serviceId: 'svc-archana',
-        scheduledAt: new Date('2026-06-07T09:00:00.000Z'),
-        status: BookingStatus.CONFIRMED,
-        amount: 25,
-        currency: Currency.USD,
-        sankalpa: {
-          sponsorName: 'Rajan Krishnamurthy',
-          gotram: 'Bharadwaja',
-          nakshatra: 'Rohini',
-          beneficiaryName: 'Rajan Krishnamurthy',
+    if (this.scoped(DEMO_TENANT).length === 0) {
+      const svBookings: Array<Omit<BookingRecord, 'createdAt' | 'updatedAt'>> = [
+        {
+          id: 'bkg-archana-rajan',
+          tenantId: DEMO_TENANT,
+          devoteeId: 'dev-rajan-krishnamurthy',
+          serviceId: 'svc-archana',
+          scheduledAt: new Date('2026-06-07T09:00:00.000Z'),
+          status: BookingStatus.CONFIRMED,
+          amount: 25,
+          currency: Currency.USD,
+          sankalpa: {
+            sponsorName: 'Rajan Krishnamurthy',
+            gotram: 'Bharadwaja',
+            nakshatra: 'Rohini',
+            beneficiaryName: 'Rajan Krishnamurthy',
+          },
+          receiptNumber: 'RCT-2026-1801',
+          channel: 'app',
         },
-        receiptNumber: 'RCT-2026-1801',
-        channel: 'app',
-      },
-      {
-        id: 'bkg-abhishekam-patel',
-        tenantId: DEMO_TENANT,
-        devoteeId: 'dev-meena-patel',
-        serviceId: 'svc-abhishekam',
-        scheduledAt: new Date('2026-06-07T09:30:00.000Z'),
-        status: BookingStatus.CONFIRMED,
-        amount: 101,
-        currency: Currency.USD,
-        receiptNumber: 'RCT-2026-1802',
-        channel: 'counter',
-      },
-    ];
+        {
+          id: 'bkg-abhishekam-patel',
+          tenantId: DEMO_TENANT,
+          devoteeId: 'dev-meena-patel',
+          serviceId: 'svc-abhishekam',
+          scheduledAt: new Date('2026-06-07T09:30:00.000Z'),
+          status: BookingStatus.CONFIRMED,
+          amount: 101,
+          currency: Currency.USD,
+          receiptNumber: 'RCT-2026-1802',
+          channel: 'counter',
+        },
+      ];
 
-    for (const booking of seedBookings) {
-      this.store.set(booking.id, {
-        ...booking,
-        createdAt: now,
-        updatedAt: now,
-      });
+      for (const booking of svBookings) {
+        this.store.set(booking.id, { ...booking, createdAt: now, updatedAt: now });
+      }
+      this.receiptCounters.set(`${DEMO_TENANT}:2026`, 1802);
     }
 
-    this.receiptCounters.set(`${DEMO_TENANT}:2026`, 1802);
+    if (this.scoped(GANESHA_TEMPLE_ID).length === 0) {
+      const ganeshaBookings: Array<Omit<BookingRecord, 'createdAt' | 'updatedAt'>> = [
+        {
+          id: 'sgt-bkg-archana-raj',
+          tenantId: GANESHA_TEMPLE_ID,
+          devoteeId: 'sgt-dev-raj-natarajan',
+          serviceId: 'sgt-svc-ganesha-archana',
+          scheduledAt: new Date('2026-06-06T15:00:00.000Z'),
+          status: BookingStatus.CONFIRMED,
+          amount: 15,
+          currency: Currency.USD,
+          sankalpa: {
+            sponsorName: 'Raj Natarajan',
+            gotram: 'Atri',
+            occasion: '60th Birthday',
+          },
+          receiptNumber: 'RCT-2026-3101',
+          channel: 'counter',
+        },
+        {
+          id: 'sgt-bkg-abhishekam-raj',
+          tenantId: GANESHA_TEMPLE_ID,
+          devoteeId: 'sgt-dev-raj-natarajan',
+          serviceId: 'sgt-svc-ganesha-abhishekam',
+          scheduledAt: new Date('2026-06-14T14:00:00.000Z'),
+          status: BookingStatus.CONFIRMED,
+          amount: 125,
+          currency: Currency.USD,
+          sankalpa: { sponsorName: 'Raj & Swetha Natarajan', gotram: 'Atri' },
+          receiptNumber: 'RCT-2026-3102',
+          channel: 'app',
+        },
+        {
+          id: 'sgt-bkg-archana-priya',
+          tenantId: GANESHA_TEMPLE_ID,
+          devoteeId: 'sgt-dev-priya-iyer',
+          serviceId: 'sgt-svc-ganesha-archana',
+          scheduledAt: new Date('2026-05-20T16:00:00.000Z'),
+          status: BookingStatus.COMPLETED,
+          amount: 15,
+          currency: Currency.USD,
+          channel: 'counter',
+        },
+      ];
+
+      for (const booking of ganeshaBookings) {
+        this.store.set(booking.id, { ...booking, createdAt: now, updatedAt: now });
+      }
+      this.receiptCounters.set(`${GANESHA_TEMPLE_ID}:2026`, 3102);
+    }
   }
 }

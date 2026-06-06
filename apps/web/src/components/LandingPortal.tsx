@@ -10,6 +10,7 @@ import {
 import { PublicThemeBar } from '@/components/PublicThemeBar';
 import { getLandingRoles, LANDING_ROLE_ORDER } from '@/lib/landing-roles';
 import {
+  getDefaultTenantId,
   readSelectedTenantId,
   SELECTABLE_TENANTS,
   writeSelectedTenantId,
@@ -26,8 +27,12 @@ function loginHref(email: string, role: string, tenantId: string) {
 }
 
 export function LandingPortal() {
-  const [tenantId, setTenantId] = useState(readSelectedTenantId);
+  const [tenantId, setTenantId] = useState(getDefaultTenantId);
   const tenant = getTenantBranding(tenantId);
+
+  useEffect(() => {
+    setTenantId(readSelectedTenantId());
+  }, []);
   const rolesByKey = Object.fromEntries(getLandingRoles(tenantId).map((r) => [r.role, r]));
   const roles = LANDING_ROLE_ORDER.map((key) => rolesByKey[key]).filter(Boolean);
 

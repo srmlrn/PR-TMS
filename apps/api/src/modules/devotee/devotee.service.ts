@@ -117,6 +117,29 @@ export class DevoteeService
     return this.paginate(items, page, limit);
   }
 
+  async findFamilyMembers(
+    tenantId: string,
+    familyId: string,
+    excludeId?: string,
+  ): Promise<DevoteeRecord[]> {
+    if (!familyId) return [];
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.devotees();
+      const rows = await repo.find({
+        where: { familyId },
+        order: { lastName: 'ASC' },
+      });
+      return rows
+        .map((r) => this.toDevotee(r))
+        .filter((d) => d.id !== excludeId);
+    }
+
+    return this.scoped(tenantId).filter(
+      (d) => d.familyId === familyId && d.id !== excludeId,
+    );
+  }
+
   async findOne(tenantId: string, id: string): Promise<DevoteeRecord> {
     if (this.usePostgres) {
       const repo = await this.tenantData.devotees();
@@ -458,11 +481,35 @@ export class DevoteeService
             tenantId,
             firstName: 'Raj',
             lastName: 'Natarajan',
+            email: 'raj@ex.com',
             phone: '+1 615-555-0211',
             country: 'US',
             gotram: 'Atri',
+            nakshatra: 'Rohini',
+            gender: 'male',
+            dateOfBirth: '1978-07-27',
+            familyId: 'fam-natarajan',
             membershipTier: 'Annual',
             ytdDonations: { amount: 400, currency: Currency.USD },
+            status: 'active',
+            address: {
+              line1: '865 Bellevue Rd, J13',
+              city: 'Nashville',
+              state: 'TN',
+              postalCode: '37221',
+              country: 'US',
+            },
+          },
+          {
+            id: 'sgt-dev-swetha-natarajan',
+            tenantId,
+            firstName: 'Swetha',
+            lastName: 'Natarajan',
+            phone: '+1 615-555-0212',
+            country: 'US',
+            gotram: 'Atri',
+            familyId: 'fam-natarajan',
+            membershipTier: 'Annual',
             status: 'active',
           },
         ]

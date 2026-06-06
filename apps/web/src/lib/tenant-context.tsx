@@ -13,7 +13,7 @@ import { TenantEnvironment } from '@tms/types';
 import { useAuth } from './auth-context';
 import { createApiClient, type ApiClient } from './api/client';
 
-import { readSelectedTenantId } from './tenant-selection';
+import { getDefaultTenantId, readSelectedTenantId } from './tenant-selection';
 
 interface TenantContextValue {
   tenantId: string;
@@ -26,7 +26,7 @@ const TenantCtx = createContext<TenantContextValue | null>(null);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
   const { accessToken, user } = useAuth();
-  const [tenantId, setTenantId] = useState(readSelectedTenantId);
+  const [tenantId, setTenantId] = useState(getDefaultTenantId);
   const [environment, setEnvironmentState] = useState<TenantEnvironment>(
     TenantEnvironment.PROD,
   );

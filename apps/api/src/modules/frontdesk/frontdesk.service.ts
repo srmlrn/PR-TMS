@@ -1,6 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import {
+  BookingStatus,
+  DevoteeLookupMatch,
   DevoteeLookupResult,
+  DevoteeProfile,
   DisplayBoard,
   DisplayBoardLane,
   IssueTokenInput,
@@ -16,6 +19,7 @@ import { QueueTokenEntity } from '../../database/entities/tenant/queue-token.ent
 import { TenantDataService } from '../../database/tenant-data.service';
 import { BookingService } from '../booking/booking.service';
 import { DevoteeService } from '../devotee/devotee.service';
+import { DonationService } from '../donation/donation.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PlatformService } from '../platform/platform.service';
 
@@ -55,6 +59,7 @@ export class FrontDeskService
     private readonly tenantData: TenantDataService,
     private readonly devoteeService: DevoteeService,
     private readonly bookingService: BookingService,
+    private readonly donationService: DonationService,
     private readonly notificationsService: NotificationsService,
     private readonly platformService: PlatformService,
   ) {
@@ -178,6 +183,42 @@ export class FrontDeskService
     };
   }
 
+  private toLookupMatch(d: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    gotram?: string;
+    nakshatra?: string;
+    membershipTier?: string;
+    upcomingBooking?: string;
+  }): DevoteeLookupMatch {
+    return {
+      id: d.id,
+      name: `${d.firstName} ${d.lastName}`,
+      phone: d.phone,
+      gotram: d.gotram,
+      nakshatra: d.nakshatra,
+      membershipTier: d.membershipTier,
+    };
+  }
+
+  private async buildLookupResult(
+    tenantId: string,
+    matches: DevoteeLookupMatch[],
+    extras?: Map<string, { upcomingBooking?: string }>,
+  ): Promise<DevoteeLookupResult> {
+    if (matches.length === 0) {
+      return { found: false, matches: [] };
+    }
+    const first = matches[0];
+    const enriched = await this.enrichDevotee(tenantId, {
+      ...first,
+      upcomingBooking: extras?.get(first.id)?.upcomingBooking,
+    });
+    return { found: true, matches, devotee: enriched };
+  }
+
   async lookupDevotee(
     tenantId: string,
     query: { phone?: string; name?: string },
@@ -187,70 +228,147 @@ export class FrontDeskService
     }
 
     if (this.usePostgres || query.phone || query.name) {
-      const result = await this.devoteeService.findAll(tenantId, 1, 5, {
+      const result = await this.devoteeService.findAll(tenantId, 1, 10, {
         phone: query.phone,
         name: query.name,
       });
       if (result.data.length > 0) {
-        const d = result.data[0];
-        const base = {
-          id: d.id,
-          name: `${d.firstName} ${d.lastName}`,
-          phone: d.phone ?? query.phone ?? '',
-          gotram: d.gotram,
-          nakshatra: d.nakshatra,
-          membershipTier: d.membershipTier,
-        };
-        return {
-          found: true,
-          devotee: await this.enrichDevotee(tenantId, base),
-        };
+        return this.buildLookupResult(
+          tenantId,
+          result.data.map((d) => this.toLookupMatch(d)),
+        );
       }
       if (this.usePostgres) {
-        return { found: false };
+        return { found: false, matches: [] };
       }
     }
 
     this.ensureSeeded(tenantId);
 
-    if (query.phone) {
-      const normalized = this.normalizePhone(query.phone);
-      for (const devotee of this.devoteeDirectory.values()) {
-        if (this.normalizePhone(devotee.phone) === normalized) {
-          const base = {
-            id: devotee.id,
-            name: `${devotee.firstName} ${devotee.lastName}`,
-            phone: devotee.phone,
-            gotram: devotee.gotram,
-            nakshatra: devotee.nakshatra,
-            membershipTier: devotee.membershipTier,
-            upcomingBooking: devotee.upcomingBooking,
-          };
-          return { found: true, devotee: await this.enrichDevotee(tenantId, base) };
+    const legacyMatches: DevoteeLookupMatch[] = [];
+    const extras = new Map<string, { upcomingBooking?: string }>();
+
+    for (const devotee of this.devoteeDirectory.values()) {
+      const normalizedQueryPhone = query.phone ? this.normalizePhone(query.phone) : '';
+      const term = query.name?.toLowerCase() ?? '';
+      const full = `${devotee.firstName} ${devotee.lastName}`.toLowerCase();
+      const phoneHit =
+        normalizedQueryPhone &&
+        this.normalizePhone(devotee.phone) === normalizedQueryPhone;
+      const nameHit = term && full.includes(term);
+      if (phoneHit || nameHit) {
+        legacyMatches.push(this.toLookupMatch(devotee));
+        if (devotee.upcomingBooking) {
+          extras.set(devotee.id, { upcomingBooking: devotee.upcomingBooking });
         }
       }
     }
 
-    if (query.name) {
-      const term = query.name.toLowerCase();
-      for (const devotee of this.devoteeDirectory.values()) {
-        const full = `${devotee.firstName} ${devotee.lastName}`.toLowerCase();
-        if (full.includes(term)) {
-          const base = {
-            id: devotee.id,
-            name: `${devotee.firstName} ${devotee.lastName}`,
-            phone: devotee.phone,
-            gotram: devotee.gotram,
-            nakshatra: devotee.nakshatra,
-            membershipTier: devotee.membershipTier,
-            upcomingBooking: devotee.upcomingBooking,
-          };
-          return { found: true, devotee: await this.enrichDevotee(tenantId, base) };
-        }
-      }
-    }
+    return this.buildLookupResult(tenantId, legacyMatches, extras);
+  }
 
-    return { found: false };
+  async getDevoteeProfile(tenantId: string, devoteeId: string): Promise<DevoteeProfile> {
+    const full = await this.devoteeService.findOne(tenantId, devoteeId);
+    const family = full.familyId
+      ? await this.devoteeService.findFamilyMembers(tenantId, full.familyId, devoteeId)
+      : [];
+
+    const today = this.todayIso();
+    const checkedIn = this.checkedInSet(tenantId);
+    const now = new Date();
+
+    const { data: allBookings } = await this.bookingService.findAll(tenantId, 1, 50, {
+      devoteeId,
+    });
+
+    const todayBookings = allBookings
+      .filter((b) => b.scheduledAt.toISOString().slice(0, 10) === today)
+      .map((b) => ({
+        id: b.id,
+        serviceId: b.serviceId,
+        scheduledAt: b.scheduledAt.toISOString(),
+        status: b.status,
+        checkedIn: checkedIn.has(b.id),
+      }));
+
+    const toProfileBooking = (b: (typeof allBookings)[0]) => ({
+      id: b.id,
+      serviceId: b.serviceId,
+      scheduledAt: b.scheduledAt.toISOString(),
+      status: b.status,
+      amount: b.amount,
+      currency: b.currency,
+      channel: b.channel,
+      checkedIn: checkedIn.has(b.id),
+    });
+
+    const upcomingBookings = allBookings
+      .filter(
+        (b) =>
+          b.scheduledAt >= now &&
+          b.status !== BookingStatus.CANCELLED &&
+          b.status !== BookingStatus.COMPLETED,
+      )
+      .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime())
+      .map(toProfileBooking);
+
+    const bookingHistory = allBookings
+      .filter((b) => b.scheduledAt < now || b.status === BookingStatus.COMPLETED)
+      .sort((a, b) => b.scheduledAt.getTime() - a.scheduledAt.getTime())
+      .slice(0, 12)
+      .map(toProfileBooking);
+
+    const { data: donations } = await this.donationService.findDonations(tenantId, 1, 10, {
+      devoteeId,
+    });
+
+    const addr = full.address;
+
+    return {
+      id: full.id,
+      firstName: full.firstName,
+      lastName: full.lastName,
+      email: full.email,
+      phone: full.phone,
+      country: full.country,
+      gotram: full.gotram,
+      nakshatra: full.nakshatra,
+      rashi: full.rashi,
+      gender: full.gender,
+      dateOfBirth: full.dateOfBirth,
+      familyId: full.familyId,
+      membershipTier: full.membershipTier,
+      membershipExpiresAt: full.membershipExpiresAt?.toISOString(),
+      status: full.status,
+      addressLine1: addr?.line1,
+      city: addr?.city,
+      state: addr?.state,
+      postalCode: addr?.postalCode,
+      ytdDonations: full.ytdDonations
+        ? { amount: full.ytdDonations.amount, currency: full.ytdDonations.currency }
+        : undefined,
+      familyMembers: family.map((m) => ({
+        id: m.id,
+        name: `${m.firstName} ${m.lastName}`,
+        phone: m.phone,
+        gotram: m.gotram,
+        relationship:
+          m.lastName === full.lastName && m.firstName !== full.firstName
+            ? 'Spouse'
+            : 'Family member',
+      })),
+      todayBookings,
+      upcomingBookings,
+      bookingHistory,
+      recentDonations: donations.map((d: { id: string; amount: number; currency: string; purpose: string; createdAt: Date; receiptNumber?: string }) => ({
+        id: d.id,
+        amount: d.amount,
+        currency: d.currency,
+        purpose: d.purpose,
+        createdAt: d.createdAt.toISOString(),
+        receiptNumber: d.receiptNumber,
+      })),
+    };
   }
 
   async checkInBooking(tenantId: string, bookingId: string): Promise<{ checkedIn: true }> {

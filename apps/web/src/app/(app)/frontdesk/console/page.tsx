@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
 import {
   Currency,
+  type DevoteeLookupMatch,
   type DevoteeLookupResult,
   type PaymentProvider,
   type QueueToken,
@@ -16,6 +17,7 @@ import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { CounterBookingForm } from '@/components/CounterBookingForm';
+import { DevoteeProfilePanel } from '@/components/DevoteeProfilePanel';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
@@ -24,6 +26,7 @@ import styles from './console.module.css';
 const EMPTY_WALK_IN = {
   firstName: '',
   lastName: '',
+  email: '',
   gotram: '',
   nakshatra: '',
 };
@@ -45,6 +48,9 @@ export default function FrontDeskConsolePage() {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [lookup, setLookup] = useState<DevoteeLookupResult | null>(null);
+  const [matches, setMatches] = useState<DevoteeLookupMatch[]>([]);
+  const [selectedDevoteeId, setSelectedDevoteeId] = useState<string | null>(null);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
   const [walkIn, setWalkIn] = useState(EMPTY_WALK_IN);
   const [registering, setRegistering] = useState(false);
@@ -58,6 +64,7 @@ export default function FrontDeskConsolePage() {
     defaultPaymentProvider(Currency.USD, 'counter'),
   );
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [profileRefresh, setProfileRefresh] = useState(0);
 
   const getPayer = useCallback(
     () => ({
@@ -101,6 +108,16 @@ export default function FrontDeskConsolePage() {
     });
   }
 
+  function selectMatch(match: DevoteeLookupMatch, result?: DevoteeLookupResult) {
+    setSelectedDevoteeId(match.id);
+    setLookup({
+      found: true,
+      matches: result?.matches ?? matches,
+      devotee: result?.devotee?.id === match.id ? result.devotee : { ...match },
+    });
+    setShowRegisterForm(false);
+  }
+
   async function handleLookup() {
     if (!phone.trim() && !name.trim()) {
       setLookupMessage('Enter phone or name to look up.');
@@ -108,19 +125,52 @@ export default function FrontDeskConsolePage() {
     }
     setBusy(true);
     setLookup(null);
+    setMatches([]);
+    setSelectedDevoteeId(null);
     setLookupMessage(null);
     setTokenResult(null);
     setLastToken(null);
     setActionMsg(null);
+    setShowRegisterForm(false);
     setWalkIn(EMPTY_WALK_IN);
     try {
       const result = await refreshLookup();
       setLookup(result);
-      if (!result.found) {
-        setLookupMessage('No devotee found — register walk-in below.');
+      setMatches(result.matches ?? []);
+      if (result.found && result.devotee) {
+        setSelectedDevoteeId(result.devotee.id);
+      } else {
+        setLookupMessage('No devotee found — use New devotee to register.');
+        setShowRegisterForm(true);
       }
     } catch (err) {
       setLookupMessage(err instanceof Error ? err.message : 'Lookup failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSelectDevoteeId(id: string) {
+    const hit = matches.find((m) => m.id === id);
+    if (hit) {
+      selectMatch(hit);
+      return;
+    }
+    setBusy(true);
+    try {
+      const ep = createEndpoints(api);
+      const profile = await ep.getDevoteeProfile(id);
+      const match: DevoteeLookupMatch = {
+        id: profile.id,
+        name: `${profile.firstName} ${profile.lastName}`,
+        phone: profile.phone,
+        gotram: profile.gotram,
+        nakshatra: profile.nakshatra,
+        membershipTier: profile.membershipTier,
+      };
+      selectMatch(match);
+      setPhone(profile.phone);
+      setName(`${profile.firstName} ${profile.lastName}`);
     } finally {
       setBusy(false);
     }
@@ -135,6 +185,7 @@ export default function FrontDeskConsolePage() {
       const result = await refreshLookup();
       setLookup(result);
       setActionMsg('Checked in for today\'s seva.');
+      setProfileRefresh((n) => n + 1);
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Check-in failed');
     } finally {
@@ -155,22 +206,24 @@ export default function FrontDeskConsolePage() {
         firstName: walkIn.firstName.trim(),
         lastName: walkIn.lastName.trim(),
         phone: phone.trim(),
+        email: walkIn.email.trim() || undefined,
         country: 'US',
         gotram: walkIn.gotram.trim() || undefined,
         nakshatra: walkIn.nakshatra.trim() || undefined,
       });
       const fullName = `${created.firstName} ${created.lastName}`;
-      setLookup({
-        found: true,
-        devotee: {
-          id: created.id,
-          name: fullName,
-          phone: created.phone,
-          gotram: created.gotram,
-          nakshatra: created.nakshatra,
-        },
-      });
-      setLookupMessage(`Walk-in registered — ${fullName}`);
+      const match: DevoteeLookupMatch = {
+        id: created.id,
+        name: fullName,
+        phone: created.phone,
+        gotram: created.gotram,
+        nakshatra: created.nakshatra,
+      };
+      setMatches([match]);
+      setSelectedDevoteeId(created.id);
+      setLookup({ found: true, matches: [match], devotee: match });
+      setLookupMessage(`Registered — ${fullName}`);
+      setShowRegisterForm(false);
       setWalkIn(EMPTY_WALK_IN);
     } catch (err) {
       setLookupMessage(err instanceof Error ? err.message : 'Registration failed');
@@ -268,7 +321,7 @@ export default function FrontDeskConsolePage() {
   }
 
   const devotee = lookup?.devotee;
-  const showWalkInForm = lookup && !lookup.found;
+  const activeDevoteeId = selectedDevoteeId ?? devotee?.id ?? null;
   const ep = createEndpoints(api);
   const serviceList = services ?? [];
 
@@ -321,7 +374,26 @@ export default function FrontDeskConsolePage() {
       <ApiBanner loading={posLoading} error={posError} />
 
       <div className={styles.grid}>
-        <GlassCard compact title="Devotee lookup" className={styles.span2}>
+        <GlassCard
+          compact
+          title="Devotee lookup"
+          className={styles.span2}
+          headerRight={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setShowRegisterForm(true);
+                setLookup(null);
+                setMatches([]);
+                setSelectedDevoteeId(null);
+                setLookupMessage(null);
+              }}
+            >
+              + New devotee
+            </Button>
+          }
+        >
           <div className={styles.lookupRow}>
             <div className="formGroup">
               <label htmlFor="phone">Phone</label>
@@ -329,7 +401,7 @@ export default function FrontDeskConsolePage() {
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 408-555-0101"
+                placeholder="+1 615-555-0211"
               />
             </div>
             <div className="formGroup">
@@ -338,7 +410,8 @@ export default function FrontDeskConsolePage() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Rajan Kumar"
+                placeholder="Raj Natarajan"
+                onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
               />
             </div>
             <Button size="sm" onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
@@ -350,51 +423,40 @@ export default function FrontDeskConsolePage() {
               {lookupMessage}
             </p>
           )}
-          {devotee && (
-            <div className={styles.devoteeChip}>
-              <strong>{devotee.name}</strong>
-              <div className={styles.devoteeMeta}>
-                {devotee.phone}
-                {devotee.gotram ? ` · ${devotee.gotram}` : ''}
-                {devotee.nakshatra ? ` · ${devotee.nakshatra}` : ''}
-                {devotee.membershipTier ? ` · ${devotee.membershipTier}` : ''}
-                {devotee.ytdDonations
-                  ? ` · YTD ${formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}`
-                  : ''}
-                {devotee.upcomingBooking ? ` · Next: ${devotee.upcomingBooking}` : ''}
-              </div>
-              {devotee.todayBookings && devotee.todayBookings.length > 0 && (
-                <div className={styles.todayList}>
-                  {devotee.todayBookings.map((b) => (
-                    <div key={b.id} className={styles.todayRow}>
-                      <span>
-                        {new Date(b.scheduledAt).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
-                        {' · '}
-                        {b.status}
-                        {b.checkedIn ? ' · ✓' : ''}
-                      </span>
-                      {!b.checkedIn && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCheckIn(b.id)}
-                          disabled={busy}
-                        >
-                          Check in
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+          {matches.length > 1 && (
+            <div className={styles.matchList}>
+              <p className={styles.hint}>{matches.length} matches — select devotee</p>
+              {matches.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`${styles.matchItem} ${activeDevoteeId === m.id ? styles.matchItemActive : ''}`}
+                  onClick={() => selectMatch(m, lookup ?? undefined)}
+                >
+                  <strong>{m.name}</strong>
+                  <span>
+                    {m.phone}
+                    {m.gotram ? ` · ${m.gotram}` : ''}
+                    {m.membershipTier ? ` · ${m.membershipTier}` : ''}
+                  </span>
+                </button>
+              ))}
             </div>
           )}
-          {showWalkInForm && (
+          {activeDevoteeId && devotee && (
+            <DevoteeProfilePanel
+              ep={ep}
+              devoteeId={activeDevoteeId}
+              services={serviceList}
+              onSelectMember={handleSelectDevoteeId}
+              onCheckIn={handleCheckIn}
+              checkInBusy={busy}
+              refreshToken={profileRefresh}
+            />
+          )}
+          {showRegisterForm && (
             <div className={styles.walkInForm}>
-              <p className={styles.hint}>Walk-in registration</p>
+              <p className={styles.hint}>Register new devotee</p>
               <div className={styles.walkInGrid}>
                 <div className="formGroup">
                   <label htmlFor="wiFirst">First name</label>
@@ -410,6 +472,15 @@ export default function FrontDeskConsolePage() {
                     id="wiLast"
                     value={walkIn.lastName}
                     onChange={(e) => setWalkIn({ ...walkIn, lastName: e.target.value })}
+                  />
+                </div>
+                <div className="formGroup">
+                  <label htmlFor="wiEmail">Email</label>
+                  <input
+                    id="wiEmail"
+                    type="email"
+                    value={walkIn.email}
+                    onChange={(e) => setWalkIn({ ...walkIn, email: e.target.value })}
                   />
                 </div>
                 <div className="formGroup">
@@ -429,9 +500,19 @@ export default function FrontDeskConsolePage() {
                   />
                 </div>
               </div>
-              <Button size="sm" onClick={handleRegisterWalkIn} disabled={registering || busy}>
-                {registering ? 'Registering…' : 'Register'}
-              </Button>
+              <div className={styles.registerActions}>
+                <Button size="sm" onClick={handleRegisterWalkIn} disabled={registering || busy}>
+                  {registering ? 'Saving…' : 'Save devotee'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowRegisterForm(false)}
+                  disabled={registering}
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
         </GlassCard>

@@ -11,16 +11,22 @@ import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { getLandingRoles } from '@/lib/landing-roles';
 import { getDefaultHrefForRole } from '@/lib/route-access';
 import type { AppRole } from '@/lib/roles';
-import { readSelectedTenantId, writeSelectedTenantId } from '@/lib/tenant-selection';
+import { getDefaultTenantId, readSelectedTenantId, writeSelectedTenantId } from '@/lib/tenant-selection';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
   const tenantParam = searchParams.get('tenant');
-  const [tenantId, setTenantId] = useState(tenantParam ?? readSelectedTenantId());
+  const [tenantId, setTenantId] = useState(() => tenantParam ?? getDefaultTenantId());
   const tenant = getTenantBranding(tenantId);
   const landingRoles = getLandingRoles(tenantId);
+
+  useEffect(() => {
+    if (!tenantParam) {
+      setTenantId(readSelectedTenantId());
+    }
+  }, [tenantParam]);
 
   const [email, setEmail] = useState(searchParams.get('email') ?? '');
   const [password, setPassword] = useState('demo123');

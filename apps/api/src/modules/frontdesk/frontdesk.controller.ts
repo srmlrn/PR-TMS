@@ -37,6 +37,12 @@ export class FrontDeskController {
     return this.frontDeskService.lookupDevotee(tenantId, query);
   }
 
+  @Get('devotee-profile/:id')
+  @ApiOperation({ summary: 'Full devotee CRM profile for front desk' })
+  async devoteeProfile(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.frontDeskService.getDevoteeProfile(tenantId, id);
+  }
+
   @Post('check-in')
   @ApiOperation({ summary: 'Check in devotee for a booking today' })
   async checkIn(@TenantId() tenantId: string, @Body() dto: CheckInBookingDto) {

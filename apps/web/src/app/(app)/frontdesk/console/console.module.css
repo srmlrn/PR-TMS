@@ -137,6 +137,45 @@
   flex-wrap: wrap;
 }
 
+.matchList {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.matchItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  text-align: left;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--b2);
+  border-radius: var(--rs);
+  background: var(--ink3);
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--txt2);
+}
+
+.matchItem strong {
+  color: var(--txt);
+  font-size: 0.82rem;
+}
+
+.matchItemActive {
+  border-color: var(--gr);
+  background: color-mix(in srgb, var(--gr) 10%, var(--ink3));
+}
+
+.registerActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .console :global(.formGroup) {
   margin-bottom: 0.45rem;
 }

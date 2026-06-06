@@ -24,19 +24,80 @@ export interface DevoteeTodayBooking {
   checkedIn?: boolean;
 }
 
+export interface DevoteeLookupMatch {
+  id: string;
+  name: string;
+  phone: string;
+  gotram?: string;
+  nakshatra?: string;
+  membershipTier?: string;
+}
+
 export interface DevoteeLookupResult {
   found: boolean;
-  devotee?: {
-    id: string;
-    name: string;
-    phone: string;
-    gotram?: string;
-    nakshatra?: string;
-    membershipTier?: string;
+  /** All matches (up to 10) — pick one to load full profile */
+  matches?: DevoteeLookupMatch[];
+  devotee?: DevoteeLookupMatch & {
     upcomingBooking?: string;
     todayBookings?: DevoteeTodayBooking[];
     ytdDonations?: { amount: number; currency: string };
   };
+}
+
+export interface DevoteeFamilyMember {
+  id: string;
+  name: string;
+  phone: string;
+  gotram?: string;
+  relationship?: string;
+}
+
+export interface DevoteeProfileBooking {
+  id: string;
+  serviceId: string;
+  scheduledAt: string;
+  status: string;
+  amount: number;
+  currency: string;
+  channel: string;
+  checkedIn?: boolean;
+}
+
+export interface DevoteeProfileDonation {
+  id: string;
+  amount: number;
+  currency: string;
+  purpose: string;
+  createdAt: string;
+  receiptNumber?: string;
+}
+
+export interface DevoteeProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone: string;
+  country: string;
+  gotram?: string;
+  nakshatra?: string;
+  rashi?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  familyId?: string;
+  membershipTier?: string;
+  membershipExpiresAt?: string;
+  status: string;
+  addressLine1?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  ytdDonations?: { amount: number; currency: string };
+  familyMembers: DevoteeFamilyMember[];
+  todayBookings: DevoteeTodayBooking[];
+  upcomingBookings: DevoteeProfileBooking[];
+  bookingHistory: DevoteeProfileBooking[];
+  recentDonations: DevoteeProfileDonation[];
 }
 
 export interface QueueStats {
