@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { DisplayBoard, DisplayBoardLane } from '@tms/types';
+import Link from 'next/link';
 import { fetchDisplayBoard } from '@/lib/display-api';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import styles from './display.module.css';
 
 function playChime() {
@@ -91,6 +93,12 @@ export default function FrontDeskDisplayPage() {
 
   return (
     <div className={styles.wrap}>
+      <div className={styles.topBar}>
+        <Link href="/frontdesk/console" className={styles.backLink}>
+          ← Reception Console
+        </Link>
+        <ThemeToggle />
+      </div>
       <header className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.logo} aria-hidden>

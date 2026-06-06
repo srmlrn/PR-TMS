@@ -1,9 +1,9 @@
 .page {
   min-height: 100vh;
   padding: 2rem;
-  background: #fff;
-  color: #111;
-  font-family: Georgia, 'Times New Roman', serif;
+  background: var(--ink);
+  color: var(--txt);
+  font-family: var(--font);
 }
 
 .receipt {
@@ -11,6 +11,10 @@
   margin: 0 auto;
   border: 1px solid #ccc;
   padding: 2rem;
+  background: #fff;
+  color: #111;
+  font-family: Georgia, 'Times New Roman', serif;
+  box-shadow: var(--card-shadow);
 }
 
 .header {

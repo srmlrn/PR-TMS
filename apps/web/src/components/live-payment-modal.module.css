@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--overlay-bg);
   backdrop-filter: blur(6px);
 }
 
@@ -15,9 +15,9 @@
   max-width: 440px;
   padding: 1.5rem;
   border-radius: 16px;
-  background: var(--glass, rgba(20, 18, 14, 0.95));
-  border: 1px solid rgba(201, 162, 39, 0.25);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  background: var(--glass2);
+  border: 1px solid var(--callout-border);
+  box-shadow: var(--card-hover-shadow), 0 24px 48px var(--overlay-bg);
 }
 
 .header {
@@ -32,7 +32,7 @@
 
 .subtitle {
   margin: 0.35rem 0 0;
-  color: var(--txt2, #b8b0a0);
+  color: var(--txt2);
   font-size: 0.9rem;
 }
 
@@ -48,7 +48,7 @@
 
 .error {
   margin: 0.75rem 0 0;
-  color: var(--crimson, #e85d6a);
+  color: var(--crimson);
   font-size: 0.88rem;
 }
 

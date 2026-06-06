@@ -35,17 +35,17 @@
 }
 
 .card:hover {
-  border-color: rgba(245, 166, 35, 0.35);
+  border-color: var(--accent-border);
 }
 
 .cardSelected {
   border-color: var(--amber);
-  box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.25);
+  box-shadow: 0 0 0 1px var(--accent-border-soft);
 }
 
 .columnDragOver {
-  border-color: rgba(245, 166, 35, 0.45);
-  background: rgba(245, 166, 35, 0.04);
+  border-color: var(--accent-border-strong);
+  background: var(--accent-bg-hover);
 }
 
 .stageActions {
@@ -67,7 +67,7 @@
 }
 
 .stageBtn:hover {
-  border-color: rgba(245, 166, 35, 0.35);
+  border-color: var(--accent-border);
   color: var(--txt);
 }
 
@@ -83,7 +83,7 @@
 }
 
 .cardHighlight {
-  border-color: rgba(15, 185, 129, 0.35);
+  border-color: var(--success-border);
 }
 
 .cardFaded {
@@ -101,13 +101,4 @@
   .checklist {
     grid-template-columns: 1fr;
   }
-}
-
-.apiBanner {
-  margin-bottom: 1rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: 8px;
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-  font-size: 0.85rem;
 }

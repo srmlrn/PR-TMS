@@ -89,17 +89,12 @@ const CHANNEL_LABELS: Record<string, { label: string; variant: 'amber' | 'blue' 
   kiosk: { label: 'Kiosk', variant: 'amber' },
 };
 
-function Sparkline({ color }: { color: string }) {
+function Sparkline({ accent }: { accent: 'amber' | 'green' | 'blue' }) {
+  const accentClass =
+    accent === 'green' ? styles.sparkGreen : accent === 'blue' ? styles.sparkBlue : styles.sparkAmber;
   return (
-    <svg className={styles.sparkline} viewBox="0 0 120 32" preserveAspectRatio="none">
-      <polyline
-        points="0,28 20,22 40,24 60,12 80,16 100,6 120,8"
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg className={`${styles.sparkline} ${accentClass}`} viewBox="0 0 120 32" preserveAspectRatio="none">
+      <polyline className={styles.sparkLine} points="0,28 20,22 40,24 60,12 80,16 100,6 120,8" />
     </svg>
   );
 }
@@ -107,7 +102,7 @@ function Sparkline({ color }: { color: string }) {
 function ApiBanner({ loading, error }: { loading: boolean; error: string | null }) {
   if (!loading && !error) return null;
   return (
-    <div className={styles.apiBanner}>
+    <div className="apiBanner">
       {loading && 'Loading live data…'}
       {!loading && error && `Using demo data — ${error}`}
     </div>
@@ -180,7 +175,7 @@ export default function AdminDashboardPage() {
             }
             changeTone="up"
             accent="amber"
-            sparkline={<Sparkline color="rgba(245,166,35,.5)" />}
+            sparkline={<Sparkline accent="amber" />}
           />
         </BentoItem>
         <BentoItem span={3}>
@@ -191,7 +186,7 @@ export default function AdminDashboardPage() {
             change={analytics ? 'Scheduled seva for today' : '38 seva · 14 darshan'}
             changeTone="neutral"
             accent="green"
-            sparkline={<Sparkline color="rgba(15,185,129,.5)" />}
+            sparkline={<Sparkline accent="green" />}
           />
         </BentoItem>
         <BentoItem span={3}>
@@ -202,7 +197,7 @@ export default function AdminDashboardPage() {
             change="Active CRM profiles"
             changeTone="up"
             accent="blue"
-            sparkline={<Sparkline color="rgba(95,164,249,.5)" />}
+            sparkline={<Sparkline accent="blue" />}
           />
         </BentoItem>
         <BentoItem span={3}>
@@ -232,15 +227,7 @@ export default function AdminDashboardPage() {
                 </linearGradient>
               </defs>
               {[20, 60, 100].map((y) => (
-                <line
-                  key={y}
-                  x1="0"
-                  y1={y}
-                  x2="400"
-                  y2={y}
-                  stroke="rgba(255,255,255,.05)"
-                  strokeWidth="1"
-                />
+                <line key={y} x1="0" y1={y} x2="400" y2={y} className={styles.chartGrid} />
               ))}
               {BAR_HEIGHTS.map((h, i) => (
                 <rect
@@ -260,9 +247,7 @@ export default function AdminDashboardPage() {
                   x={32 + i * 60}
                   y="135"
                   textAnchor="middle"
-                  fill={label === 'Fri' ? 'rgba(245,166,35,.8)' : 'rgba(255,255,255,.35)'}
-                  fontSize="11"
-                  fontWeight={label === 'Fri' ? 700 : 400}
+                  className={label === 'Fri' ? styles.chartLabelActive : styles.chartLabel}
                 >
                   {label}
                 </text>
@@ -274,7 +259,7 @@ export default function AdminDashboardPage() {
           <GlassCard title="Collection Breakdown">
             <div className={styles.donutRow}>
               <svg viewBox="0 0 130 130" width="130" height="130">
-                <circle cx="65" cy="65" r="50" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="16" />
+                <circle cx="65" cy="65" r="50" className={styles.donutTrack} />
                 <circle
                   cx="65"
                   cy="65"
@@ -310,10 +295,10 @@ export default function AdminDashboardPage() {
                   strokeLinecap="round"
                   transform="rotate(-90 65 65)"
                 />
-                <text x="65" y="61" textAnchor="middle" fill="white" fontSize="16" fontWeight="800">
+                <text x="65" y="61" textAnchor="middle" className={styles.donutCenter}>
                   $9.8k
                 </text>
-                <text x="65" y="76" textAnchor="middle" fill="rgba(255,255,255,.4)" fontSize="9">
+                <text x="65" y="76" textAnchor="middle" className={styles.donutSub}>
                   TODAY
                 </text>
               </svg>

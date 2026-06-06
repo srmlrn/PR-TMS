@@ -25,7 +25,7 @@
 
 .serviceCard.selected {
   border-color: var(--amber);
-  box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.3);
+  box-shadow: 0 0 0 1px var(--accent-border-soft);
 }
 
 .slots {

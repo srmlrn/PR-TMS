@@ -19,7 +19,7 @@
 .chip {
   background: var(--adim);
   color: var(--amber);
-  border: 1px solid rgba(245, 166, 35, 0.2);
+  border: 1px solid var(--accent-border-soft);
   border-radius: 999px;
   padding: 0.15rem 0.58rem;
   font-size: 0.7rem;
@@ -31,7 +31,7 @@
 .chipGreen {
   background: var(--grdim);
   color: var(--gr);
-  border: 1px solid rgba(15, 185, 129, 0.2);
+  border: 1px solid var(--success-border-soft);
   border-radius: 999px;
   padding: 0.15rem 0.58rem;
   font-size: 0.7rem;
@@ -43,7 +43,7 @@
 .chipBlue {
   background: var(--bldim);
   color: var(--bl);
-  border: 1px solid rgba(95, 164, 249, 0.2);
+  border: 1px solid var(--info-border);
   border-radius: 999px;
   padding: 0.15rem 0.58rem;
   font-size: 0.7rem;
@@ -53,22 +53,22 @@
 }
 
 .ok {
-  background: rgba(15, 185, 129, 0.1);
+  background: var(--grdim);
   color: var(--gr);
 }
 
 .pending {
-  background: rgba(245, 166, 35, 0.1);
+  background: var(--adim);
   color: var(--amber);
 }
 
 .info {
-  background: rgba(95, 164, 249, 0.1);
+  background: var(--bldim);
   color: var(--bl);
 }
 
 .error {
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--reddim);
   color: var(--red);
 }
 
@@ -78,9 +78,9 @@
   border-radius: 999px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  background: rgba(15, 185, 129, 0.11);
+  background: var(--grdim);
   color: var(--gr);
-  border: 1px solid rgba(15, 185, 129, 0.28);
+  border: 1px solid var(--success-border);
 }
 
 .envUat {
@@ -89,9 +89,9 @@
   border-radius: 999px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  background: rgba(245, 166, 35, 0.11);
+  background: var(--adim);
   color: var(--amber);
-  border: 1px solid rgba(245, 166, 35, 0.28);
+  border: 1px solid var(--accent-border);
 }
 
 .envDev {
@@ -100,7 +100,7 @@
   border-radius: 999px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  background: rgba(95, 164, 249, 0.11);
+  background: var(--bldim);
   color: var(--bl);
-  border: 1px solid rgba(95, 164, 249, 0.28);
+  border: 1px solid var(--info-border);
 }

@@ -28,7 +28,7 @@ const SERVICE_LABELS: Record<string, string> = {
 function ApiBanner({ loading, error }: { loading: boolean; error: string | null }) {
   if (!loading && !error) return null;
   return (
-    <div className={styles.apiBanner}>
+    <div className="apiBanner">
       {loading && 'Loading live data…'}
       {!loading && error && `Using demo data — ${error}`}
     </div>

@@ -10,6 +10,7 @@ import {
   readKioskLang,
   type KioskLang,
 } from '@/lib/kiosk-i18n';
+import { PublicThemeBar } from '@/components/PublicThemeBar';
 import styles from './kiosk.module.css';
 
 export default function KioskPage() {
@@ -33,6 +34,7 @@ export default function KioskPage() {
 
   return (
     <div className={styles.wrap}>
+      <PublicThemeBar />
       <h1 className={styles.title}>🛕 {t.welcome}</h1>
       <p className={styles.sub}>{t.subtitle}</p>
 

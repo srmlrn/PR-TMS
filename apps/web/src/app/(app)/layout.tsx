@@ -12,6 +12,7 @@ import {
   type AppRole,
 } from '@/lib/roles';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { PublicThemeBar } from '@/components/PublicThemeBar';
 
 function RoleBadge({ role }: { role: AppRole }) {
   const config = getRoleConfigForUser(role);
@@ -57,6 +58,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   if (isLoading || !isAuthenticated || !user) {
     return (
       <div className="authLoading">
+        <PublicThemeBar />
         <span className="landingIcon" aria-hidden>
           🛕
         </span>

@@ -47,7 +47,7 @@
 
 .langBtnActive {
   border-color: var(--amber);
-  background: rgba(245, 166, 35, 0.12);
+  background: var(--accent-bg-soft);
 }
 
 .grid {

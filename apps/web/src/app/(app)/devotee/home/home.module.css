@@ -10,7 +10,7 @@
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--b);
 }
 
 .quickActions {
@@ -35,19 +35,16 @@
 }
 
 .phoneShell {
-  background: #08080f;
-  border: 9px solid #111122;
+  background: var(--device-shell-bg);
+  border: 9px solid var(--device-shell-border);
   border-radius: 34px;
   overflow: hidden;
-  box-shadow:
-    0 40px 80px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  box-shadow: var(--card-shadow), 0 40px 80px var(--overlay-bg);
 }
 
 .phoneNotch {
   height: 26px;
-  background: #08080f;
+  background: var(--device-notch-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,7 +54,7 @@
   content: '';
   width: 72px;
   height: 10px;
-  background: #0e0e1c;
+  background: var(--device-notch-pill);
   border-radius: 0 0 7px 7px;
 }
 
@@ -89,7 +86,7 @@
 }
 
 .phoneHeroCard {
-  background: linear-gradient(135deg, var(--crimson), rgba(245, 166, 35, 0.3));
+  background: linear-gradient(135deg, var(--crimson), var(--adim));
   border-radius: 10px;
   padding: 0.75rem;
   margin-bottom: 0.6rem;
@@ -142,7 +139,7 @@
 }
 
 .phoneMini:hover {
-  border-color: rgba(245, 166, 35, 0.3);
+  border-color: var(--accent-border-soft);
 }
 
 .phoneMiniEmoji {
@@ -153,8 +150,8 @@
 
 .phoneLiveCard {
   margin-top: 0.65rem;
-  background: rgba(15, 185, 129, 0.07);
-  border: 1px solid rgba(15, 185, 129, 0.2);
+  background: var(--success-bg-soft);
+  border: 1px solid var(--success-border-soft);
   border-radius: 10px;
   padding: 0.75rem;
 }
@@ -172,7 +169,7 @@
 }
 
 .phoneNav {
-  background: rgba(8, 8, 15, 0.97);
+  background: var(--device-nav-bg);
   display: flex;
   justify-content: space-around;
   padding: 0.6rem 0.5rem;
@@ -199,11 +196,3 @@
   margin-bottom: 2px;
 }
 
-.apiBanner {
-  margin-bottom: 1rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: 8px;
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-  font-size: 0.85rem;
-}

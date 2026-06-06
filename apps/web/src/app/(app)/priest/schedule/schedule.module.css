@@ -9,9 +9,9 @@
   font-size: 0.85rem;
   padding: 0.25rem 0.4rem;
   border-radius: var(--r);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--t1);
+  border: 1px solid var(--b);
+  background: var(--input-bg);
+  color: var(--txt);
   max-width: 10rem;
 }
 

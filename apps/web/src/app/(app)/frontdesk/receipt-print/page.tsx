@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@tms/ui';
+import { PublicThemeBar } from '@/components/PublicThemeBar';
 import { Currency } from '@tms/types';
 import { formatMoney } from '@/lib/api/endpoints';
 import styles from './receipt-print.module.css';
@@ -24,6 +25,7 @@ export default function ReceiptPrintPage() {
 
   return (
     <div className={styles.page}>
+      <PublicThemeBar />
       <article className={styles.receipt}>
         <header className={styles.header}>
           <span aria-hidden>🛕</span>

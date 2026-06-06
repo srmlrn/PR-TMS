@@ -1,10 +1,38 @@
 .wrap {
   min-height: 100vh;
   padding: 1.75rem 2rem 0;
-  background: linear-gradient(165deg, #0d1218 0%, #151d28 50%, #0f161f 100%);
-  color: #f0f4f8;
+  background: var(--display-bg);
+  color: var(--display-text);
   display: flex;
   flex-direction: column;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--display-text-muted);
+  text-decoration: none;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--display-lane-border);
+  border-radius: 999px;
+  background: var(--display-lane-bg);
+  box-shadow: var(--card-shadow);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.backLink:hover {
+  color: var(--display-accent);
+  border-color: var(--display-accent);
 }
 
 .header {
@@ -36,7 +64,7 @@
 .date {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
-  color: #8b97a8;
+  color: var(--display-text-muted);
 }
 
 .headerRight {
@@ -50,7 +78,7 @@
   font-size: 2rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #3ecf8e;
+  color: var(--display-accent);
   line-height: 1;
 }
 
@@ -65,11 +93,11 @@
 }
 
 .liveOk {
-  color: #3ecf8e;
+  color: var(--display-accent);
 }
 
 .liveErr {
-  color: #f87171;
+  color: var(--red);
 }
 
 .liveDot {
@@ -91,9 +119,9 @@
 }
 
 .errorBanner {
-  background: rgba(248, 113, 113, 0.12);
-  border: 1px solid rgba(248, 113, 113, 0.35);
-  color: #fecaca;
+  background: var(--display-error-bg);
+  border: 1px solid var(--display-error-border);
+  color: var(--display-error-text);
   padding: 0.55rem 0.85rem;
   border-radius: 10px;
   font-size: 0.82rem;
@@ -108,10 +136,11 @@
 }
 
 .lane {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--display-lane-bg);
+  border: 1px solid var(--display-lane-border);
   border-radius: 16px;
   padding: 1.25rem 1.35rem;
+  box-shadow: var(--card-shadow);
 }
 
 .laneHead {
@@ -128,7 +157,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #9ba8b8;
+  color: var(--display-text-muted);
 }
 
 .vipBadge {
@@ -136,8 +165,8 @@
   font-weight: 800;
   padding: 0.15rem 0.45rem;
   border-radius: 999px;
-  background: rgba(245, 166, 35, 0.2);
-  color: #f5c842;
+  background: var(--display-vip-bg);
+  color: var(--display-vip-text);
 }
 
 .label {
@@ -145,7 +174,7 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #7d8a99;
+  color: var(--display-text-subtle);
 }
 
 .labelNext {
@@ -169,7 +198,7 @@
   font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 800;
   line-height: 1;
-  color: #3ecf8e;
+  color: var(--display-accent);
 }
 
 .pulse {
@@ -192,8 +221,8 @@
   font-weight: 800;
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
-  background: rgba(245, 166, 35, 0.2);
-  color: #f5c842;
+  background: var(--display-vip-bg);
+  color: var(--display-vip-text);
 }
 
 .nextList {
@@ -208,7 +237,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.45rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--display-row-border);
 }
 
 .nextList li:last-child {
@@ -218,13 +247,13 @@
 .vipInline {
   font-size: 0.62rem;
   font-weight: 700;
-  color: #f5c842;
+  color: var(--display-vip-text);
 }
 
 .wait {
   margin-left: auto;
   font-size: 0.75rem;
-  color: #7d8a99;
+  color: var(--display-text-subtle);
 }
 
 .muted {
@@ -235,7 +264,7 @@
 .footer {
   margin-top: 1.5rem;
   padding: 1rem 0 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--display-footer-border);
 }
 
 .stats {
@@ -243,12 +272,12 @@
   flex-wrap: wrap;
   gap: 1.5rem;
   font-size: 0.85rem;
-  color: #9ba8b8;
+  color: var(--display-text-muted);
   margin-bottom: 0.85rem;
 }
 
 .stats strong {
-  color: #e8edf2;
+  color: var(--display-stats-strong);
   font-weight: 700;
 }
 
@@ -267,7 +296,7 @@
 .tickerItem {
   white-space: nowrap;
   font-size: 0.88rem;
-  color: #b8c4d0;
+  color: var(--display-text-ticker);
 }
 
 @keyframes tickerScroll {

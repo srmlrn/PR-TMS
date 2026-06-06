@@ -26,11 +26,55 @@
   flex-shrink: 0;
 }
 
-.apiBanner {
-  margin-bottom: 1rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: 8px;
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-  font-size: 0.85rem;
+.sparkAmber {
+  color: color-mix(in srgb, var(--amber) 55%, transparent);
+}
+
+.sparkGreen {
+  color: color-mix(in srgb, var(--gr) 55%, transparent);
+}
+
+.sparkBlue {
+  color: color-mix(in srgb, var(--bl) 55%, transparent);
+}
+
+.sparkLine {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chartGrid {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.chartLabel {
+  fill: var(--chart-label);
+  font-size: 11px;
+}
+
+.chartLabelActive {
+  fill: var(--chart-label-active);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.donutTrack {
+  fill: none;
+  stroke: var(--donut-track);
+  stroke-width: 16;
+}
+
+.donutCenter {
+  fill: var(--txt);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.donutSub {
+  fill: var(--txt3);
+  font-size: 9px;
 }

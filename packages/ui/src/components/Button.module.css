@@ -38,18 +38,18 @@
 .outline {
   background: transparent;
   color: var(--amber);
-  border: 1px solid rgba(245, 166, 35, 0.35);
+  border: 1px solid var(--accent-border);
 }
 
 .green {
   background: var(--grdim);
   color: var(--gr);
-  border: 1px solid rgba(15, 185, 129, 0.3);
+  border: 1px solid var(--success-border);
 }
 
 .crimson {
   background: var(--crimson);
-  color: #fff;
+  color: var(--btn-primary-text);
 }
 
 .sm {

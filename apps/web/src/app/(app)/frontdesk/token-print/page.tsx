@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@tms/ui';
+import { PublicThemeBar } from '@/components/PublicThemeBar';
 import styles from './token-print.module.css';
 
 export default function TokenPrintPage() {
@@ -21,6 +22,7 @@ export default function TokenPrintPage() {
 
   return (
     <div className={styles.page}>
+      <PublicThemeBar />
       <article className={styles.ticket}>
         <header className={styles.header}>
           <span aria-hidden>🛕</span>

@@ -43,7 +43,7 @@
 }
 
 .envRowActive {
-  border-color: rgba(245, 166, 35, 0.35);
+  border-color: var(--accent-border);
   background: var(--adim);
 }
 
@@ -151,7 +151,7 @@
 
 .errorCard {
   margin-bottom: 1rem;
-  border-color: rgba(248, 113, 113, 0.3);
+  border-color: var(--error-border);
 }
 
 .hint {

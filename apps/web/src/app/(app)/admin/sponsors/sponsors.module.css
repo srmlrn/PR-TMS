@@ -49,15 +49,6 @@
   }
 }
 
-.apiBanner {
-  margin-bottom: 1rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: 8px;
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-  font-size: 0.85rem;
-}
-
 .select {
   background: var(--ink3);
   border: 1px solid var(--b);
@@ -93,7 +84,7 @@
 }
 
 .renewalItem:hover {
-  border-color: rgba(245, 166, 35, 0.35);
+  border-color: var(--accent-border);
 }
 
 .recognitionRow {
