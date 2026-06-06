@@ -38,4 +38,12 @@ export class CreateDonationDto {
   @IsOptional()
   @IsUUID()
   campaignId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tax identifier for receipt (PAN / SSN / SIN)',
+    example: 'ABCDE1234F',
+  })
+  @IsOptional()
+  @IsString()
+  taxId?: string;
 }

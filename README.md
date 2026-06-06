@@ -70,6 +70,10 @@ API headers:
 - `X-Tenant-Id`: `00000000-0000-0000-0000-000000000001` (Sri Venkateswara Temple)
 - `X-Tenant-Environment`: `prod` | `uat` | `test` | `dev`
 
+## Data collection audit
+
+Per-screen field requirements vs industry temple apps: `docs/DATA_COLLECTION_MATRIX.md`
+
 ## Coding Standards
 
 All contributors and AI agents must follow `docs/CODING_STANDARDS.md`:

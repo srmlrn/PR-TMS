@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import type { DevoteeLookupResult } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
@@ -11,7 +12,8 @@ import styles from './console.module.css';
 export default function FrontDeskConsolePage() {
   const { api } = useTenant();
   const [phone, setPhone] = useState('');
-  const [lookupResult, setLookupResult] = useState<string | null>(null);
+  const [lookup, setLookup] = useState<DevoteeLookupResult | null>(null);
+  const [lookupMessage, setLookupMessage] = useState<string | null>(null);
   const [tokenResult, setTokenResult] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -19,21 +21,18 @@ export default function FrontDeskConsolePage() {
 
   async function handleLookup() {
     setBusy(true);
-    setLookupResult(null);
+    setLookup(null);
+    setLookupMessage(null);
+    setTokenResult(null);
     try {
       const ep = createEndpoints(api);
       const result = await ep.frontDeskLookup(phone);
-      if (result.found && result.devotee) {
-        setLookupResult(
-          `${result.devotee.name} · ${result.devotee.phone}${
-            result.devotee.upcomingBooking ? ` · Next: ${result.devotee.upcomingBooking}` : ''
-          }`,
-        );
-      } else {
-        setLookupResult('No devotee found — create a walk-in profile in Devotee CRM.');
+      setLookup(result);
+      if (!result.found) {
+        setLookupMessage('No devotee found — register walk-in in Devotee CRM.');
       }
     } catch (err) {
-      setLookupResult(err instanceof Error ? err.message : 'Lookup failed');
+      setLookupMessage(err instanceof Error ? err.message : 'Lookup failed');
     } finally {
       setBusy(false);
     }
@@ -44,7 +43,10 @@ export default function FrontDeskConsolePage() {
     setTokenResult(null);
     try {
       const ep = createEndpoints(api);
-      const token = await ep.issueToken({ devoteeName: lookupResult?.split(' · ')[0] ?? 'Walk-in' });
+      const token = await ep.issueToken({
+        devoteeId: lookup?.devotee?.id,
+        devoteeName: lookup?.devotee?.name ?? 'Walk-in guest',
+      });
       setTokenResult(
         `Token ${token.tokenNumber} · Position ${token.position} · ~${token.estimatedWaitMinutes} min wait`,
       );
@@ -55,6 +57,8 @@ export default function FrontDeskConsolePage() {
       setBusy(false);
     }
   }
+
+  const devotee = lookup?.devotee;
 
   return (
     <>
@@ -81,11 +85,29 @@ export default function FrontDeskConsolePage() {
           <Button onClick={handleLookup} disabled={busy || !phone}>
             Look up
           </Button>
-          {lookupResult && <p className="tms-t2 mt1">{lookupResult}</p>}
+          {lookupMessage && <p className="tms-t2 mt1">{lookupMessage}</p>}
+          {devotee && (
+            <div className="calloutAmber mt1">
+              <strong>{devotee.name}</strong>
+              <p className="tms-t3">
+                {devotee.phone}
+                {devotee.gotram ? ` · Gotram: ${devotee.gotram}` : ''}
+                {devotee.nakshatra ? ` · Nakshatra: ${devotee.nakshatra}` : ''}
+              </p>
+              {devotee.membershipTier && (
+                <p className="tms-t3">Membership: {devotee.membershipTier}</p>
+              )}
+              {devotee.upcomingBooking && (
+                <p className="tms-t3">Next booking: {devotee.upcomingBooking}</p>
+              )}
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard title="Issue Darshan Token">
-          <p className="tms-t3">Issue a queue token for the devotee above or a walk-in guest.</p>
+          <p className="tms-t3">
+            Issues token linked to devotee ID when lookup succeeds (industry standard).
+          </p>
           <Button onClick={handleIssueToken} disabled={busy} className="mt1">
             Issue Token
           </Button>

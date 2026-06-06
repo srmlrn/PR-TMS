@@ -67,6 +67,7 @@ export function createEndpoints(client: ApiClient) {
         gotram?: string;
         nakshatra?: string;
         occasion?: string;
+        beneficiaryName?: string;
       };
     }) => client.post<Booking>('/bookings', body),
 
@@ -89,6 +90,19 @@ export function createEndpoints(client: ApiClient) {
       gotram?: string;
       nakshatra?: string;
     }) => client.post<Devotee>('/devotees', body),
+
+    updateDevotee: (
+      id: string,
+      body: Partial<{
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        gotram: string;
+        nakshatra: string;
+        status: string;
+      }>,
+    ) => client.patch<Devotee>(`/devotees/${id}`, body),
 
     getEventPipeline: () => client.get<EventPipeline>('/events/pipeline'),
 
@@ -116,7 +130,9 @@ export function createEndpoints(client: ApiClient) {
       amount: number;
       currency: string;
       purpose: string;
+      frequency?: string;
       campaignId?: string;
+      taxId?: string;
     }) => client.post('/donations', body),
 
     frontDeskLookup: (phone: string) =>

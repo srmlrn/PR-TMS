@@ -19,6 +19,9 @@ export default function BookSevaPage() {
   const [slot, setSlot] = useState('');
   const [sponsorName, setSponsorName] = useState(user?.name ?? '');
   const [gotram, setGotram] = useState('');
+  const [nakshatra, setNakshatra] = useState('');
+  const [occasion, setOccasion] = useState('');
+  const [beneficiaryName, setBeneficiaryName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -53,7 +56,13 @@ export default function BookSevaPage() {
         scheduledAt,
         channel: 'app',
         sankalpa: sponsorName
-          ? { sponsorName, gotram: gotram || undefined }
+          ? {
+              sponsorName,
+              gotram: gotram || undefined,
+              nakshatra: nakshatra || undefined,
+              occasion: occasion || undefined,
+              beneficiaryName: beneficiaryName || undefined,
+            }
           : undefined,
       });
       setMessage('Booking confirmed! Check your home page for details.');
@@ -125,8 +134,35 @@ export default function BookSevaPage() {
               />
             </div>
             <div className="formGroup">
-              <label htmlFor="gotram">Gotram</label>
-              <input id="gotram" value={gotram} onChange={(e) => setGotram(e.target.value)} />
+              <label htmlFor="gotram">Gotram *</label>
+              <input id="gotram" value={gotram} onChange={(e) => setGotram(e.target.value)} required />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="nakshatra">Nakshatra (star)</label>
+              <input
+                id="nakshatra"
+                value={nakshatra}
+                onChange={(e) => setNakshatra(e.target.value)}
+                placeholder="Rohini — or leave blank if unknown"
+              />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="occasion">Occasion / purpose</label>
+              <input
+                id="occasion"
+                value={occasion}
+                onChange={(e) => setOccasion(e.target.value)}
+                placeholder="Birthday, anniversary, health…"
+              />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="beneficiary">Beneficiary name</label>
+              <input
+                id="beneficiary"
+                value={beneficiaryName}
+                onChange={(e) => setBeneficiaryName(e.target.value)}
+                placeholder="If offering for someone else"
+              />
             </div>
           </div>
           {selectedService && (

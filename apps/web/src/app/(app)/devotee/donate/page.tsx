@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button, GlassCard, PageHeader, ProgressBar } from '@tms/ui';
-import { Currency } from '@tms/types';
+import { Currency, DonationFrequency } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
@@ -10,12 +10,24 @@ import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './donate.module.css';
 
-const AMOUNTS = [25, 51, 101, 251, 501, 1001];
+const AMOUNTS_USD = [25, 51, 101, 251, 501, 1001];
+
+const TAX_ID_LABEL: Record<Currency, string> = {
+  [Currency.USD]: 'SSN / EIN (optional, for IRS receipt)',
+  [Currency.INR]: 'PAN (optional, for 80G receipt)',
+  [Currency.CAD]: 'SIN (optional, for CRA receipt)',
+  [Currency.GBP]: 'Tax reference (optional)',
+};
 
 export default function DonatePage() {
   const { user } = useAuth();
   const { api } = useTenant();
   const [amount, setAmount] = useState(101);
+  const [currency, setCurrency] = useState<Currency>(Currency.USD);
+  const [frequency, setFrequency] = useState<DonationFrequency>(
+    DonationFrequency.ONE_TIME,
+  );
+  const [taxId, setTaxId] = useState('');
   const [campaignId, setCampaignId] = useState('');
   const [purpose, setPurpose] = useState('General Hundi');
   const [submitting, setSubmitting] = useState(false);
@@ -35,11 +47,15 @@ export default function DonatePage() {
       await ep.createDonation({
         devoteeId: user.devoteeId,
         amount,
-        currency: Currency.USD,
+        currency,
         purpose,
+        frequency,
         campaignId: campaignId || undefined,
+        taxId: taxId || undefined,
       });
-      setMessage(`Thank you! ${formatMoney(amount)} recorded. Tax receipt will be emailed.`);
+      setMessage(
+        `Thank you! ${formatMoney(amount, currency)} recorded. Tax receipt will be emailed.`,
+      );
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Donation failed');
     } finally {
@@ -63,6 +79,7 @@ export default function DonatePage() {
                 onClick={() => {
                   setCampaignId(c.id);
                   setPurpose(c.name);
+                  setCurrency(c.currency);
                 }}
               >
                 <strong>{c.name}</strong>
@@ -88,20 +105,49 @@ export default function DonatePage() {
         </GlassCard>
 
         <GlassCard title="Your Offering">
+          <div className="formGrid">
+            <div className="formGroup">
+              <label htmlFor="currency">Currency</label>
+              <select
+                id="currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as Currency)}
+              >
+                {Object.values(Currency).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="formGroup">
+              <label htmlFor="frequency">Frequency</label>
+              <select
+                id="frequency"
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value as DonationFrequency)}
+              >
+                <option value={DonationFrequency.ONE_TIME}>One-time</option>
+                <option value={DonationFrequency.MONTHLY}>Monthly</option>
+                <option value={DonationFrequency.ANNUAL}>Annual</option>
+              </select>
+            </div>
+          </div>
+
           <div className={styles.amounts}>
-            {AMOUNTS.map((a) => (
+            {AMOUNTS_USD.map((a) => (
               <button
                 key={a}
                 type="button"
                 className={`${styles.amountBtn} ${amount === a ? styles.amountActive : ''}`}
                 onClick={() => setAmount(a)}
               >
-                {formatMoney(a)}
+                {formatMoney(a, currency)}
               </button>
             ))}
           </div>
           <div className="formGroup mt1">
-            <label htmlFor="custom">Custom amount ($)</label>
+            <label htmlFor="custom">Custom amount</label>
             <input
               id="custom"
               type="number"
@@ -110,8 +156,17 @@ export default function DonatePage() {
               onChange={(e) => setAmount(Number(e.target.value))}
             />
           </div>
+          <div className="formGroup mt1">
+            <label htmlFor="taxId">{TAX_ID_LABEL[currency]}</label>
+            <input
+              id="taxId"
+              value={taxId}
+              onChange={(e) => setTaxId(e.target.value)}
+              placeholder="Required for official tax receipt in some countries"
+            />
+          </div>
           <Button onClick={handleDonate} disabled={submitting} fullWidth className="mt1">
-            {submitting ? 'Processing…' : `Donate ${formatMoney(amount)}`}
+            {submitting ? 'Processing…' : `Donate ${formatMoney(amount, currency)}`}
           </Button>
           {message && <p className="tms-t2 mt1">{message}</p>}
         </GlassCard>

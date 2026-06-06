@@ -7,6 +7,9 @@ This folder contains the product requirements for a global, multi-tenant, multi-
 
 - **[REQUIREMENTS.md](REQUIREMENTS.md)** - the master Product Requirements Document (PRD).
   This is the primary document to hand to an AI coding agent or development team.
+- **[../docs/DATA_COLLECTION_MATRIX.md](../docs/DATA_COLLECTION_MATRIX.md)** - per-screen data field
+  audit cross-checked against GullySales, Grasp, Mandira Pranali, SwaDharmaSetu, temple booking
+  sites, and our current API/UI gaps.
 
 ## How to use this document
 
