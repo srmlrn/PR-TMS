@@ -34,6 +34,7 @@ export const TENANT_BRANDING: Record<string, TenantBranding> = {
     name: 'Sri Ganesha Temple',
     subtitle: 'Hindu Cultural Center of Tennessee',
     icon: '🙏',
+    /** Official logo from https://ganeshatemple.org/ (cached locally) */
     logoSrc: '/tenants/sri-ganesha-temple.png',
     deity: 'Lord Ganesha',
     location: 'Nashville, Tennessee',

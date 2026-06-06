@@ -60,13 +60,16 @@ function LoginForm() {
       <PublicThemeBar />
       <div className="loginHero">
         {tenant.logoSrc ? (
-          <Image
-            src={tenant.logoSrc}
-            alt=""
-            width={200}
-            height={56}
-            style={{ height: '3rem', width: 'auto', borderRadius: '8px' }}
-          />
+          <div className="templeLogoFrame">
+            <Image
+              src={tenant.logoSrc}
+              alt={`${tenant.name} logo`}
+              width={296}
+              height={58}
+              style={{ height: '2.75rem', width: 'auto', maxWidth: 'min(18rem, 90vw)' }}
+              priority
+            />
+          </div>
         ) : (
           <span className="landingIcon" aria-hidden>
             {tenant.icon}

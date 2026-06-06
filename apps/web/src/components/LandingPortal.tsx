@@ -56,13 +56,15 @@ export function LandingPortal() {
               onClick={() => pickTenant(t)}
             >
               {t.logoSrc ? (
-                <Image
-                  src={t.logoSrc}
-                  alt=""
-                  width={72}
-                  height={28}
-                  className={styles.tenantLogo}
-                />
+                <span className={styles.tenantLogoWrap}>
+                  <Image
+                    src={t.logoSrc}
+                    alt=""
+                    width={148}
+                    height={29}
+                    className={styles.tenantLogo}
+                  />
+                </span>
               ) : (
                 <span className={styles.tenantChipIcon} aria-hidden>
                   {t.icon}
@@ -74,20 +76,23 @@ export function LandingPortal() {
         </div>
 
         <div className={styles.brand}>
-          <div className={styles.medallion} aria-hidden>
-            {tenant.logoSrc ? (
+          {tenant.logoSrc ? (
+            <div className={styles.logoFrame} aria-hidden>
               <Image
                 src={tenant.logoSrc}
-                alt=""
-                width={120}
-                height={48}
+                alt={`${tenant.name} logo`}
+                width={296}
+                height={58}
                 className={styles.medallionLogo}
+                priority
               />
-            ) : (
-              tenant.icon
-            )}
-          </div>
-          <h1 className={styles.templeName}>{tenant.name}</h1>
+            </div>
+          ) : (
+            <div className={styles.medallion} aria-hidden>
+              {tenant.icon}
+            </div>
+          )}
+          {!tenant.logoSrc && <h1 className={styles.templeName}>{tenant.name}</h1>}
           <p className={styles.tagline}>{tenant.subtitle}</p>
         </div>
 

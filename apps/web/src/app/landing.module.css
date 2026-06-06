@@ -71,11 +71,19 @@
   line-height: 1;
 }
 
+.tenantLogoWrap {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background: #0a0a0a;
+}
+
 .tenantLogo {
-  height: 1.1rem;
+  height: 1rem;
   width: auto;
+  max-width: 7.5rem;
   object-fit: contain;
-  border-radius: 3px;
 }
 
 .tenantChipName {
@@ -87,11 +95,22 @@
   text-overflow: ellipsis;
 }
 
+.logoFrame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  margin: 0 auto 1rem;
+  border-radius: 10px;
+  background: #0a0a0a;
+  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
+}
+
 .medallionLogo {
   width: auto;
-  height: 2.25rem;
+  height: 2.5rem;
+  max-width: min(18rem, 88vw);
   object-fit: contain;
-  border-radius: 6px;
 }
 
 .brand {
