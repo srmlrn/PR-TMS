@@ -43,6 +43,18 @@ npm run dev:api
 PORT=3001 npm run dev -w @tms/web
 ```
 
+Open http://localhost:3001/login — all demo accounts use password **`demo123`**:
+
+| Role | Email |
+|------|-------|
+| Devotee | `rajan@ex.com` |
+| Admin | `admin@svtemple.org` |
+| Front Desk | `frontdesk@svtemple.org` |
+| Priest | `priest@svtemple.org` |
+| Accountant | `finance@svtemple.org` |
+| Volunteer | `volunteer@svtemple.org` |
+| Platform Admin | `platform@tms.dev` |
+
 ### Per-tenant environments with isolated databases (recommended)
 
 ```bash

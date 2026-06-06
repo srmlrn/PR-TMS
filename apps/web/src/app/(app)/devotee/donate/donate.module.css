@@ -1,0 +1,59 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1rem;
+}
+
+.campaigns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.campaign {
+  text-align: left;
+  padding: 0.85rem;
+  border-radius: var(--rs);
+  border: 1px solid var(--b);
+  background: var(--glass);
+  color: var(--txt);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.campaign.active {
+  border-color: var(--amber);
+}
+
+.amounts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.amountBtn {
+  padding: 0.65rem;
+  border-radius: var(--rs);
+  border: 1px solid var(--b);
+  background: var(--ink3);
+  color: var(--txt);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.amountActive {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.mt1 {
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -9,12 +9,14 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Devotee, PaginatedResponse } from '@tms/types';
+import { Devotee, PaginatedResponse, UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateDevoteeDto } from './dto/create-devotee.dto';
 import { DevoteeQueryDto } from './dto/devotee-query.dto';
@@ -22,11 +24,13 @@ import { UpdateDevoteeDto } from './dto/update-devotee.dto';
 import { DevoteeService } from './devotee.service';
 
 @ApiTags('devotees')
+@ApiBearerAuth()
 @Controller('devotees')
 export class DevoteeController {
   constructor(private readonly devoteeService: DevoteeService) {}
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'List devotees with optional search filters' })
   @ApiResponse({ status: 200, description: 'Paginated devotee list' })
   async findAll(
@@ -46,6 +50,7 @@ export class DevoteeController {
   }
 
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'Get devotee by ID' })
   @ApiParam({ name: 'id', description: 'Devotee UUID' })
   @ApiResponse({ status: 200, description: 'Devotee details' })
@@ -58,6 +63,7 @@ export class DevoteeController {
   }
 
   @Post()
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
   @ApiOperation({ summary: 'Create a new devotee profile' })
   @ApiResponse({ status: 201, description: 'Devotee created' })
   async create(
@@ -68,6 +74,7 @@ export class DevoteeController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'Update devotee profile' })
   @ApiParam({ name: 'id', description: 'Devotee UUID' })
   @ApiResponse({ status: 200, description: 'Devotee updated' })
@@ -81,6 +88,7 @@ export class DevoteeController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete a devotee profile' })
   @ApiParam({ name: 'id', description: 'Devotee UUID' })
   @ApiResponse({ status: 200, description: 'Devotee deleted' })

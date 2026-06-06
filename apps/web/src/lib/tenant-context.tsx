@@ -4,11 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
 import { TenantEnvironment } from '@tms/types';
+import { useAuth } from './auth-context';
 import { createApiClient, type ApiClient } from './api/client';
 
 const TENANT_ID =
@@ -24,9 +26,18 @@ interface TenantContextValue {
 const TenantCtx = createContext<TenantContextValue | null>(null);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
+  const { accessToken } = useAuth();
   const [environment, setEnvironmentState] = useState<TenantEnvironment>(
     TenantEnvironment.PROD,
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('tms-environment');
+    if (stored && Object.values(TenantEnvironment).includes(stored as TenantEnvironment)) {
+      setEnvironmentState(stored as TenantEnvironment);
+    }
+  }, []);
 
   const setEnvironment = useCallback((env: TenantEnvironment) => {
     setEnvironmentState(env);
@@ -41,8 +52,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1',
         tenantId: TENANT_ID,
         environment,
+        accessToken: accessToken ?? undefined,
       }),
-    [environment],
+    [environment, accessToken],
   );
 
   const value = useMemo(

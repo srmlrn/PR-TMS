@@ -1,14 +1,23 @@
 import type {
   Booking,
   Devotee,
+  DevoteeLookupResult,
+  DonationCampaign,
   EventLifecycleStage,
   FinanceSummary,
   PaginatedResponse,
   PrasadamSponsorship,
+  QueueStats,
+  QueueToken,
   RentalAsset,
   RentalOrder,
+  SevaService,
   Sponsor,
+  TaxComplianceStatus,
   TempleEvent,
+  Tenant,
+  TenantEnvironmentRecord,
+  VendorPayment,
 } from '@tms/types';
 import type { ApiClient } from './client';
 
@@ -19,17 +28,67 @@ export interface ListParams extends Record<string, string | number | boolean | u
   limit?: number;
   devoteeId?: string;
   date?: string;
+  name?: string;
+  phone?: string;
+}
+
+export interface ServiceSlotsResponse {
+  serviceId: string;
+  date: string;
+  slots: { startTime: string; endTime: string; available: boolean }[];
+}
+
+export interface EnvironmentUsage {
+  environmentId: string;
+  env: string;
+  metrics: Record<string, number>;
+  estimatedCostUsd: number;
 }
 
 export function createEndpoints(client: ApiClient) {
   return {
     getFinanceSummary: () => client.get<FinanceSummary>('/finance/summary'),
 
+    getVendorPayments: (params?: Pick<ListParams, 'page' | 'limit'>) =>
+      client.get<PaginatedResponse<VendorPayment>>('/finance/vendor-payments', { params }),
+
+    getTaxCompliance: () => client.get<TaxComplianceStatus[]>('/finance/tax-compliance'),
+
     getBookings: (params?: ListParams) =>
       client.get<PaginatedResponse<Booking>>('/bookings', { params }),
 
-    getDevotees: (params?: Pick<ListParams, 'page' | 'limit'>) =>
+    createBooking: (body: {
+      devoteeId: string;
+      serviceId: string;
+      scheduledAt: string;
+      channel?: string;
+      sankalpa?: {
+        sponsorName: string;
+        gotram?: string;
+        nakshatra?: string;
+        occasion?: string;
+      };
+    }) => client.post<Booking>('/bookings', body),
+
+    getServices: () => client.get<SevaService[]>('/services'),
+
+    getServiceSlots: (serviceId: string, date: string) =>
+      client.get<ServiceSlotsResponse>(`/services/${serviceId}/slots`, {
+        params: { date },
+      }),
+
+    getDevotees: (params?: Pick<ListParams, 'page' | 'limit' | 'name' | 'phone'>) =>
       client.get<PaginatedResponse<Devotee>>('/devotees', { params }),
+
+    createDevotee: (body: {
+      firstName: string;
+      lastName: string;
+      email?: string;
+      phone: string;
+      country: string;
+      gotram?: string;
+      nakshatra?: string;
+    }) => client.post<Devotee>('/devotees', body),
 
     getEventPipeline: () => client.get<EventPipeline>('/events/pipeline'),
 
@@ -49,6 +108,32 @@ export function createEndpoints(client: ApiClient) {
       client.get<PaginatedResponse<PrasadamSponsorship>>('/prasadam/sponsorships', {
         params,
       }),
+
+    getCampaigns: () => client.get<DonationCampaign[]>('/campaigns'),
+
+    createDonation: (body: {
+      devoteeId: string;
+      amount: number;
+      currency: string;
+      purpose: string;
+      campaignId?: string;
+    }) => client.post('/donations', body),
+
+    frontDeskLookup: (phone: string) =>
+      client.get<DevoteeLookupResult>('/frontdesk/lookup', { params: { phone } }),
+
+    issueToken: (body: { devoteeId?: string; devoteeName?: string }) =>
+      client.post<QueueToken>('/frontdesk/tokens', body),
+
+    getQueueStats: () => client.get<QueueStats>('/frontdesk/queue-stats'),
+
+    listTenants: () => client.get<Tenant[]>('/platform/tenants'),
+
+    getTenantEnvironments: (tenantId: string) =>
+      client.get<TenantEnvironmentRecord[]>(`/platform/tenants/${tenantId}/environments`),
+
+    getTenantUsage: (tenantId: string) =>
+      client.get<EnvironmentUsage[]>(`/platform/tenants/${tenantId}/usage`),
   };
 }
 

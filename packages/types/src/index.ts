@@ -1,4 +1,5 @@
 export * from './enums';
+export * from './auth';
 export * from './platform';
 export * from './common';
 export * from './devotee';

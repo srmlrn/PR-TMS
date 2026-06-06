@@ -1,12 +1,14 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TenantCtx } from '../../common/decorators/tenant-context.decorator';
-import { TenantContext } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { TenantContext, UserRole } from '@tms/types';
 import { PlatformService } from './platform.service';
 import { ProvisionEnvironmentDto } from './dto/provision-environment.dto';
 import { PromoteEnvironmentDto } from './dto/promote-environment.dto';
 
 @ApiTags('Platform')
+@ApiBearerAuth()
 @Controller('platform')
 export class PlatformController {
   constructor(private readonly platformService: PlatformService) {}
@@ -19,12 +21,14 @@ export class PlatformController {
   }
 
   @Get('tenants')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'List all tenants (super-admin)' })
   listTenants() {
     return this.platformService.listTenants();
   }
 
   @Get('tenants/:tenantId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get tenant by ID' })
   @ApiParam({ name: 'tenantId', description: 'Tenant UUID' })
   getTenant(@Param('tenantId') tenantId: string) {
@@ -32,12 +36,14 @@ export class PlatformController {
   }
 
   @Get('tenants/:tenantId/environments')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'List environments for a tenant' })
   listEnvironments(@Param('tenantId') tenantId: string) {
     return this.platformService.listEnvironments(tenantId);
   }
 
   @Post('tenants/:tenantId/environments')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Provision a new environment (creates isolated database)' })
   provisionEnvironment(
     @Param('tenantId') tenantId: string,
@@ -47,6 +53,7 @@ export class PlatformController {
   }
 
   @Post('tenants/:tenantId/environments/promote')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Promote config/data from one environment to another' })
   promoteEnvironment(
     @Param('tenantId') tenantId: string,
@@ -56,6 +63,7 @@ export class PlatformController {
   }
 
   @Get('tenants/:tenantId/usage')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Per-environment usage and estimated cost (metered billing)' })
   getUsage(@Param('tenantId') tenantId: string) {
     return this.platformService.getUsageByTenant(tenantId);

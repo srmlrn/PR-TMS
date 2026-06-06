@@ -1,11 +1,13 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Booking, PaginatedResponse, SevaService } from '@tms/types';
+import { Booking, PaginatedResponse, SevaService, UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { BookingQueryDto, ServiceSlotsQueryDto } from './dto/booking-query.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -13,6 +15,14 @@ import { BookingService } from './booking.service';
 import { SevaCatalogService, TimeSlot } from './seva-catalog.service';
 
 @ApiTags('bookings')
+@ApiBearerAuth()
+@Roles(
+  UserRole.ADMIN,
+  UserRole.FRONT_DESK,
+  UserRole.PRIEST,
+  UserRole.DEVOTEE,
+  UserRole.ACCOUNTANT,
+)
 @Controller()
 export class BookingController {
   constructor(

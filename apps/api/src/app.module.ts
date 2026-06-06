@@ -12,12 +12,15 @@ import { PrasadamModule } from './modules/prasadam/prasadam.module';
 import { DonationModule } from './modules/donation/donation.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { FrontDeskModule } from './modules/frontdesk/frontdesk.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { TenantDataModule } from './database/tenant-data.module';
 
 const usePostgres = process.env.STORAGE_MODE === 'postgres';
 
 @Module({
   imports: [
-    ...(usePostgres ? [DatabaseModule] : []),
+    AuthModule,
+    ...(usePostgres ? [DatabaseModule] : [TenantDataModule]),
     PlatformModule,
     DevoteeModule,
     BookingModule,

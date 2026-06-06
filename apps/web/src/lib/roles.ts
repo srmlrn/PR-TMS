@@ -1,6 +1,7 @@
 import { UserRole } from '@tms/types';
 import type { DockNavItem } from '@tms/ui';
 import type { EnvBadgeVariant } from '@tms/ui';
+import { getDefaultHrefForRole } from './route-access';
 
 export type AppRole = UserRole | 'kiosk';
 
@@ -17,14 +18,11 @@ export interface RoleConfig {
 
 const adminNav: DockNavItem[] = [
   { id: 'a-dash', emoji: '📊', label: 'Dashboard', href: '/admin/dashboard' },
-  { id: 'a-devotees', emoji: '👥', label: 'Devotees', href: '/admin/dashboard' },
-  { id: 'a-analytics', emoji: '🔥', label: 'Analytics & Heatmap', href: '/admin/dashboard' },
+  { id: 'a-devotees', emoji: '👥', label: 'Devotees', href: '/admin/devotees' },
   { id: 'events', emoji: '🎪', label: 'Event Management', href: '/admin/events' },
   { id: 'rentals', emoji: '🏛️', label: 'Venue & Equipment Rentals', href: '/admin/rentals' },
   { id: 'prasadam', emoji: '🍬', label: 'Prasadam Sponsorship', href: '/admin/prasadam' },
   { id: 'sponsors', emoji: '🤝', label: 'Sponsor Management', href: '/admin/sponsors' },
-  { id: 'a-festivals', emoji: '🎉', label: 'Festival Planner', href: '/admin/dashboard' },
-  { id: 'a-calendar', emoji: '📅', label: 'Panchang Calendar', href: '/admin/dashboard' },
   { id: 'a-settings', emoji: '⚙️', label: 'Settings & Envs', href: '/admin/settings' },
 ];
 
@@ -38,10 +36,8 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     defaultHref: '/devotee/home',
     nav: [
       { id: 'd-home', emoji: '🏠', label: 'Home', href: '/devotee/home' },
-      { id: 'd-book', emoji: '🙏', label: 'Book Seva', href: '/devotee/home' },
-      { id: 'd-donate', emoji: '💝', label: 'Donate', href: '/devotee/home' },
-      { id: 'd-receipts', emoji: '📄', label: 'Receipts & Tax Docs', href: '/devotee/home' },
-      { id: 'd-live', emoji: '📺', label: 'Live Darshan', href: '/devotee/home' },
+      { id: 'd-book', emoji: '🙏', label: 'Book Seva', href: '/devotee/book' },
+      { id: 'd-donate', emoji: '💝', label: 'Donate', href: '/devotee/donate' },
     ],
   },
   [UserRole.ADMIN]: {
@@ -59,8 +55,11 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     avatarInitials: 'FD',
     envLabel: 'PROD',
     envVariant: 'prod',
-    defaultHref: '/admin/dashboard',
-    nav: [{ id: 'fd', emoji: '🖥️', label: 'Reception Console', href: '/admin/dashboard' }],
+    defaultHref: '/frontdesk/console',
+    nav: [
+      { id: 'fd', emoji: '🖥️', label: 'Reception Console', href: '/frontdesk/console' },
+      { id: 'kiosk', emoji: '🏧', label: 'Kiosk Mode', href: '/kiosk' },
+    ],
   },
   [UserRole.PRIEST]: {
     key: UserRole.PRIEST,
@@ -68,8 +67,8 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     avatarInitials: 'SR',
     envLabel: 'PROD',
     envVariant: 'prod',
-    defaultHref: '/admin/dashboard',
-    nav: [{ id: 'priest', emoji: '📿', label: "Today's Schedule", href: '/admin/dashboard' }],
+    defaultHref: '/priest/schedule',
+    nav: [{ id: 'priest', emoji: '📿', label: "Today's Schedule", href: '/priest/schedule' }],
   },
   [UserRole.ACCOUNTANT]: {
     key: UserRole.ACCOUNTANT,
@@ -77,8 +76,8 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     avatarInitials: 'AC',
     envLabel: 'PROD',
     envVariant: 'prod',
-    defaultHref: '/admin/dashboard',
-    nav: [{ id: 'ac', emoji: '🧾', label: 'Finance Dashboard', href: '/admin/dashboard' }],
+    defaultHref: '/accountant/finance',
+    nav: [{ id: 'ac', emoji: '🧾', label: 'Finance Dashboard', href: '/accountant/finance' }],
   },
   [UserRole.VOLUNTEER]: {
     key: UserRole.VOLUNTEER,
@@ -86,8 +85,8 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     avatarInitials: 'VP',
     envLabel: 'PROD',
     envVariant: 'prod',
-    defaultHref: '/admin/dashboard',
-    nav: [{ id: 'vol', emoji: '🤝', label: 'Volunteering', href: '/admin/dashboard' }],
+    defaultHref: '/volunteer/shifts',
+    nav: [{ id: 'vol', emoji: '🤝', label: 'Volunteering', href: '/volunteer/shifts' }],
   },
   [UserRole.SUPER_ADMIN]: {
     key: UserRole.SUPER_ADMIN,
@@ -95,8 +94,11 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     avatarInitials: 'SA',
     envLabel: 'PROD',
     envVariant: 'prod',
-    defaultHref: '/admin/dashboard',
-    nav: [{ id: 'sa', emoji: '⚙️', label: 'All Tenants & Billing', href: '/admin/dashboard' }],
+    defaultHref: '/platform/tenants',
+    nav: [
+      { id: 'sa', emoji: '⚙️', label: 'All Tenants', href: '/platform/tenants' },
+      { id: 'sa-dash', emoji: '📊', label: 'Temple Admin', href: '/admin/dashboard' },
+    ],
   },
   kiosk: {
     key: 'kiosk',
@@ -105,8 +107,8 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     envLabel: 'PROD',
     envVariant: 'prod',
     kiosk: true,
-    defaultHref: '/',
-    nav: [{ id: 'kiosk', emoji: '🏧', label: 'Kiosk Home', href: '/' }],
+    defaultHref: '/kiosk',
+    nav: [{ id: 'kiosk', emoji: '🏧', label: 'Kiosk Home', href: '/kiosk' }],
   },
 };
 
@@ -115,7 +117,7 @@ export interface LandingRoleCard {
   emoji: string;
   title: string;
   description: string;
-  href: string;
+  loginEmail: string;
 }
 
 export const LANDING_ROLES: LandingRoleCard[] = [
@@ -124,71 +126,86 @@ export const LANDING_ROLES: LandingRoleCard[] = [
     emoji: '🙏',
     title: 'Devotee / Member',
     description: 'Book sevas, donate, tax docs, live darshan',
-    href: '/devotee/home',
+    loginEmail: 'rajan@ex.com',
   },
   {
     role: UserRole.ADMIN,
     emoji: '📊',
     title: 'Temple Admin',
     description: 'Bento dashboard, devotees, inventory, reports',
-    href: '/admin/dashboard',
+    loginEmail: 'admin@svtemple.org',
   },
   {
     role: UserRole.FRONT_DESK,
     emoji: '🖥️',
     title: 'Front Desk',
     description: 'Reception, POS, queue tokens',
-    href: '/admin/dashboard',
+    loginEmail: 'frontdesk@svtemple.org',
   },
   {
     role: UserRole.PRIEST,
     emoji: '📿',
     title: 'Priest',
     description: 'Schedule, poojas, honorarium',
-    href: '/admin/dashboard',
+    loginEmail: 'priest@svtemple.org',
   },
   {
     role: UserRole.ACCOUNTANT,
     emoji: '🧾',
     title: 'Accountant',
     description: 'Finance, 80G/IRS/CRA, vendors',
-    href: '/admin/dashboard',
+    loginEmail: 'finance@svtemple.org',
   },
   {
     role: UserRole.VOLUNTEER,
     emoji: '🤝',
     title: 'Volunteer',
     description: 'Shifts, hours, recognition',
-    href: '/admin/dashboard',
+    loginEmail: 'volunteer@svtemple.org',
   },
   {
     role: UserRole.SUPER_ADMIN,
     emoji: '⚙️',
     title: 'Platform Admin',
     description: 'All tenants, billing, metered usage',
-    href: '/admin/dashboard',
+    loginEmail: 'platform@tms.dev',
   },
   {
     role: 'kiosk',
     emoji: '🏧',
     title: 'Self-Service Kiosk',
     description: 'Touch-first self-service terminal',
-    href: '/',
+    loginEmail: 'frontdesk@svtemple.org',
   },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
   '/devotee/home': 'Home',
+  '/devotee/book': 'Book Seva',
+  '/devotee/donate': 'Donate',
   '/admin/dashboard': 'Temple Dashboard',
+  '/admin/devotees': 'Devotee CRM',
   '/admin/events': 'Event Management',
   '/admin/rentals': 'Venue & Equipment Rentals',
   '/admin/prasadam': 'Prasadam Sponsorship Program',
   '/admin/sponsors': 'Sponsor Management',
   '/admin/settings': 'Settings & Environments',
+  '/frontdesk/console': 'Reception Console',
+  '/priest/schedule': "Today's Schedule",
+  '/accountant/finance': 'Finance Dashboard',
+  '/volunteer/shifts': 'Volunteering',
+  '/platform/tenants': 'Platform Tenants',
+  '/kiosk': 'Self-Service Kiosk',
 };
 
 export function resolveRoleFromPath(pathname: string): AppRole {
   if (pathname.startsWith('/devotee')) return UserRole.DEVOTEE;
+  if (pathname.startsWith('/frontdesk')) return UserRole.FRONT_DESK;
+  if (pathname.startsWith('/priest')) return UserRole.PRIEST;
+  if (pathname.startsWith('/accountant')) return UserRole.ACCOUNTANT;
+  if (pathname.startsWith('/volunteer')) return UserRole.VOLUNTEER;
+  if (pathname.startsWith('/platform')) return UserRole.SUPER_ADMIN;
+  if (pathname.startsWith('/kiosk')) return 'kiosk';
   if (pathname.startsWith('/admin')) return UserRole.ADMIN;
   return UserRole.ADMIN;
 }
@@ -199,4 +216,11 @@ export function getPageTitle(pathname: string): string {
 
 export function getRoleConfig(role: AppRole): RoleConfig {
   return ROLE_CONFIGS[role];
+}
+
+export function getRoleConfigForUser(role: AppRole): RoleConfig {
+  return {
+    ...ROLE_CONFIGS[role],
+    defaultHref: getDefaultHrefForRole(role),
+  };
 }

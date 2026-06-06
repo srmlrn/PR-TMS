@@ -19,12 +19,19 @@ export default function LandingPage() {
           beyond.
         </p>
         <p className="landingMeta">
-          mockui-sn46 · Sri Venkateswara Temple (demo tenant) · Pick a role to explore
+          mockui-sn46 · Sri Venkateswara Temple (demo tenant) · Sign in to explore
         </p>
+        <Link href="/login" className="landingLoginBtn">
+          Sign in →
+        </Link>
       </div>
       <div className="landingRoles">
         {LANDING_ROLES.map((role) => (
-          <Link key={role.role} href={role.href} className="roleCard">
+          <Link
+            key={role.role}
+            href={`/login?email=${encodeURIComponent(role.loginEmail)}&role=${role.role}`}
+            className="roleCard"
+          >
             <span className="roleEmoji" aria-hidden>
               {role.emoji}
             </span>

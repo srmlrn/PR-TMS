@@ -1,11 +1,14 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateDonationDto } from './dto/create-donation.dto';
@@ -17,11 +20,13 @@ import {
 import { DonationService } from './donation.service';
 
 @ApiTags('Donations')
+@ApiBearerAuth()
 @Controller()
 export class DonationController {
   constructor(private readonly donationService: DonationService) {}
 
   @Post('donations')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'Record a new donation' })
   @ApiCreatedResponse({ type: DonationResponseDto })
   async create(
@@ -32,6 +37,7 @@ export class DonationController {
   }
 
   @Get('donations')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.FRONT_DESK)
   @ApiOperation({ summary: 'List donations for the tenant' })
   @ApiOkResponse({ type: PaginatedDonationsDto })
   async findAll(
@@ -46,6 +52,7 @@ export class DonationController {
   }
 
   @Get('campaigns')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.FRONT_DESK, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'List active donation campaigns with progress' })
   @ApiOkResponse({ type: [CampaignResponseDto] })
   async findCampaigns(@TenantId() tenantId: string): Promise<CampaignResponseDto[]> {
@@ -53,6 +60,7 @@ export class DonationController {
   }
 
   @Get('campaigns/:id')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.FRONT_DESK, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'Get a donation campaign by ID' })
   @ApiOkResponse({ type: CampaignResponseDto })
   @ApiNotFoundResponse({ description: 'Campaign not found' })

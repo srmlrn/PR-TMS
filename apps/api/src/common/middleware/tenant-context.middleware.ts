@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware, Optional } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { TenantContext, TenantEnvironment } from '@tms/types';
+import { AuthUser, TenantContext, TenantEnvironment } from '@tms/types';
 import { TenantResolverService } from '../../database/tenant-resolver.service';
 import { TenantContextStorage } from '../context/tenant-context.storage';
 
@@ -8,6 +8,7 @@ export interface TenantRequest extends Request {
   tenantId: string;
   environment: TenantEnvironment;
   tenantContext: TenantContext;
+  user?: AuthUser;
 }
 
 const DEFAULT_TENANT = '00000000-0000-0000-0000-000000000001';

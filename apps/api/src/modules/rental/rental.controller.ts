@@ -1,10 +1,13 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateRentalOrderDto } from './dto/create-rental-order.dto';
@@ -12,6 +15,8 @@ import { ReturnInspectionDto } from './dto/return-inspection.dto';
 import { RentalService } from './rental.service';
 
 @ApiTags('rentals')
+@ApiBearerAuth()
+@Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
 @Controller()
 export class RentalController {
   constructor(private readonly rentalService: RentalService) {}

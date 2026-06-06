@@ -1,10 +1,13 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { IssueTokenDto } from './dto/issue-token.dto';
 import { LookupQueryDto } from './dto/lookup-query.dto';
@@ -16,6 +19,8 @@ import {
 import { FrontDeskService } from './frontdesk.service';
 
 @ApiTags('Front Desk')
+@ApiBearerAuth()
+@Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
 @Controller('frontdesk')
 export class FrontDeskController {
   constructor(private readonly frontDeskService: FrontDeskService) {}

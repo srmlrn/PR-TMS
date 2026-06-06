@@ -9,15 +9,13 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,
     "noImplicitAny": true,
-    "strictNullChecks": true,
-    "paths": {
-      "@tms/types": ["../../packages/types/src"]
-    }
+    "strictNullChecks": true
   },
   "include": ["src/**/*"]
 }

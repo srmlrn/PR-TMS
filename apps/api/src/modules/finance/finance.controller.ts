@@ -1,5 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import {
@@ -10,6 +12,8 @@ import {
 import { FinanceService } from './finance.service';
 
 @ApiTags('Finance')
+@ApiBearerAuth()
+@Roles(UserRole.ADMIN, UserRole.ACCOUNTANT)
 @Controller('finance')
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}

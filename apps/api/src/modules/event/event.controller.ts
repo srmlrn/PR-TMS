@@ -9,11 +9,14 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventQueryDto } from './dto/event-query.dto';
@@ -22,6 +25,8 @@ import { UpdateEventStageDto } from './dto/update-event-stage.dto';
 import { EventService } from './event.service';
 
 @ApiTags('events')
+@ApiBearerAuth()
+@Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.VOLUNTEER, UserRole.ACCOUNTANT)
 @Controller('events')
 export class EventController {
   constructor(private readonly eventService: EventService) {}
@@ -55,6 +60,7 @@ export class EventController {
   }
 
   @Post()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a new event (starts at enquiry stage)' })
   @ApiResponse({ status: 201, description: 'Event created' })
   async create(@TenantId() tenantId: string, @Body() dto: CreateEventDto) {
@@ -62,6 +68,7 @@ export class EventController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Update event details' })
   @ApiParam({ name: 'id', description: 'Event UUID' })
   @ApiResponse({ status: 200, description: 'Event updated' })
@@ -74,6 +81,7 @@ export class EventController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete an event' })
   @ApiParam({ name: 'id', description: 'Event UUID' })
   @ApiResponse({ status: 200, description: 'Event deleted' })
@@ -83,6 +91,7 @@ export class EventController {
   }
 
   @Patch(':id/stage')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Advance event lifecycle stage' })
   @ApiParam({ name: 'id', description: 'Event UUID' })
   @ApiResponse({ status: 200, description: 'Stage updated' })

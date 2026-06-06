@@ -9,11 +9,14 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@tms/types';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateSponsorDto } from './dto/create-sponsor.dto';
 import { SponsorQueryDto } from './dto/sponsor-query.dto';
@@ -22,6 +25,8 @@ import { UpdateSponsorDto } from './dto/update-sponsor.dto';
 import { SponsorService } from './sponsor.service';
 
 @ApiTags('sponsors')
+@ApiBearerAuth()
+@Roles(UserRole.ADMIN)
 @Controller('sponsors')
 export class SponsorController {
   constructor(private readonly sponsorService: SponsorService) {}

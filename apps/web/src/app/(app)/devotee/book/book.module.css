@@ -1,0 +1,60 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.serviceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.serviceCard {
+  text-align: left;
+  padding: 0.85rem;
+  border-radius: var(--rs);
+  border: 1px solid var(--b);
+  background: var(--glass);
+  color: var(--txt);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.serviceCard.selected {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.3);
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.slot {
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--rs);
+  border: 1px solid var(--b);
+  background: var(--ink3);
+  color: var(--txt);
+  cursor: pointer;
+}
+
+.slotActive {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.mt1 {
+  margin-top: 1rem;
+}
+
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
