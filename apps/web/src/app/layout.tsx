@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { OrbsBackground } from '@tms/ui';
+import { ThemeProvider } from '@/lib/theme-context';
+import { ThemeScript } from '@/components/ThemeScript';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -9,8 +11,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="light">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <ThemeScript />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -19,8 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <OrbsBackground />
-        {children}
+        <ThemeProvider>
+          <OrbsBackground />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

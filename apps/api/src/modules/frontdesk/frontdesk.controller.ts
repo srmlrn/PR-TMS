@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Public } from '../../common/decorators/public.decorator';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -50,6 +51,13 @@ export class FrontDeskController {
     @Query('queueType') queueType?: QueueType,
   ) {
     return { data: await this.frontDeskService.listQueue(tenantId, { status, queueType }) };
+  }
+
+  @Public()
+  @Get('display-board')
+  @ApiOperation({ summary: 'Public TV display board payload (no auth, token numbers only)' })
+  async displayBoard(@TenantId() tenantId: string) {
+    return this.frontDeskService.getDisplayBoard(tenantId);
   }
 
   @Get('now-serving')

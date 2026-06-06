@@ -38,7 +38,7 @@ export function StatTile({
   changeTone = 'neutral',
   accent = 'amber',
   valueSize = 'default',
-  compact = false,
+  compact = true,
   sparkline,
   className,
 }: StatTileProps) {

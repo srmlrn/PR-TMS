@@ -15,7 +15,7 @@ Sources: [TempleManagementSoftware](https://www.templemanagementsoftware.com/), 
 | Queue types (darshan/seva) | Common | ❌ | ✅ |
 | Live queue list | ✅ | ❌ | ✅ `/frontdesk/queue` |
 | Call next / mark served | ✅ | ❌ | ✅ |
-| Display board (TV) | ✅ | ❌ | ✅ `/frontdesk/display` |
+| Display board (TV) | ✅ | ❌ | ✅ public `/frontdesk/display` + `/frontdesk/display-board` API |
 | SMS/WhatsApp token notify | ✅ | ❌ | ✅ stub via notifications API |
 | Counter booking + payment + receipt | PRD AC1 | Partial (1st service) | ✅ full form |
 | Counter donation + receipt | ✅ | ✅ | ✅ |
@@ -32,7 +32,7 @@ Sources: [TempleManagementSoftware](https://www.templemanagementsoftware.com/), 
 |-------|---------|
 | `/frontdesk/console` | Primary counter: lookup, register, token, book, donate, POS |
 | `/frontdesk/queue` | Staff queue control: call next, serve, priority view |
-| `/frontdesk/display` | Public display: now serving + up next |
+| `/frontdesk/display` | Public TV: multi-lane counters, stats, ticker, chime (no login) |
 | `/frontdesk/token-print` | Thermal-friendly token slip |
 | `/frontdesk/receipt-print` | Thermal-friendly payment receipt |
 

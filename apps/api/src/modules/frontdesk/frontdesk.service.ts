@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import {
   DevoteeLookupResult,
+  DisplayBoard,
+  DisplayBoardLane,
   IssueTokenInput,
   NowServing,
   QueueStats,
@@ -14,6 +16,7 @@ import { TenantDataService } from '../../database/tenant-data.service';
 import { BookingService } from '../booking/booking.service';
 import { DevoteeService } from '../devotee/devotee.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PlatformService } from '../platform/platform.service';
 
 type QueueTokenRecord = QueueToken & TenantEntity;
 
@@ -41,12 +44,24 @@ export class FrontDeskService
 
   private static readonly AVG_MINUTES_PER_TOKEN = 22;
   private static readonly BASE_QUEUE_SIZE = 53;
+  private static readonly LANE_ORDER: QueueType[] = ['priority', 'darshan', 'seva'];
+  private static readonly COUNTER_LABELS: Record<QueueType, string> = {
+    priority: 'VIP Counter',
+    darshan: 'Counter 1 · Darshan',
+    seva: 'Counter 2 · Seva',
+  };
+  private static readonly DISPLAY_ANNOUNCEMENTS = [
+    'Please listen for your token number · अपना टोकन सुनें',
+    'Proceed to the counter shown when your number is called',
+    'Thank you for your patience · धन्यवाद',
+  ];
 
   constructor(
     private readonly tenantData: TenantDataService,
     private readonly devoteeService: DevoteeService,
     private readonly bookingService: BookingService,
     private readonly notificationsService: NotificationsService,
+    private readonly platformService: PlatformService,
   ) {
     super();
   }
@@ -294,6 +309,43 @@ export class FrontDeskService
       queueType: t.queueType ?? 'darshan',
       status: t.status,
     }));
+  }
+
+  async getDisplayBoard(tenantId: string): Promise<DisplayBoard> {
+    const tenant = await this.platformService.getTenant(tenantId);
+    const stats = await this.getQueueStats(tenantId);
+
+    const lanes: DisplayBoardLane[] = [];
+    for (const queueType of FrontDeskService.LANE_ORDER) {
+      const called = await this.listQueue(tenantId, { status: 'called', queueType });
+      const waiting = await this.listQueue(tenantId, { status: 'waiting', queueType });
+
+      lanes.push({
+        queueType,
+        counterLabel: FrontDeskService.COUNTER_LABELS[queueType],
+        nowServing: called[0]
+          ? {
+              tokenNumber: called[0].tokenNumber,
+              priority: called[0].priority,
+            }
+          : undefined,
+        upNext: waiting.slice(0, 8).map((t) => ({
+          tokenNumber: t.tokenNumber,
+          priority: t.priority,
+          position: t.position,
+          estimatedWaitMinutes: t.estimatedWaitMinutes,
+        })),
+      });
+    }
+
+    return {
+      tenantName: tenant.name,
+      hideNames: true,
+      updatedAt: new Date().toISOString(),
+      stats,
+      lanes,
+      announcements: FrontDeskService.DISPLAY_ANNOUNCEMENTS,
+    };
   }
 
   async callNext(tenantId: string, queueType?: QueueType): Promise<QueueTokenRecord | null> {

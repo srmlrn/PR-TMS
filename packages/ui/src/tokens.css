@@ -29,10 +29,11 @@
   --r: 14px;
   --rs: 8px;
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --dock-width: 60px;
-  --topbar-height: 3.25rem;
+  --dock-width: 232px;
+  --topbar-height: 3.35rem;
   --content-padding-x: 1.5rem;
-  --content-offset-left: calc(var(--dock-width) + 2.25rem);
+  --content-offset-left: calc(var(--dock-width) + 1.5rem);
+  --btn-primary-text: #1a0800;
   --card-shadow: none;
   --card-hover-shadow: none;
   --card-backdrop: blur(16px);
@@ -47,6 +48,12 @@
   --input-bg: var(--ink3);
   --callout-bg: rgba(245, 166, 35, 0.07);
   --callout-border: rgba(245, 166, 35, 0.18);
+}
+
+/* ────────────────────── DARK THEME (sacred glass) ────────────────────── */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --btn-primary-text: #1a0800;
 }
 
 /* ────────────────────── LIGHT THEME (filllo-inspired) ────────────────────── */
@@ -99,6 +106,7 @@
   --input-bg: #f8faf9;
   --callout-bg: rgba(26, 155, 110, 0.06);
   --callout-border: rgba(26, 155, 110, 0.16);
+  --btn-primary-text: #ffffff;
 }
 
 [data-theme='light'] .orbs {
@@ -125,8 +133,12 @@
   padding: 0;
 }
 
-html {
+html[data-theme='dark'] {
   color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
 }
 
 body {

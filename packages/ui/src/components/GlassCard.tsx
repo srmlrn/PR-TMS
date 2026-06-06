@@ -18,7 +18,7 @@ export function GlassCard({
   className,
   bodyClassName,
   noBodyPadding = false,
-  compact = false,
+  compact = true,
 }: GlassCardProps) {
   const hasHeader = title !== undefined || headerRight !== undefined;
 

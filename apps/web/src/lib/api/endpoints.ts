@@ -21,6 +21,7 @@ import type {
   PrasadamSponsorship,
   PrasadamSponsorshipType,
   PrasadamPackageTier,
+  DisplayBoard,
   NowServing,
   QueueStats,
   QueueToken,
@@ -339,6 +340,8 @@ export function createEndpoints(client: ApiClient) {
       status?: 'waiting' | 'called' | 'served';
       queueType?: string;
     }) => client.get<{ data: QueueToken[] }>('/frontdesk/queue', { params }),
+
+    getDisplayBoard: () => client.get<DisplayBoard>('/frontdesk/display-board'),
 
     getNowServing: () => client.get<{ data: NowServing[] }>('/frontdesk/now-serving'),
 

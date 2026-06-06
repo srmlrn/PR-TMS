@@ -11,6 +11,7 @@ import {
   getRoleConfigForUser,
   type AppRole,
 } from '@/lib/roles';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 function RoleBadge({ role }: { role: AppRole }) {
   const config = getRoleConfigForUser(role);
@@ -31,13 +32,15 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const config = getRoleConfigForUser(role);
   const title = getPageTitle(pathname);
   const isKiosk = pathname.startsWith('/kiosk');
+  const isDisplayPage = pathname.startsWith('/frontdesk/display');
   const isFullscreenPage =
     pathname.startsWith('/frontdesk/token-print') ||
     pathname.startsWith('/frontdesk/receipt-print') ||
-    pathname.startsWith('/frontdesk/display');
+    isDisplayPage;
 
   useEffect(() => {
     if (isLoading) return;
+    if (isDisplayPage) return;
     if (!isAuthenticated) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
@@ -45,7 +48,11 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     if (user && !canAccessPath(role, pathname)) {
       router.replace(config.defaultHref);
     }
-  }, [isLoading, isAuthenticated, user, role, pathname, router, config.defaultHref]);
+  }, [isLoading, isAuthenticated, user, role, pathname, router, config.defaultHref, isDisplayPage]);
+
+  if (isDisplayPage) {
+    return <main className="displayShell">{children}</main>;
+  }
 
   if (isLoading || !isAuthenticated || !user) {
     return (
@@ -71,6 +78,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             envLabel={environment.toUpperCase()}
             envVariant={envVariant}
             avatarInitials={config.avatarInitials}
+            themeToggle={<ThemeToggle />}
             roleSwitcher={
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <RoleBadge role={role} />
@@ -82,7 +90,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           />
         </>
       )}
-      <main className="appContent">{children}</main>
+      <main className="appContent compactUi">{children}</main>
     </div>
   );
 }

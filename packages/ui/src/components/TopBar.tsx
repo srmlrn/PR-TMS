@@ -11,6 +11,7 @@ export interface TopBarProps {
   avatarInitials?: string;
   searchPlaceholder?: string;
   languages?: string[];
+  themeToggle?: ReactNode;
   roleSwitcher?: ReactNode;
 }
 
@@ -21,6 +22,7 @@ export function TopBar({
   avatarInitials = 'RK',
   searchPlaceholder = 'Search devotees, receipts, bookings…',
   languages = ['EN', 'हि', 'தமி', 'తె'],
+  themeToggle,
   roleSwitcher,
 }: TopBarProps) {
   return (
@@ -49,6 +51,7 @@ export function TopBar({
             </option>
           ))}
         </select>
+        {themeToggle}
         {roleSwitcher}
         <div className={styles.avatar} aria-hidden>
           {avatarInitials}

@@ -25,7 +25,7 @@
 
 .primary {
   background: linear-gradient(135deg, var(--amber), var(--amber2));
-  color: #ffffff;
+  color: var(--btn-primary-text, #ffffff);
   box-shadow: 0 4px 16px var(--aglow);
 }
 

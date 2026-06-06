@@ -1,0 +1,8 @@
+.toggle {
+  gap: 0.35rem !important;
+  padding: 0.3rem 0.65rem !important;
+}
+
+.label {
+  font-size: 0.72rem;
+}

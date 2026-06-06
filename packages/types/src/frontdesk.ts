@@ -59,3 +59,26 @@ export interface NowServing {
   queueType: QueueType;
   status: QueueTokenStatus;
 }
+
+export interface DisplayBoardToken {
+  tokenNumber: string;
+  priority?: boolean;
+  position?: number;
+  estimatedWaitMinutes?: number;
+}
+
+export interface DisplayBoardLane {
+  queueType: QueueType;
+  counterLabel: string;
+  nowServing?: DisplayBoardToken;
+  upNext: DisplayBoardToken[];
+}
+
+export interface DisplayBoard {
+  tenantName: string;
+  hideNames: boolean;
+  updatedAt: string;
+  stats: QueueStats;
+  lanes: DisplayBoardLane[];
+  announcements: string[];
+}

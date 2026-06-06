@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, GlassCard } from '@tms/ui';
+import { PublicThemeBar } from '@/components/PublicThemeBar';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { getDefaultHrefForRole } from '@/lib/route-access';
 import { LANDING_ROLES, type AppRole } from '@/lib/roles';
@@ -39,7 +40,8 @@ function LoginForm() {
   }
 
   return (
-    <div className="loginPage">
+    <div className="loginPage compactUi">
+      <PublicThemeBar />
       <div className="loginHero">
         <span className="landingIcon" aria-hidden>
           🛕

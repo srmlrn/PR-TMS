@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { LANDING_ROLES } from '@/lib/roles';
+import { PublicThemeBar } from '@/components/PublicThemeBar';
 
 export default function LandingPage() {
   return (
-    <div className="landing">
+    <div className="landing compactUi">
+      <PublicThemeBar />
       <div className="landingHero">
         <span className="landingIcon" aria-hidden>
           🛕
