@@ -172,7 +172,7 @@
 }
 
 .kioskMode .appContent {
-  padding: 0;
+  padding: 0.65rem 0.75rem 1rem;
 }
 
 .displayShell {
@@ -382,8 +382,7 @@
 }
 
 .kioskMode .appContent {
-  padding: 2rem;
-  max-width: 900px;
+  max-width: 680px;
   margin: 0 auto;
 }
 
