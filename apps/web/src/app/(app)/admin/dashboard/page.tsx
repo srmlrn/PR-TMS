@@ -116,17 +116,20 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 
 export default function AdminDashboardPage() {
   const { data, loading, error } = useApi((ep) =>
-    Promise.all([ep.getFinanceSummary(), ep.getBookings({ limit: 10 })]).then(
-      ([finance, bookings]) => ({ finance, bookings }),
-    ),
+    Promise.all([
+      ep.getDashboardAnalytics(),
+      ep.getBookings({ limit: 10 }),
+    ]).then(([analytics, bookings]) => ({ analytics, bookings })),
   );
 
-  const finance = data?.finance;
-  const collectionsValue = finance
-    ? formatMoney(finance.incomeMtd, finance.currency)
+  const analytics = data?.analytics;
+  const donationsMtdValue = analytics
+    ? formatMoney(analytics.donationsMtd.total, analytics.donationsMtd.currency)
     : '$9,820';
-  const bookingsCount = data?.bookings?.meta.total ?? 52;
-  const alertsCount = finance ? Math.ceil(finance.receivables / 800) : 3;
+  const devoteesCount = analytics?.devotees ?? 1480;
+  const bookingsCount = analytics?.bookingsToday ?? 52;
+  const queueInLine = analytics?.queue.inQueue ?? 53;
+  const queueServed = analytics?.queue.servedToday ?? 312;
 
   const recentBookings: RecentBooking[] =
     data?.bookings?.data.length && !error
@@ -168,9 +171,13 @@ export default function AdminDashboardPage() {
         <BentoItem span={3}>
           <StatTile
             icon="💰"
-            label="Today's Collections"
-            value={collectionsValue}
-            change={finance ? `MTD income · ${formatMoney(finance.expensesMtd, finance.currency)} expenses` : '↑ 14% vs yesterday'}
+            label="Donations MTD"
+            value={donationsMtdValue}
+            change={
+              analytics
+                ? `${analytics.donationsMtd.count} gifts this month`
+                : '↑ 14% vs last month'
+            }
             changeTone="up"
             accent="amber"
             sparkline={<Sparkline color="rgba(245,166,35,.5)" />}
@@ -181,7 +188,7 @@ export default function AdminDashboardPage() {
             icon="📅"
             label="Bookings Today"
             value={String(bookingsCount)}
-            change="38 seva · 14 darshan"
+            change={analytics ? 'Scheduled seva for today' : '38 seva · 14 darshan'}
             changeTone="neutral"
             accent="green"
             sparkline={<Sparkline color="rgba(15,185,129,.5)" />}
@@ -190,9 +197,9 @@ export default function AdminDashboardPage() {
         <BentoItem span={3}>
           <StatTile
             icon="👥"
-            label="Footfall (est.)"
-            value="1,480"
-            change="Festival weekend"
+            label="Devotees"
+            value={String(devoteesCount)}
+            change="Active CRM profiles"
             changeTone="up"
             accent="blue"
             sparkline={<Sparkline color="rgba(95,164,249,.5)" />}
@@ -200,11 +207,15 @@ export default function AdminDashboardPage() {
         </BentoItem>
         <BentoItem span={3}>
           <StatTile
-            icon="🔔"
-            label="Alerts"
-            value={String(alertsCount)}
-            change={finance ? `${formatMoney(finance.receivables, finance.currency)} receivable` : 'Low prasadam stock'}
-            changeTone="down"
+            icon="🎫"
+            label="Queue"
+            value={String(queueInLine)}
+            change={
+              analytics
+                ? `${queueServed} served · ~${analytics.queue.averageWaitMinutes} min avg wait`
+                : 'Low prasadam stock'
+            }
+            changeTone="neutral"
             accent="red"
           />
         </BentoItem>

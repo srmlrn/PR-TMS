@@ -12,7 +12,11 @@ type KioskStrings = {
   welcome: string;
   subtitle: string;
   bookSeva: string;
+  bookSevaPageTitle: string;
+  bookSevaPageSubtitle: string;
   donate: string;
+  donatePageTitle: string;
+  donatePageSubtitle: string;
   darshanToken: string;
   myAccount: string;
   staffSignIn: string;
@@ -24,7 +28,11 @@ const STRINGS: Record<KioskLang, KioskStrings> = {
     welcome: 'Welcome',
     subtitle: 'Sri Venkateswara Temple · Self-Service',
     bookSeva: 'Book Seva',
+    bookSevaPageTitle: 'Book Seva',
+    bookSevaPageSubtitle: 'Select a service, date, and sankalpa details',
     donate: 'Donate',
+    donatePageTitle: 'Donate',
+    donatePageSubtitle: 'Support the temple — IRS / 80G / CRA compliant receipts',
     darshanToken: 'Darshan Token',
     myAccount: 'My Account',
     staffSignIn: 'Staff sign in',
@@ -34,7 +42,11 @@ const STRINGS: Record<KioskLang, KioskStrings> = {
     welcome: 'స్వాగతం',
     subtitle: 'శ్రీ వెంకటేశ్వర స్వామి ఆలయం · స్వయం సేవ',
     bookSeva: 'సేవ బుక్ చేయండి',
+    bookSevaPageTitle: 'సేవ బుక్ చేయండి',
+    bookSevaPageSubtitle: 'సేవ, తేదీ మరియు సంకల్ప వివరాలను ఎంచుకోండి',
     donate: 'దానం',
+    donatePageTitle: 'దానం',
+    donatePageSubtitle: 'ఆలయానికి మద్దతు — పన్ను రసీదులు అందుబాటులో',
     darshanToken: 'దర్శన టోకెన్',
     myAccount: 'నా ఖాతా',
     staffSignIn: 'సిబ్బంది ప్రవేశం',
@@ -44,7 +56,11 @@ const STRINGS: Record<KioskLang, KioskStrings> = {
     welcome: 'स्वागत है',
     subtitle: 'श्री वेंकटेश्वर मंदिर · स्वयं सेवा',
     bookSeva: 'सेवा बुक करें',
+    bookSevaPageTitle: 'सेवा बुक करें',
+    bookSevaPageSubtitle: 'सेवा, तिथि और संकल्प विवरण चुनें',
     donate: 'दान करें',
+    donatePageTitle: 'दान करें',
+    donatePageSubtitle: 'मंदिर का समर्थन — कर रसीद उपलब्ध',
     darshanToken: 'दर्शन टोकन',
     myAccount: 'मेरा खाता',
     staffSignIn: 'कर्मचारी साइन इन',
@@ -56,11 +72,15 @@ export function kioskStrings(lang: KioskLang): KioskStrings {
   return STRINGS[lang];
 }
 
+export function parseKioskLang(value: string | null | undefined): KioskLang {
+  if (value === 'en' || value === 'te' || value === 'hi') return value;
+  return 'en';
+}
+
 export function readKioskLang(): KioskLang {
   if (typeof window === 'undefined') return 'en';
   const stored = sessionStorage.getItem(KIOSK_LANG_KEY);
-  if (stored === 'en' || stored === 'te' || stored === 'hi') return stored;
-  return 'en';
+  return parseKioskLang(stored);
 }
 
 export function persistKioskLang(lang: KioskLang): void {

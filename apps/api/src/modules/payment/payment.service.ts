@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,12 +9,16 @@ import {
   CreatePaymentSessionInput,
   Currency,
   FxRates,
+  PaymentMode,
   PaymentProvider,
   PaymentProvidersResponse,
   PaymentSession,
   PaymentStatus,
 } from '@tms/types';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
+import { isRazorpayLive, isStripeLive } from './payment-config';
+import { RazorpayProvider } from './razorpay.provider';
+import { StripeProvider } from './stripe.provider';
 
 type SessionRecord = PaymentSession;
 
@@ -34,7 +39,13 @@ const PROVIDERS_BY_CURRENCY: Record<Currency, PaymentProvider[]> = {
 
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
   private readonly sessions = new Map<string, SessionRecord>();
+
+  constructor(
+    private readonly stripeProvider: StripeProvider,
+    private readonly razorpayProvider: RazorpayProvider,
+  ) {}
 
   getFxRates(): FxRates {
     return {
@@ -57,13 +68,29 @@ export class PaymentService {
     return Math.round(usd * FX_RATES[to] * 100) / 100;
   }
 
-  createSession(
+  resolvePaymentMode(provider: PaymentProvider): PaymentMode {
+    if (provider === 'demo' || provider === 'cash') {
+      return 'demo';
+    }
+    if (provider === 'stripe') {
+      return isStripeLive() ? 'live' : 'demo';
+    }
+    if (provider === 'razorpay') {
+      return isRazorpayLive() ? 'live' : 'demo';
+    }
+    return 'demo';
+  }
+
+  async createSession(
     tenantId: string,
     input: CreatePaymentSessionInput,
-  ): PaymentSession {
+  ): Promise<PaymentSession> {
     const now = new Date();
+    const sessionId = uuidv4();
+    const paymentMode = this.resolvePaymentMode(input.provider);
+
     const session: SessionRecord = {
-      id: uuidv4(),
+      id: sessionId,
       tenantId,
       amount: input.amount,
       currency: input.currency,
@@ -72,12 +99,38 @@ export class PaymentService {
       purpose: input.purpose,
       devoteeId: input.devoteeId,
       metadata: input.metadata,
+      paymentMode,
       createdAt: now,
       updatedAt: now,
     };
+
+    if (input.provider === 'stripe' && paymentMode === 'live') {
+      const intent = await this.stripeProvider.createPaymentIntent({
+        amount: input.amount,
+        currency: input.currency,
+        purpose: input.purpose,
+        sessionId,
+        devoteeId: input.devoteeId,
+      });
+      if (intent) {
+        session.providerRefId = intent.paymentIntentId;
+        session.clientSecret = intent.clientSecret;
+      }
+    } else if (input.provider === 'razorpay' && paymentMode === 'live') {
+      const order = await this.razorpayProvider.createOrder({
+        amount: input.amount,
+        currency: input.currency,
+        purpose: input.purpose,
+        sessionId,
+        devoteeId: input.devoteeId,
+      });
+      if (order) {
+        session.providerRefId = order.orderId;
+      }
+    }
+
     this.sessions.set(session.id, session);
 
-    // Counter cash sessions skip PSP confirmation.
     if (input.provider === 'cash') {
       return this.confirmSession(tenantId, session.id);
     }
@@ -85,18 +138,62 @@ export class PaymentService {
     return session;
   }
 
-  confirmSession(tenantId: string, sessionId: string): PaymentSession {
+  async confirmSession(tenantId: string, sessionId: string): Promise<PaymentSession> {
     const session = this.getSession(tenantId, sessionId);
 
     if (session.status === PaymentStatus.PAID) {
       return session;
     }
 
-    // Demo mode: no Stripe/Razorpay call — mark paid immediately (local/dev/UAT only).
+    const mode = session.paymentMode ?? this.resolvePaymentMode(session.provider);
+
+    if (mode === 'live' && session.provider === 'stripe' && session.providerRefId) {
+      const status = await this.stripeProvider.retrievePaymentIntentStatus(
+        session.providerRefId,
+      );
+      if (status === 'succeeded') {
+        session.status = PaymentStatus.PAID;
+        session.updatedAt = new Date();
+        this.sessions.set(session.id, session);
+        return session;
+      }
+      throw new BadRequestException(
+        `Stripe payment not completed (status: ${status ?? 'unknown'}). ` +
+          'Complete payment on the client or wait for webhook confirmation.',
+      );
+    }
+
+    if (mode === 'live' && session.provider === 'razorpay' && session.providerRefId) {
+      const status = await this.razorpayProvider.fetchOrderStatus(session.providerRefId);
+      if (status === 'paid') {
+        session.status = PaymentStatus.PAID;
+        session.updatedAt = new Date();
+        this.sessions.set(session.id, session);
+        return session;
+      }
+      throw new BadRequestException(
+        `Razorpay order not paid (status: ${status ?? 'unknown'}). ` +
+          'Complete payment on the client or wait for webhook confirmation.',
+      );
+    }
+
     session.status = PaymentStatus.PAID;
     session.updatedAt = new Date();
     this.sessions.set(session.id, session);
     return session;
+  }
+
+  markSessionPaidByProviderRef(providerRefId: string): PaymentSession | undefined {
+    for (const session of this.sessions.values()) {
+      if (session.providerRefId === providerRefId && session.status !== PaymentStatus.PAID) {
+        session.status = PaymentStatus.PAID;
+        session.updatedAt = new Date();
+        this.sessions.set(session.id, session);
+        this.logger.log(`Marked session ${session.id} paid via webhook (ref=${providerRefId})`);
+        return session;
+      }
+    }
+    return undefined;
   }
 
   assertPaidSession(

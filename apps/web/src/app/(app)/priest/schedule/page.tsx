@@ -16,16 +16,16 @@ const SERVICE_LABELS: Record<string, string> = {
   'svc-homam': 'Homam',
 };
 
-/** Demo priest roster — replace with GET /staff?role=priest when available */
-const PRIEST_OPTIONS = [
+/** Fallback when staff API is unavailable */
+const FALLBACK_PRIESTS = [
   { id: 'user-priest-001', name: 'Sri Raman' },
   { id: 'user-priest-002', name: 'Swami Venkat' },
   { id: 'user-priest-003', name: 'Swami Ramanujan' },
-] as const;
+];
 
-function priestLabel(priestId?: string): string {
+function priestLabel(priestId: string | undefined, priests: { id: string; name: string }[]): string {
   if (!priestId) return 'Unassigned';
-  return PRIEST_OPTIONS.find((p) => p.id === priestId)?.name ?? priestId.slice(0, 8);
+  return priests.find((p) => p.id === priestId)?.name ?? priestId.slice(0, 8);
 }
 
 interface ScheduleRow {
@@ -72,15 +72,18 @@ export default function PriestSchedulePage() {
       ep.getBookings({ limit: 20, date: today }),
       ep.getDevotees({ limit: 100 }),
       ep.getHonorarium(today),
-    ]).then(([bookings, devotees, honorarium]) => ({
+      ep.getStaff({ role: 'priest' }),
+    ]).then(([bookings, devotees, honorarium, staff]) => ({
       bookings,
       devotees,
       honorarium,
+      priests: staff.data,
     })),
   );
 
   const bookings = data?.bookings?.data ?? [];
   const devotees = data?.devotees?.data;
+  const priests = data?.priests?.length ? data.priests : FALLBACK_PRIESTS;
   const confirmed = bookings.filter((b) => b.status === BookingStatus.CONFIRMED).length;
   const honorariumTotal = data?.honorarium?.total ?? 0;
   const honorariumCurrency = data?.honorarium?.currency ?? 'USD';
@@ -173,14 +176,14 @@ export default function PriestSchedulePage() {
                   aria-label={`Assign priest for ${r.service} at ${r.time}`}
                 >
                   <option value="">Unassigned</option>
-                  {PRIEST_OPTIONS.map((p) => (
+                  {priests.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
                   {r.priestId &&
-                    !PRIEST_OPTIONS.some((p) => p.id === r.priestId) && (
-                      <option value={r.priestId}>{priestLabel(r.priestId)}</option>
+                    !priests.some((p) => p.id === r.priestId) && (
+                      <option value={r.priestId}>{priestLabel(r.priestId, priests)}</option>
                     )}
                 </select>
               ),

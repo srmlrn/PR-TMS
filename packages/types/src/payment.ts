@@ -2,6 +2,7 @@ import { Currency, PaymentStatus } from './enums';
 import { TenantScoped, Timestamps } from './common';
 
 export type PaymentProvider = 'stripe' | 'razorpay' | 'demo' | 'cash';
+export type PaymentMode = 'live' | 'demo';
 
 export interface PaymentSession extends TenantScoped, Timestamps {
   id: string;
@@ -12,6 +13,11 @@ export interface PaymentSession extends TenantScoped, Timestamps {
   purpose: string;
   devoteeId?: string;
   metadata?: Record<string, string>;
+  /** Stripe PaymentIntent id or Razorpay order id when live mode is active. */
+  providerRefId?: string;
+  /** Stripe client secret for Elements / Payment Element (live mode only). */
+  clientSecret?: string;
+  paymentMode?: PaymentMode;
 }
 
 export interface CreatePaymentSessionInput {

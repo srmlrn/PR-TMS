@@ -12,7 +12,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { BookingQueryDto, ServiceSlotsQueryDto } from './dto/booking-query.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { formatReceiptText } from '../../common/utils/receipt-text.util';
+import { generateReceiptPdf } from '../../common/utils/receipt-pdf.util';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { BookingService } from './booking.service';
@@ -74,7 +74,7 @@ export class BookingController {
 
   @Get('bookings/:id/receipt.pdf')
   @Roles(UserRole.ADMIN, UserRole.DEVOTEE, UserRole.FRONT_DESK, UserRole.PRIEST)
-  @ApiOperation({ summary: 'Download booking receipt as plain-text (PDF scaffold)' })
+  @ApiOperation({ summary: 'Download booking receipt as PDF' })
   @ApiParam({ name: 'id', description: 'Booking UUID' })
   async getReceiptPdf(
     @TenantId() tenantId: string,
@@ -82,12 +82,13 @@ export class BookingController {
     @Res() res: Response,
   ): Promise<void> {
     const receipt = await this.bookingService.getReceipt(tenantId, id);
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    const pdf = await generateReceiptPdf(receipt);
+    res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="receipt-${receipt.receiptNumber}.txt"`,
+      `attachment; filename="receipt-${receipt.receiptNumber}.pdf"`,
     );
-    res.send(formatReceiptText(receipt));
+    res.send(pdf);
   }
 
   @Patch('bookings/:id')

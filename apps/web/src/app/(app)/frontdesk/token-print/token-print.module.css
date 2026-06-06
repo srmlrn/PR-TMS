@@ -73,16 +73,40 @@
 }
 
 @media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
+  :global(body) {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
   .actions {
-    display: none;
+    display: none !important;
   }
 
   .page {
     padding: 0;
+    gap: 0;
+    min-height: auto;
   }
 
   .ticket {
     border: none;
     width: 100%;
+    max-width: none;
+    padding: 0;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .tokenNumber {
+    font-size: 2.25rem;
+  }
+
+  .details div {
+    border-bottom-color: #ccc;
   }
 }

@@ -179,11 +179,16 @@ export default function FrontDeskConsolePage() {
         currency: Currency.USD,
         purpose: 'Counter — General Hundi',
         paymentSessionId,
-      }) as { receiptNumber?: string };
-      setActionMsg(
-        `Donation recorded (${paymentProvider}) · ${donation.receiptNumber ?? 'receipt issued'}`,
-      );
+      });
+      const receiptNumber = donation.receiptNumber ?? donation.id.slice(0, 8);
+      setActionMsg(`Donation recorded (${paymentProvider}) · ${receiptNumber}`);
       refetchPos();
+      const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Counter guest');
+      router.push(
+        `/frontdesk/receipt-print?amount=${donateAmount}&currency=${Currency.USD}` +
+          `&receipt=${encodeURIComponent(receiptNumber)}` +
+          `&name=${guestName}&purpose=${encodeURIComponent('Counter — General Hundi')}`,
+      );
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Donation failed');
     } finally {

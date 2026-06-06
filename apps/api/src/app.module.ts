@@ -13,6 +13,8 @@ import { DonationModule } from './modules/donation/donation.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { FrontDeskModule } from './modules/frontdesk/frontdesk.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { StaffModule } from './modules/staff/staff.module';
+import { VolunteerModule } from './modules/volunteer/volunteer.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantDataModule } from './database/tenant-data.module';
 
@@ -33,6 +35,8 @@ const usePostgres = process.env.STORAGE_MODE === 'postgres';
     FinanceModule,
     FrontDeskModule,
     PaymentModule,
+    StaffModule,
+    VolunteerModule,
   ],
   providers: [
     TenantContextMiddleware,

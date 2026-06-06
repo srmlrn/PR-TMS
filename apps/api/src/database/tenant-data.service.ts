@@ -19,6 +19,8 @@ import {
   DonationSubscriptionEntity,
   VendorPaymentEntity,
   QueueTokenEntity,
+  StaffEntity,
+  VolunteerShiftEntity,
 } from './entities/tenant';
 
 @Injectable()
@@ -132,5 +134,17 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(QueueTokenEntity);
+  }
+
+  async staff() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(StaffEntity);
+  }
+
+  async volunteerShifts() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(VolunteerShiftEntity);
   }
 }

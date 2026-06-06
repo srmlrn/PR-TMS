@@ -10,6 +10,7 @@ import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.s
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { DonationSubscriptionEntity } from '../../database/entities/tenant/donation-subscription.entity';
 import { TenantDataService } from '../../database/tenant-data.service';
+import { PaymentService } from '../payment/payment.service';
 
 type SubscriptionRecord = DonationSubscription & TenantEntity;
 
@@ -26,7 +27,10 @@ export class DonationBillingService
   protected store = new Map<string, SubscriptionRecord>();
   private readonly logger = new Logger(DonationBillingService.name);
 
-  constructor(private readonly tenantData: TenantDataService) {
+  constructor(
+    private readonly tenantData: TenantDataService,
+    private readonly paymentService: PaymentService,
+  ) {
     super();
   }
 
@@ -82,15 +86,55 @@ export class DonationBillingService
   async runBillingCheck(asOf: Date): Promise<void> {
     const due = await this.findDueSubscriptions(asOf);
     for (const sub of due) {
+      const provider =
+        sub.currency === Currency.INR ? 'razorpay' : ('stripe' as const);
+
+      const session = await this.paymentService.createSession(sub.tenantId, {
+        amount: sub.amount,
+        currency: sub.currency,
+        provider,
+        purpose: `Recurring donation: ${sub.purpose}`,
+        devoteeId: sub.devoteeId,
+        metadata: {
+          subscriptionId: sub.id,
+          donationId: sub.donationId,
+        },
+      });
+
+      await this.paymentService.confirmSession(sub.tenantId, session.id);
+
       this.logger.log(
-        `[billing-stub] charge intent: subscription=${sub.id} devotee=${sub.devoteeId} ` +
-          `amount=${sub.currency} ${sub.amount} purpose="${sub.purpose}" ` +
-          `(no Stripe — scaffold only)`,
+        `[billing] charged subscription=${sub.id} devotee=${sub.devoteeId} ` +
+          `amount=${sub.currency} ${sub.amount} session=${session.id} ` +
+          `mode=${session.paymentMode ?? 'demo'}`,
       );
+
+      await this.advanceNextBilling(sub, session.id);
     }
     if (due.length === 0) {
       this.logger.debug(`[billing-stub] no subscriptions due on ${asOf.toISOString().slice(0, 10)}`);
     }
+  }
+
+  private async advanceNextBilling(
+    sub: SubscriptionRecord,
+    paymentSessionId: string,
+  ): Promise<void> {
+    const nextBillingAt = this.computeNextBillingAt(sub.nextBillingAt, sub.frequency);
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.donationSubscriptions();
+      await repo.update(sub.id, {
+        nextBillingAt,
+        lastPaymentSessionId: paymentSessionId,
+      });
+      return;
+    }
+
+    this.updateEntity(sub.tenantId, sub.id, {
+      nextBillingAt,
+      lastPaymentSessionId: paymentSessionId,
+    });
   }
 
   private async findDueSubscriptions(asOf: Date): Promise<SubscriptionRecord[]> {
@@ -140,6 +184,7 @@ export class DonationBillingService
       frequency: row.frequency as DonationFrequency,
       status: row.status as SubscriptionRecord['status'],
       nextBillingAt: row.nextBillingAt,
+      lastPaymentSessionId: row.lastPaymentSessionId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

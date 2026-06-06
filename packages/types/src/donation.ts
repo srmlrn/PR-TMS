@@ -29,6 +29,7 @@ export interface DonationSubscription extends TenantScoped, Timestamps {
   frequency: DonationFrequency;
   status: 'active' | 'paused' | 'cancelled';
   nextBillingAt: Date;
+  lastPaymentSessionId?: string;
 }
 
 export interface DonationCampaign extends TenantScoped, Timestamps {

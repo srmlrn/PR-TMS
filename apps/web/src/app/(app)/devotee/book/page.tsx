@@ -10,8 +10,10 @@ import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { formatMoney } from '@/lib/api/endpoints';
 import { ApiBanner } from '@/components/ApiBanner';
+import { PaymentModeBadge } from '@/components/PaymentModeBadge';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
+import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
 import styles from './book.module.css';
 
 export default function BookSevaPage() {
@@ -19,6 +21,8 @@ export default function BookSevaPage() {
   const { api } = useTenant();
   const searchParams = useSearchParams();
   const channel = (searchParams.get('channel') as 'app' | 'kiosk' | 'counter') ?? 'app';
+  const kioskLang = channel === 'kiosk' ? parseKioskLang(searchParams.get('lang')) : null;
+  const kioskT = kioskLang ? kioskStrings(kioskLang) : null;
   const [serviceId, setServiceId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [slot, setSlot] = useState('');
@@ -107,7 +111,11 @@ export default function BookSevaPage() {
 
   return (
     <>
-      <PageHeader title="Book Seva" subtitle="Select a service, date, and sankalpa details" />
+      <PageHeader
+        title={kioskT?.bookSevaPageTitle ?? 'Book Seva'}
+        subtitle={kioskT?.bookSevaPageSubtitle ?? 'Select a service, date, and sankalpa details'}
+        actions={<PaymentModeBadge />}
+      />
       <ApiBanner loading={loading} error={error} />
 
       <div className={styles.grid}>

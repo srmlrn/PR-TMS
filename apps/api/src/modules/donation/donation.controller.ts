@@ -18,7 +18,7 @@ import {
   DonationResponseDto,
   PaginatedDonationsDto,
 } from './dto/donation-response.dto';
-import { formatReceiptText } from '../../common/utils/receipt-text.util';
+import { generateReceiptPdf } from '../../common/utils/receipt-pdf.util';
 import { DonationService } from './donation.service';
 
 @ApiTags('Donations')
@@ -75,20 +75,21 @@ export class DonationController {
 
   @Get('donations/:id/receipt.pdf')
   @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.DEVOTEE, UserRole.FRONT_DESK)
-  @ApiOperation({ summary: 'Download tax receipt as plain-text (PDF scaffold)' })
-  @ApiOkResponse({ description: 'Plain-text receipt suitable for print/PDF conversion' })
+  @ApiOperation({ summary: 'Download tax receipt as PDF' })
+  @ApiOkResponse({ description: 'PDF tax receipt' })
   async getReceiptPdf(
     @TenantId() tenantId: string,
     @Param('id') id: string,
     @Res() res: Response,
   ): Promise<void> {
     const receipt = await this.donationService.getReceipt(tenantId, id);
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    const pdf = await generateReceiptPdf(receipt);
+    res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="receipt-${receipt.receiptNumber}.txt"`,
+      `attachment; filename="receipt-${receipt.receiptNumber}.pdf"`,
     );
-    res.send(formatReceiptText(receipt));
+    res.send(pdf);
   }
 
   @Get('campaigns/:id')

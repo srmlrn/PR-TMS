@@ -2,6 +2,7 @@ import type {
   Booking,
   CreateBookingInput,
   CreateDonationInput,
+  DashboardAnalytics,
   Donation,
   Devotee,
   DevoteeDuplicateCheck,
@@ -35,6 +36,9 @@ import type {
   Tenant,
   TenantEnvironmentRecord,
   VendorPayment,
+  Staff,
+  VolunteerShift,
+  CreateVolunteerShiftInput,
 } from '@tms/types';
 import type { ApiClient } from './client';
 
@@ -114,6 +118,9 @@ export interface DevoteeFormBody {
 export function createEndpoints(client: ApiClient) {
   return {
     getFinanceSummary: () => client.get<FinanceSummary>('/finance/summary'),
+
+    getDashboardAnalytics: () =>
+      client.get<DashboardAnalytics>('/analytics/dashboard'),
 
     getVendorPayments: (params?: Pick<ListParams, 'page' | 'limit'>) =>
       client.get<PaginatedResponse<VendorPayment>>('/finance/vendor-payments', { params }),
@@ -333,6 +340,21 @@ export function createEndpoints(client: ApiClient) {
 
     getTenantUsage: (tenantId: string) =>
       client.get<EnvironmentUsage[]>(`/platform/tenants/${tenantId}/usage`),
+
+    getStaff: (params?: { role?: Staff['role'] }) =>
+      client.get<{ data: Staff[] }>('/staff', { params }),
+
+    getVolunteerShifts: () =>
+      client.get<{ data: VolunteerShift[] }>('/volunteer/shifts'),
+
+    createVolunteerShift: (body: CreateVolunteerShiftInput) =>
+      client.post<VolunteerShift>('/volunteer/shifts', body),
+
+    signupVolunteerShift: (id: string) =>
+      client.post<VolunteerShift>(`/volunteer/shifts/${id}/signup`, {}),
+
+    checkinVolunteerShift: (id: string) =>
+      client.post<VolunteerShift>(`/volunteer/shifts/${id}/checkin`, {}),
   };
 }
 

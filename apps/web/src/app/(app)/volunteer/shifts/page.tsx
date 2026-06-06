@@ -2,58 +2,53 @@
 
 import { useState } from 'react';
 import { Badge, Button, GlassCard, PageHeader, ProgressBar } from '@tms/ui';
+import type { VolunteerShift } from '@tms/types';
+import { useAuth } from '@/lib/auth-context';
+import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
+import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './shifts.module.css';
 
-interface VolunteerShift {
-  id: string;
-  event: string;
-  role: string;
-  hours: string;
-  date: string;
-  signedUpAt: string;
-  checkedIn: boolean;
+function shiftHours(shift: VolunteerShift): string {
+  return `${shift.startTime}–${shift.endTime}`;
 }
 
-const FALLBACK_SHIFTS: VolunteerShift[] = [
-  {
-    id: '1',
-    event: 'Brahmotsavam Setup',
-    role: 'Decorations',
-    hours: '4h',
-    date: 'Jun 8',
-    signedUpAt: new Date().toISOString(),
-    checkedIn: false,
-  },
-  {
-    id: '2',
-    event: 'Annadanam Service',
-    role: 'Food prep',
-    hours: '3h',
-    date: 'Jun 9',
-    signedUpAt: new Date().toISOString(),
-    checkedIn: true,
-  },
-  {
-    id: '3',
-    event: 'Parking & Queue',
-    role: 'Crowd flow',
-    hours: '5h',
-    date: 'Jun 10',
-    signedUpAt: new Date().toISOString(),
-    checkedIn: false,
-  },
-];
+function isSignedUp(shift: VolunteerShift, userId?: string): boolean {
+  return !!userId && shift.signups.some((s) => s.userId === userId);
+}
+
+function isCheckedIn(shift: VolunteerShift, userId?: string): boolean {
+  return !!userId && shift.signups.some((s) => s.userId === userId && s.checkedIn);
+}
+
+function slotsRemaining(shift: VolunteerShift): number {
+  return Math.max(0, shift.slots - shift.signups.length);
+}
 
 export default function VolunteerShiftsPage() {
-  const { data: pipeline, loading, error } = useApi((ep) => ep.getEventPipeline());
-  const [shifts, setShifts] = useState<VolunteerShift[]>(FALLBACK_SHIFTS);
-  const [eventName, setEventName] = useState('');
-  const [role, setRole] = useState('');
-  const [shiftDate, setShiftDate] = useState('');
-  const [hours, setHours] = useState('3h');
-  const [signUpMsg, setSignUpMsg] = useState<string | null>(null);
+  const { api } = useTenant();
+  const { user } = useAuth();
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const { data: pipeline, loading: pipelineLoading, error: pipelineError } = useApi((ep) =>
+    ep.getEventPipeline(),
+  );
+
+  const {
+    data: shiftsData,
+    loading: shiftsLoading,
+    error: shiftsError,
+    refetch,
+  } = useApi((ep) => ep.getVolunteerShifts());
+
+  const shifts = shiftsData?.data ?? [];
+  const myShifts = shifts.filter((s) => isSignedUp(s, user?.id));
+  const openShifts = shifts.filter(
+    (s) => !isSignedUp(s, user?.id) && slotsRemaining(s) > 0,
+  );
 
   const activeEvents = pipeline
     ? Object.values(pipeline)
@@ -62,35 +57,40 @@ export default function VolunteerShiftsPage() {
         .slice(0, 3)
     : [];
 
-  const eventOptions = activeEvents.length
-    ? activeEvents.map((e) => e.name)
-    : ['Brahmotsavam 2026', 'Annadanam Service', 'Parking & Queue'];
-
-  function handleSignUp() {
-    if (!eventName.trim() || !role.trim() || !shiftDate) {
-      setSignUpMsg('Event, role, and date are required.');
-      return;
+  async function handleSignup(shiftId: string) {
+    setActionId(shiftId);
+    setActionError(null);
+    setActionMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      const updated = await ep.signupVolunteerShift(shiftId);
+      setActionMsg(`Signed up for ${updated.title}.`);
+      await refetch();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not sign up');
+    } finally {
+      setActionId(null);
     }
-    const newShift: VolunteerShift = {
-      id: `local-${Date.now()}`,
-      event: eventName.trim(),
-      role: role.trim(),
-      hours: hours.trim() || '3h',
-      date: shiftDate,
-      signedUpAt: new Date().toISOString(),
-      checkedIn: false,
-    };
-    setShifts((prev) => [newShift, ...prev]);
-    setSignUpMsg(`Signed up for ${newShift.event} (mock — no volunteer API yet).`);
-    setRole('');
-    setShiftDate('');
   }
 
-  function handleCheckIn(id: string) {
-    setShifts((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, checkedIn: true } : s)),
-    );
+  async function handleCheckIn(shiftId: string) {
+    setActionId(shiftId);
+    setActionError(null);
+    setActionMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      await ep.checkinVolunteerShift(shiftId);
+      setActionMsg('Checked in successfully.');
+      await refetch();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not check in');
+    } finally {
+      setActionId(null);
+    }
   }
+
+  const loading = pipelineLoading || shiftsLoading;
+  const error = pipelineError ?? shiftsError;
 
   return (
     <>
@@ -101,92 +101,83 @@ export default function VolunteerShiftsPage() {
       <ApiBanner loading={loading} error={error} />
 
       <div className={styles.grid}>
-        <GlassCard title="Sign Up for a Shift">
-          <p className="tms-t3 mb1">
-            Volunteer shift API not available — sign-ups stored locally for this session.
-          </p>
-          <div className={styles.formGrid}>
-            <div className="formGroup">
-              <label htmlFor="volEvent">Event</label>
-              <select
-                id="volEvent"
-                value={eventName}
-                onChange={(e) => setEventName(e.target.value)}
-              >
-                <option value="">Select event</option>
-                {eventOptions.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
+        <GlassCard title="Open Shifts">
+          <p className="tms-t3 mb1">Browse available shifts and sign up directly.</p>
+          {openShifts.length === 0 ? (
+            <p className="tms-t3">No open shifts right now.</p>
+          ) : (
+            <div className={styles.shifts}>
+              {openShifts.map((shift) => (
+                <div key={shift.id} className={styles.shift}>
+                  <div>
+                    <strong>{shift.title}</strong>
+                    <p className="tms-t3">
+                      {formatShortDate(shift.date)} · {shiftHours(shift)} ·{' '}
+                      {slotsRemaining(shift)} slot{slotsRemaining(shift) === 1 ? '' : 's'} left
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSignup(shift.id)}
+                    disabled={actionId === shift.id}
+                  >
+                    {actionId === shift.id ? '…' : 'Sign up'}
+                  </Button>
+                </div>
+              ))}
             </div>
-            <div className="formGroup">
-              <label htmlFor="volRole">Role</label>
-              <input
-                id="volRole"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                placeholder="e.g. Food prep"
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="volDate">Date</label>
-              <input
-                id="volDate"
-                type="date"
-                value={shiftDate}
-                onChange={(e) => setShiftDate(e.target.value)}
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="volHours">Hours</label>
-              <input
-                id="volHours"
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                placeholder="3h"
-              />
-            </div>
-          </div>
-          <Button onClick={handleSignUp}>Sign up</Button>
-          {signUpMsg && <p className="tms-t3 mt1">{signUpMsg}</p>}
+          )}
+          {(actionMsg || actionError) && (
+            <p className={`tms-t3 mt1${actionError ? '' : ''}`} style={actionError ? { color: 'var(--red)' } : undefined}>
+              {actionError ?? actionMsg}
+            </p>
+          )}
         </GlassCard>
 
-        <GlassCard title="Upcoming Shifts">
+        <GlassCard title="My Shifts">
           <div className={styles.shifts}>
-            {shifts.map((shift) => (
-              <div key={shift.id} className={styles.shift}>
-                <div>
-                  <strong>{shift.event}</strong>
-                  <p className="tms-t3">
-                    {shift.role} · {shift.date} · {shift.hours}
-                  </p>
+            {myShifts.length === 0 ? (
+              <p className="tms-t3">You have not signed up for any shifts yet.</p>
+            ) : (
+              myShifts.map((shift) => (
+                <div key={shift.id} className={styles.shift}>
+                  <div>
+                    <strong>{shift.title}</strong>
+                    <p className="tms-t3">
+                      {formatShortDate(shift.date)} · {shiftHours(shift)}
+                    </p>
+                  </div>
+                  <div className={styles.shiftActions}>
+                    {isCheckedIn(shift, user?.id) ? (
+                      <Badge variant="ok">Checked in</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCheckIn(shift.id)}
+                        disabled={actionId === shift.id}
+                      >
+                        {actionId === shift.id ? '…' : 'Check in'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className={styles.shiftActions}>
-                  {shift.checkedIn ? (
-                    <Badge variant="ok">Checked in</Badge>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={() => handleCheckIn(shift.id)}>
-                      Check in
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </GlassCard>
 
         <GlassCard title="Active Events Needing Help">
-          {(activeEvents.length ? activeEvents : [{ id: 'e1', name: 'Brahmotsavam 2026', stage: 'in_progress' as const }]).map(
-            (event) => (
-              <div key={event.id} className={styles.eventRow}>
-                <strong>{event.name}</strong>
-                <ProgressBar value={65} color="amber" />
-                <span className="tms-t3">Checklist 65% complete · 4 volunteers needed</span>
-              </div>
-            ),
-          )}
+          {(activeEvents.length
+            ? activeEvents
+            : [{ id: 'e1', name: 'Brahmotsavam 2026', stage: 'in_progress' as const }]
+          ).map((event) => (
+            <div key={event.id} className={styles.eventRow}>
+              <strong>{event.name}</strong>
+              <ProgressBar value={65} color="amber" />
+              <span className="tms-t3">Checklist 65% complete · 4 volunteers needed</span>
+            </div>
+          ))}
         </GlassCard>
 
         <GlassCard title="Recognition">

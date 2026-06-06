@@ -1,0 +1,106 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+}
+
+.receipt {
+  width: min(24rem, 100%);
+  padding: 1.5rem;
+  border: 2px dashed var(--b2);
+  border-radius: var(--r);
+  background: #fff;
+  color: #111;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.header h1 {
+  margin: 0.5rem 0 0;
+  font-size: 1.1rem;
+}
+
+.header p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.details {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.details dt {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.details dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.footer {
+  margin: 1rem 0 0;
+  font-size: 0.75rem;
+  color: #666;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
+  :global(body) {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .actions {
+    display: none !important;
+  }
+
+  .page {
+    padding: 0;
+    gap: 0;
+    min-height: auto;
+  }
+
+  .receipt {
+    border: none;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .details div {
+    border-bottom-color: #ccc;
+  }
+}

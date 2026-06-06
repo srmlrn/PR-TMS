@@ -15,6 +15,8 @@ import {
   DonationCampaignEntity,
   VendorPaymentEntity,
   QueueTokenEntity,
+  StaffEntity,
+  VolunteerShiftEntity,
 } from './entities/tenant';
 
 @Injectable()
@@ -139,6 +141,63 @@ export class TenantSeedService {
 
     void priya;
     void meena;
+
+    const staffRepo = ds.getRepository(StaffEntity);
+    await staffRepo.save([
+      staffRepo.create({
+        id: 'user-priest-001',
+        name: 'Sri Raman',
+        role: 'priest',
+        email: 'priest@svtemple.org',
+        isActive: true,
+      }),
+      staffRepo.create({
+        id: 'user-priest-002',
+        name: 'Swami Venkat',
+        role: 'priest',
+        email: 'venkat@svtemple.org',
+        isActive: true,
+      }),
+      staffRepo.create({
+        id: 'user-priest-003',
+        name: 'Swami Ramanujan',
+        role: 'priest',
+        email: 'ramanujan@svtemple.org',
+        isActive: true,
+      }),
+    ]);
+
+    const shiftRepo = ds.getRepository(VolunteerShiftEntity);
+    await shiftRepo.save([
+      shiftRepo.create({
+        id: 'vol-shift-001',
+        title: 'Brahmotsavam Setup',
+        date: '2026-06-08',
+        startTime: '09:00',
+        endTime: '13:00',
+        slots: 10,
+        signups: [],
+      }),
+      shiftRepo.create({
+        id: 'vol-shift-002',
+        title: 'Annadanam Service',
+        date: '2026-06-09',
+        startTime: '11:00',
+        endTime: '14:00',
+        slots: 6,
+        signups: [],
+      }),
+      shiftRepo.create({
+        id: 'vol-shift-003',
+        title: 'Parking & Queue',
+        date: '2026-06-10',
+        startTime: '08:00',
+        endTime: '13:00',
+        slots: 8,
+        signups: [],
+      }),
+    ]);
+
     this.seeded.add(k);
   }
 }

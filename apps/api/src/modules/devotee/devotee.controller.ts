@@ -75,8 +75,11 @@ export class DevoteeController {
     @TenantId() tenantId: string,
     @Query('date') date: string,
   ) {
-    const data = await this.reminderService.findRemindersDue(tenantId, date);
-    return { date: date.slice(0, 10), data };
+    const { queued, reminders } = await this.reminderService.queueNotificationsForDate(
+      tenantId,
+      date,
+    );
+    return { date: date.slice(0, 10), data: reminders, notificationsQueued: queued };
   }
 
   @Get(':id')

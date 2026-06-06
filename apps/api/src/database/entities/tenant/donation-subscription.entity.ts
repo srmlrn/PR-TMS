@@ -29,6 +29,9 @@ export class DonationSubscriptionEntity {
   @Column({ name: 'next_billing_at', type: 'timestamptz' })
   nextBillingAt!: Date;
 
+  @Column({ name: 'last_payment_session_id', type: 'uuid', nullable: true })
+  lastPaymentSessionId?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

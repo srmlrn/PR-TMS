@@ -32,7 +32,7 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Date of birth | Common | Required | ✅ | ✅ Profile + admin create | OK |
 | Photo | Common | Required | 🟡 `photoUrl` field | ❌ | Partial — no upload UI |
 | Family / household link | **Very common** | Required | ✅ | ✅ Profile (`familyId`) | OK |
-| Star-day / anniversary reminders | Common | Required | ✅ `importantDates` + `GET /devotees/reminders-due` | ❌ | Partial — API only |
+| Star-day / anniversary reminders | Common | Required | ✅ `importantDates` + `GET /devotees/reminders-due` + notifications queue | ❌ | Partial — API + SMS/email stub |
 | Membership tier / expiry | Common | Required | 🟡 Entity | 👁 | Partial |
 | Donation YTD | Common | Required | 🟡 | 👁 Home only | Partial |
 | PAN / tax ID (India) | Required for 80G | Required | ✅ | ✅ Profile + donate | OK |
@@ -60,10 +60,10 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Sankalpa — beneficiary name | Common | Required | ✅ | ✅ | OK |
 | Rashi | Common | Optional | ✅ | ❌ | Partial — API only |
 | Multiple beneficiaries | Some temples | Optional | ❌ | ❌ | **Gap** |
-| Priest preference | Some | Optional | ❌ | ❌ | **Gap** |
+| Priest preference | Some | Optional | ✅ | ✅ Book form | OK |
 | Channel (app/counter/kiosk) | Required | Required | ✅ | ✅ `app` / `counter` / `kiosk` | OK |
 | Payment / dakshina | **Required** | Required | ✅ | ✅ Payment session + confirm | OK |
-| Receipt / QR confirmation | **Standard** | Required | ✅ JSON + text receipt.pdf | 🟡 | Partial — no QR/print UI |
+| Receipt / QR confirmation | **Standard** | Required | ✅ JSON + text receipt.pdf | ✅ Print routes + counter receipt | OK |
 | Remote participation flag | Common post-COVID | Optional | ❌ | ❌ | **Gap** |
 | Recurring / annual archana | Common | Required | ❌ | ❌ | **Gap** |
 
@@ -81,7 +81,7 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Tax ID (PAN/SSN/SIN) | **Required for compliance** | AC3 | ✅ | ✅ Donate + profile | OK |
 | Anonymous flag | Common | Optional | ✅ | ❌ | Partial — API only |
 | Payment gateway | **Required** | Required | ✅ sessions + `GET /payments/providers` | ✅ Stripe/Razorpay/demo/cash | OK |
-| Receipt number | Standard | Required | ✅ | 🟡 JSON download | Partial — no print UI |
+| Receipt number | Standard | Required | ✅ | ✅ JSON + `/frontdesk/receipt-print` | OK |
 | 80G / IRS / CRA doc type | India/USA/Canada | Required | ✅ server by currency | 🟡 JSON receipt | Partial |
 | In-kind donation | Some | Optional | ✅ | ❌ | Partial — API only |
 
@@ -98,8 +98,8 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Walk-in devotee create | **Standard** | Required | ✅ Admin CRM | Partial — not on front desk |
 | Quick booking at counter | **Standard** | Required | ✅ | OK |
 | Quick donation at counter | **Standard** | Required | ✅ | OK |
-| POS / cash sale | Common | Required | ❌ | **Gap** |
-| Print token / receipt | Common | Required | ❌ | **Gap** |
+| POS / cash sale | Common | Required | ✅ Counter channel | ✅ Today's counter sales panel | OK |
+| Print token / receipt | Common | Required | ✅ | ✅ `/frontdesk/token-print` + `/frontdesk/receipt-print` | OK |
 
 ---
 
@@ -124,7 +124,7 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Admin sponsors | List + `PATCH /sponsors/:id/pipeline` | Full CRM + pipeline + recognition | P1 — pipeline API done |
 | Admin prasadam | List + `GET /prasadam/availability` | Calendar, sankalpa form, payment, kitchen | P1 — availability API done |
 | Admin events | Pipeline + `PATCH /events/:id/checklist/:itemId` | Create event, checklist, deposits | P1 — checklist toggle done |
-| Kiosk | Book + donate (`channel=kiosk`) | Touch booking, donate, token, language | P2 — partial |
+| Kiosk | Book + donate (`channel=kiosk`) + i18n titles (`lang=`) | Touch booking, donate, token, language | P2 — i18n titles done |
 | Volunteer | Static demo | Sign-up, check-in, hours | P2 |
 | Accountant | Read finance | Tax export triggers, vendor pay workflow | P2 |
 
@@ -158,7 +158,10 @@ Cross-check of **what data we collect per screen** against major temple manageme
 - [x] Priest mark-complete + honorarium total
 - [x] Sponsor/prasadam/event create flows wired to API
 - [x] Kiosk channel on book/donate routes
-- [ ] Full POS / print receipt hardware
+- [x] Counter POS totals + print routes (`token-print`, `receipt-print`)
+- [x] Admin dashboard analytics (`GET /analytics/dashboard`)
+- [x] Notifications stub (`POST /notifications/send`, reminder queue)
+- [ ] Full POS / receipt printer hardware integration
 
 ---
 
