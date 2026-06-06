@@ -15,6 +15,7 @@ import { FrontDeskModule } from './modules/frontdesk/frontdesk.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { VolunteerModule } from './modules/volunteer/volunteer.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantDataModule } from './database/tenant-data.module';
 
@@ -37,6 +38,7 @@ const usePostgres = process.env.STORAGE_MODE === 'postgres';
     PaymentModule,
     StaffModule,
     VolunteerModule,
+    AnalyticsModule,
   ],
   providers: [
     TenantContextMiddleware,
