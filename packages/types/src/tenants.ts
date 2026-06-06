@@ -10,10 +10,16 @@ export interface TenantBranding {
   icon: string;
   /** Optional path under /public */
   logoSrc?: string;
+  /** Logo bar background (ganeshatemple.org topbar uses #960000) */
+  logoBg?: string;
   deity: string;
   location: string;
+  /** Street / city line for receipts and headers */
+  address?: string;
   country: string;
   baseCurrency: string;
+  /** TV display board ticker messages */
+  displayAnnouncements?: string[];
 }
 
 export const TENANT_BRANDING: Record<string, TenantBranding> = {
@@ -25,8 +31,14 @@ export const TENANT_BRANDING: Record<string, TenantBranding> = {
     icon: '🛕',
     deity: 'Lord Venkateswara',
     location: 'Bay Area, California',
+    address: 'Fremont, California',
     country: 'US',
     baseCurrency: 'USD',
+    displayAnnouncements: [
+      'Please listen for your token number · अपना टोकन सुनें',
+      'Proceed to the counter shown when your number is called',
+      'Thank you for your patience · धन्यवाद',
+    ],
   },
   [GANESHA_TEMPLE_ID]: {
     id: GANESHA_TEMPLE_ID,
@@ -36,10 +48,17 @@ export const TENANT_BRANDING: Record<string, TenantBranding> = {
     icon: '🙏',
     /** Official logo from https://ganeshatemple.org/ (cached locally) */
     logoSrc: '/tenants/sri-ganesha-temple.png',
+    logoBg: '#960000',
     deity: 'Lord Ganesha',
     location: 'Nashville, Tennessee',
+    address: '527 Old Hickory Blvd, Nashville TN 37209',
     country: 'US',
     baseCurrency: 'USD',
+    displayAnnouncements: [
+      'Om Gam Ganapataye Namaha · Please listen for your token number',
+      'Proceed to the counter shown when your number is called',
+      'Thank you for your patience',
+    ],
   },
 };
 

@@ -21,6 +21,7 @@ import {
 } from '@tms/types';
 import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
+import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
@@ -117,8 +118,6 @@ const PACKAGE_OPTIONS: { tier: PrasadamPackageTier; label: string }[] = [
   { tier: PrasadamPackageTier.NRI_COURIER, label: 'NRI Courier — $201' },
 ];
 
-const DEFAULT_DEITY = 'Lord Venkateswara';
-
 function mapSponsorship(s: PrasadamSponsorship): SponsorshipRow {
   const kitchenPending = s.status === 'kitchen_pending' || s.status === 'booked';
   const kitchenOk = s.status === 'prepared' || s.status === 'distributed' || s.status === 'dispatched';
@@ -161,6 +160,7 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 
 export default function AdminPrasadamPage() {
   const { api } = useTenant();
+  const site = useTenantSite();
   const today = new Date();
   const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const todayKey = today.toISOString().slice(0, 10);
@@ -177,7 +177,7 @@ export default function AdminPrasadamPage() {
   );
   const [bookForm, setBookForm] = useState({
     devoteeId: 'dev-rajan-krishnamurthy',
-    deity: DEFAULT_DEITY,
+    deity: site.deity,
     sponsorName: 'Rajan Krishnamurthy',
     gotram: 'Bharadwaja',
     nakshatra: 'Rohini',
@@ -199,9 +199,9 @@ export default function AdminPrasadamPage() {
       ep.getPrasadamAvailability({
         month: calendarMonth,
         type: prasadamType,
-        deity: DEFAULT_DEITY,
+        deity: site.deity,
       }),
-    [calendarMonth, prasadamType],
+    [calendarMonth, prasadamType, site.deity],
   );
 
   const slots = availabilityData?.data ?? [];
@@ -363,7 +363,7 @@ export default function AdminPrasadamPage() {
                   onChange={(e) => setPrasadamType(e.target.value as PrasadamSponsorshipType)}
                   aria-label="Prasadam type"
                 >
-                  <option value={PrasadamSponsorshipType.DAILY}>Daily Prasadam — {DEFAULT_DEITY}</option>
+                  <option value={PrasadamSponsorshipType.DAILY}>Daily Prasadam — {site.deity}</option>
                   <option value={PrasadamSponsorshipType.ABHISHEKAM}>Abhishekam Prasadam</option>
                   <option value={PrasadamSponsorshipType.FESTIVAL}>Festival Kit</option>
                   <option value={PrasadamSponsorshipType.ANNADANAM}>Annadanam (Free Meals)</option>

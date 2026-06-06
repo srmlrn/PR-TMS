@@ -13,6 +13,7 @@ import {
   PaginatedResponse,
   PaymentStatus,
   TaxReceipt,
+  getTenantBranding,
 } from '@tms/types';
 import { PaymentService } from '../payment/payment.service';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
@@ -247,7 +248,7 @@ export class BookingService
       devoteeId: booking.devoteeId,
       purpose: `Seva booking — ${booking.serviceId}`,
       issuedAt: booking.createdAt.toISOString(),
-      templeName: 'Sri Venkateswara Temple',
+      templeName: getTenantBranding(tenantId).name,
     };
   }
 

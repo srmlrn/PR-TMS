@@ -4,9 +4,11 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@tms/ui';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './token-print.module.css';
 
 export default function TokenPrintPage() {
+  const site = useTenantSite();
   const router = useRouter();
   const params = useSearchParams();
 
@@ -25,8 +27,8 @@ export default function TokenPrintPage() {
       <PublicThemeBar />
       <article className={styles.ticket}>
         <header className={styles.header}>
-          <span aria-hidden>🛕</span>
-          <h1>Sri Venkateswara Temple</h1>
+          <span aria-hidden>{site.icon}</span>
+          <h1>{site.name}</h1>
           <p>Darshan Queue Token</p>
         </header>
 

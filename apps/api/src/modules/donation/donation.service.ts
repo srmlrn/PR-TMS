@@ -14,6 +14,7 @@ import {
   PaginatedResponse,
   PaymentStatus,
   TaxReceipt,
+  getTenantBranding,
 } from '@tms/types';
 import { PaymentService } from '../payment/payment.service';
 import { validateTaxId } from '../payment/tax-validation.util';
@@ -370,7 +371,7 @@ export class DonationService
       devoteeId: donation.devoteeId,
       purpose: donation.purpose,
       issuedAt: donation.createdAt.toISOString(),
-      templeName: 'Sri Venkateswara Temple',
+      templeName: getTenantBranding(tenantId).name,
     };
   }
 

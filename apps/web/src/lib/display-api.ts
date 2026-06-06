@@ -1,13 +1,12 @@
 import type { DisplayBoard } from '@tms/types';
 import { createApiClient } from './api/client';
+import { readSelectedTenantId } from './tenant-selection';
 
-const TENANT_ID =
-  process.env.NEXT_PUBLIC_TENANT_ID ?? '00000000-0000-0000-0000-000000000001';
-
-export async function fetchDisplayBoard(): Promise<DisplayBoard> {
+export async function fetchDisplayBoard(tenantId?: string): Promise<DisplayBoard> {
+  const resolvedTenantId = tenantId ?? readSelectedTenantId();
   const client = createApiClient({
     baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1',
-    tenantId: TENANT_ID,
+    tenantId: resolvedTenantId,
   });
   return client.get<DisplayBoard>('/frontdesk/display-board');
 }

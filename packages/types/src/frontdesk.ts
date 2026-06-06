@@ -76,6 +76,10 @@ export interface DisplayBoardLane {
 
 export interface DisplayBoard {
   tenantName: string;
+  tenantIcon?: string;
+  tenantLogoSrc?: string;
+  tenantLogoBg?: string;
+  tenantLocation?: string;
   hideNames: boolean;
   updatedAt: string;
   stats: QueueStats;

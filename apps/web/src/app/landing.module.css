@@ -76,7 +76,7 @@
   align-items: center;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
-  background: #0a0a0a;
+  background: var(--tenant-logo-bg, #0a0a0a);
 }
 
 .tenantLogo {
@@ -102,8 +102,8 @@
   padding: 0.55rem 1rem;
   margin: 0 auto 1rem;
   border-radius: 10px;
-  background: #0a0a0a;
-  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  background: var(--tenant-logo-bg, #0a0a0a);
+  border: 1px solid color-mix(in srgb, #fff 12%, transparent);
 }
 
 .medallionLogo {

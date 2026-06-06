@@ -16,6 +16,7 @@ import type { Booking, Devotee, Donation } from '@tms/types';
 import { BookingStatus } from '@tms/types';
 import { formatMoney, formatShortDate, formatTime } from '@/lib/api/endpoints';
 import { useAuth } from '@/lib/auth-context';
+import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
 import styles from './home.module.css';
 
@@ -37,6 +38,7 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 
 export default function DevoteeHomePage() {
   const { user } = useAuth();
+  const site = useTenantSite();
   const [view, setView] = useState<'desktop' | 'mobile'>('desktop');
 
   type HomeData = {
@@ -296,9 +298,9 @@ export default function DevoteeHomePage() {
           <div className={styles.phoneShell}>
             <div className={styles.phoneNotch} />
             <div className={styles.phoneHead}>
-              <div className={styles.phoneTempleIcon}>🛕</div>
-              <h3>Sri Venkateswara Temple</h3>
-              <p>Fremont, CA · PROD</p>
+              <div className={styles.phoneTempleIcon}>{site.icon}</div>
+              <h3>{site.name}</h3>
+              <p>{site.location} · PROD</p>
             </div>
             <div className={styles.phoneBody}>
               <div className={styles.phoneHeroCard}>

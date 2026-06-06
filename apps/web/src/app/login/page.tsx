@@ -60,7 +60,10 @@ function LoginForm() {
       <PublicThemeBar />
       <div className="loginHero">
         {tenant.logoSrc ? (
-          <div className="templeLogoFrame">
+          <div
+            className="templeLogoFrame"
+            style={tenant.logoBg ? { ['--tenant-logo-bg' as string]: tenant.logoBg } : undefined}
+          >
             <Image
               src={tenant.logoSrc}
               alt={`${tenant.name} logo`}

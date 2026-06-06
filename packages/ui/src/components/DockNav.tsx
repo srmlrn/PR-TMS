@@ -17,6 +17,7 @@ export interface DockNavProps {
   homeLabel?: string;
   variant?: 'dock' | 'sidebar';
   brandLabel?: string;
+  brandIcon?: string;
 }
 
 export function DockNav({
@@ -25,6 +26,7 @@ export function DockNav({
   homeLabel = 'All Screens',
   variant = 'dock',
   brandLabel = 'TMS',
+  brandIcon = '🛕',
 }: DockNavProps) {
   const pathname = usePathname();
   const isSidebar = variant === 'sidebar';
@@ -37,7 +39,7 @@ export function DockNav({
       {isSidebar ? (
         <Link href={homeHref} className={styles.brand}>
           <span className={styles.brandIcon} aria-hidden>
-            🛕
+            {brandIcon}
           </span>
           <span className={styles.brandText}>{brandLabel}</span>
         </Link>

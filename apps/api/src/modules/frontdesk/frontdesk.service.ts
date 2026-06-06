@@ -8,6 +8,7 @@ import {
   QueueStats,
   QueueToken,
   QueueType,
+  getTenantBranding,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
@@ -50,12 +51,6 @@ export class FrontDeskService
     darshan: 'Counter 1 · Darshan',
     seva: 'Counter 2 · Seva',
   };
-  private static readonly DISPLAY_ANNOUNCEMENTS = [
-    'Please listen for your token number · अपना टोकन सुनें',
-    'Proceed to the counter shown when your number is called',
-    'Thank you for your patience · धन्यवाद',
-  ];
-
   constructor(
     private readonly tenantData: TenantDataService,
     private readonly devoteeService: DevoteeService,
@@ -312,7 +307,7 @@ export class FrontDeskService
   }
 
   async getDisplayBoard(tenantId: string): Promise<DisplayBoard> {
-    const tenant = await this.platformService.getTenant(tenantId);
+    const site = getTenantBranding(tenantId);
     const stats = await this.getQueueStats(tenantId);
 
     const lanes: DisplayBoardLane[] = [];
@@ -339,12 +334,16 @@ export class FrontDeskService
     }
 
     return {
-      tenantName: tenant.name,
+      tenantName: site.name,
+      tenantIcon: site.icon,
+      tenantLogoSrc: site.logoSrc,
+      tenantLogoBg: site.logoBg,
+      tenantLocation: site.location,
       hideNames: true,
       updatedAt: new Date().toISOString(),
       stats,
       lanes,
-      announcements: FrontDeskService.DISPLAY_ANNOUNCEMENTS,
+      announcements: site.displayAnnouncements ?? [],
     };
   }
 

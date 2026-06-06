@@ -68,8 +68,19 @@ const STRINGS: Record<KioskLang, KioskStrings> = {
   },
 };
 
-export function kioskStrings(lang: KioskLang): KioskStrings {
-  return STRINGS[lang];
+const SELF_SERVICE_SUFFIX: Record<KioskLang, string> = {
+  en: 'Self-Service',
+  te: 'స్వయం సేవ',
+  hi: 'स्वयं सेवा',
+};
+
+export function kioskStrings(lang: KioskLang, templeName?: string): KioskStrings {
+  const base = STRINGS[lang];
+  if (!templeName) return base;
+  return {
+    ...base,
+    subtitle: `${templeName} · ${SELF_SERVICE_SUFFIX[lang]}`,
+  };
 }
 
 export function parseKioskLang(value: string | null | undefined): KioskLang {

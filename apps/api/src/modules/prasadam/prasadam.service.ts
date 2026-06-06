@@ -9,6 +9,7 @@ import {
   PrasadamSlotAvailability,
   PrasadamSponsorship,
   PrasadamSponsorshipType,
+  getTenantBranding,
 } from '@tms/types';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
@@ -21,7 +22,6 @@ import { CreatePrasadamSponsorshipDto } from './dto/create-prasadam-sponsorship.
 type PrasadamSponsorshipRecord = PrasadamSponsorship & TenantEntity;
 
 const DEMO_TENANT = '00000000-0000-0000-0000-000000000001';
-const DEFAULT_DEITY = 'Lord Venkateswara';
 
 const PACKAGE_AMOUNTS: Record<PrasadamPackageTier, number> = {
   [PrasadamPackageTier.BASIC]: 51,
@@ -62,7 +62,7 @@ export class PrasadamService
     }
 
     const type = query.type ?? PrasadamSponsorshipType.DAILY;
-    const deity = query.deity ?? DEFAULT_DEITY;
+    const deity = query.deity ?? getTenantBranding(tenantId).deity;
     const daysInMonth = new Date(year, month, 0).getDate();
     const slots: PrasadamSlotAvailability[] = [];
 
@@ -245,12 +245,14 @@ export class PrasadamService
       return;
     }
 
+    const defaultDeity = getTenantBranding(DEMO_TENANT).deity;
+
     this.createEntity(DEMO_TENANT, {
       type: PrasadamSponsorshipType.DAILY,
       packageTier: PrasadamPackageTier.GOLD,
       devoteeId: 'devotee-demo-001',
       scheduledDate: new Date('2026-06-06'),
-      deity: DEFAULT_DEITY,
+      deity: defaultDeity,
       amount: PACKAGE_AMOUNTS[PrasadamPackageTier.GOLD],
       currency: Currency.USD,
       sankalpa: {
@@ -268,7 +270,7 @@ export class PrasadamService
       packageTier: PrasadamPackageTier.GOLD,
       devoteeId: 'devotee-demo-002',
       scheduledDate: new Date('2026-06-03'),
-      deity: DEFAULT_DEITY,
+      deity: defaultDeity,
       amount: PACKAGE_AMOUNTS[PrasadamPackageTier.GOLD],
       currency: Currency.USD,
       sankalpa: {

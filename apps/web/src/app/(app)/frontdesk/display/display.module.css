@@ -54,6 +54,26 @@
   line-height: 1;
 }
 
+.logoFrame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.65rem;
+  min-height: 3.25rem;
+  max-width: 14rem;
+  border-radius: 0.75rem;
+  background: var(--tenant-logo-bg, transparent);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.logoImg {
+  width: auto;
+  height: 2.25rem;
+  max-width: 100%;
+  object-fit: contain;
+}
+
 .brand h1 {
   margin: 0;
   font-size: 1.65rem;

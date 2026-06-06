@@ -11,9 +11,11 @@ import {
   type KioskLang,
 } from '@/lib/kiosk-i18n';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './kiosk.module.css';
 
 export default function KioskPage() {
+  const site = useTenantSite();
   const router = useRouter();
   const [lang, setLang] = useState<KioskLang>('en');
 
@@ -25,7 +27,7 @@ export default function KioskPage() {
     persistKioskLang(lang);
   }, [lang]);
 
-  const t = kioskStrings(lang);
+  const t = kioskStrings(lang, site.name);
 
   function nav(path: string) {
     const sep = path.includes('?') ? '&' : '?';
@@ -35,7 +37,9 @@ export default function KioskPage() {
   return (
     <div className={styles.wrap}>
       <PublicThemeBar />
-      <h1 className={styles.title}>🛕 {t.welcome}</h1>
+      <h1 className={styles.title}>
+        {site.icon} {t.welcome}
+      </h1>
       <p className={styles.sub}>{t.subtitle}</p>
 
       <div className={styles.langRow} role="group" aria-label={t.language}>

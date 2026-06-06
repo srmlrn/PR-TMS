@@ -13,6 +13,7 @@ import {
 } from '@/lib/roles';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
+import { useTenantSite } from '@/lib/tenant-site';
 
 function RoleBadge({ role }: { role: AppRole }) {
   const config = getRoleConfigForUser(role);
@@ -28,6 +29,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { environment } = useTenant();
+  const site = useTenantSite();
 
   const role = (user?.role ?? 'admin') as AppRole;
   const config = getRoleConfigForUser(role);
@@ -60,7 +62,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="authLoading">
         <PublicThemeBar />
         <span className="landingIcon" aria-hidden>
-          🛕
+          {site.icon}
         </span>
         <p className="tms-t2">Loading session…</p>
       </div>
@@ -74,9 +76,16 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     <div className={isKiosk ? 'kioskMode' : undefined}>
       {!isKiosk && !isFullscreenPage && (
         <>
-          <DockNav items={config.nav} variant="sidebar" brandLabel="TMS" />
+          <DockNav
+            items={config.nav}
+            variant="sidebar"
+            brandLabel={site.name}
+            brandIcon={site.icon}
+          />
           <TopBar
             title={title}
+            brandLabel={site.name}
+            brandIcon={site.icon}
             envLabel={environment.toUpperCase()}
             envVariant={envVariant}
             avatarInitials={config.avatarInitials}

@@ -56,7 +56,10 @@ export function LandingPortal() {
               onClick={() => pickTenant(t)}
             >
               {t.logoSrc ? (
-                <span className={styles.tenantLogoWrap}>
+                <span
+                  className={styles.tenantLogoWrap}
+                  style={t.logoBg ? { ['--tenant-logo-bg' as string]: t.logoBg } : undefined}
+                >
                   <Image
                     src={t.logoSrc}
                     alt=""
@@ -77,7 +80,11 @@ export function LandingPortal() {
 
         <div className={styles.brand}>
           {tenant.logoSrc ? (
-            <div className={styles.logoFrame} aria-hidden>
+            <div
+              className={styles.logoFrame}
+              style={tenant.logoBg ? { ['--tenant-logo-bg' as string]: tenant.logoBg } : undefined}
+              aria-hidden
+            >
               <Image
                 src={tenant.logoSrc}
                 alt={`${tenant.name} logo`}

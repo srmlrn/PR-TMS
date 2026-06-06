@@ -15,6 +15,7 @@ import {
 import { BookingStatus } from '@tms/types';
 import { formatMoney, formatTime } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './dashboard.module.css';
 
 const WEEKLY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -110,6 +111,7 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 }
 
 export default function AdminDashboardPage() {
+  const site = useTenantSite();
   const { data, loading, error } = useApi((ep) =>
     Promise.all([
       ep.getDashboardAnalytics(),
@@ -151,7 +153,7 @@ export default function AdminDashboardPage() {
     <>
       <PageHeader
         title="Temple Dashboard"
-        subtitle="Sri Venkateswara Temple, Fremont CA · Real-time"
+        subtitle={`${site.name}${site.address ? `, ${site.address}` : ''} · Real-time`}
         actions={
           <>
             <Button size="sm">Today</Button>

@@ -6,9 +6,11 @@ import { Button } from '@tms/ui';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
 import { Currency } from '@tms/types';
 import { formatMoney } from '@/lib/api/endpoints';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './receipt-print.module.css';
 
 export default function ReceiptPrintPage() {
+  const site = useTenantSite();
   const router = useRouter();
   const params = useSearchParams();
 
@@ -28,8 +30,8 @@ export default function ReceiptPrintPage() {
       <PublicThemeBar />
       <article className={styles.receipt}>
         <header className={styles.header}>
-          <span aria-hidden>🛕</span>
-          <h1>Sri Venkateswara Temple</h1>
+          <span aria-hidden>{site.icon}</span>
+          <h1>{site.name}</h1>
           <p>Donation Receipt</p>
         </header>
 

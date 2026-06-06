@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DisplayBoard, DisplayBoardLane } from '@tms/types';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
 import { fetchDisplayBoard } from '@/lib/display-api';
+import { useTenant } from '@/lib/tenant-context';
+import { resolveActiveTenantId, useTenantSite } from '@/lib/tenant-site';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import styles from './display.module.css';
 
@@ -37,7 +40,39 @@ function servingKey(lanes: DisplayBoardLane[]): string {
   return lanes.map((l) => `${l.queueType}:${l.nowServing?.tokenNumber ?? '-'}`).join('|');
 }
 
+function DisplayLogo({
+  icon,
+  logoSrc,
+  logoBg,
+}: {
+  icon: string;
+  logoSrc?: string;
+  logoBg?: string;
+}) {
+  if (logoSrc) {
+    return (
+      <span
+        className={styles.logoFrame}
+        style={logoBg ? { ['--tenant-logo-bg' as string]: logoBg } : undefined}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logoSrc} alt="" className={styles.logoImg} />
+      </span>
+    );
+  }
+  return (
+    <span className={styles.logo} aria-hidden>
+      {icon}
+    </span>
+  );
+}
+
 export default function FrontDeskDisplayPage() {
+  const { user } = useAuth();
+  const { tenantId } = useTenant();
+  const site = useTenantSite();
+  const activeTenantId = resolveActiveTenantId(user?.tenantId, tenantId);
+
   const [board, setBoard] = useState<DisplayBoard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -58,7 +93,7 @@ export default function FrontDeskDisplayPage() {
 
     const load = async () => {
       try {
-        const data = await fetchDisplayBoard();
+        const data = await fetchDisplayBoard(activeTenantId);
         if (cancelled) return;
 
         const key = servingKey(data.lanes);
@@ -87,9 +122,13 @@ export default function FrontDeskDisplayPage() {
       clearInterval(id);
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     };
-  }, []);
+  }, [activeTenantId]);
 
   const stats = board?.stats;
+  const tenantName = board?.tenantName ?? site.name;
+  const tenantIcon = board?.tenantIcon ?? site.icon;
+  const tenantLogoSrc = board?.tenantLogoSrc ?? site.logoSrc;
+  const tenantLogoBg = board?.tenantLogoBg ?? site.logoBg;
 
   return (
     <div className={styles.wrap}>
@@ -101,12 +140,13 @@ export default function FrontDeskDisplayPage() {
       </div>
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.logo} aria-hidden>
-            🛕
-          </span>
+          <DisplayLogo icon={tenantIcon} logoSrc={tenantLogoSrc} logoBg={tenantLogoBg} />
           <div>
-            <h1>{board?.tenantName ?? 'Temple Queue'}</h1>
-            <p className={styles.date}>{clock.date}</p>
+            <h1>{tenantName}</h1>
+            <p className={styles.date}>
+              {clock.date}
+              {board?.tenantLocation ? ` · ${board.tenantLocation}` : site.location ? ` · ${site.location}` : ''}
+            </p>
           </div>
         </div>
         <div className={styles.headerRight}>
