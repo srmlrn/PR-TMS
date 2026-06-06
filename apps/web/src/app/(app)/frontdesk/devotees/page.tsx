@@ -10,6 +10,7 @@ import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { DevoteeProfilePanel } from '@/components/DevoteeProfilePanel';
+import { RitualSelect } from '@/components/RitualSelect';
 import styles from './devotees.module.css';
 
 const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -422,22 +423,20 @@ function FrontDeskDevoteesPageInner() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </div>
-              <div className="formGroup">
-                <label htmlFor="fd-gotram">Gotram</label>
-                <input
-                  id="fd-gotram"
-                  value={form.gotram}
-                  onChange={(e) => setForm({ ...form, gotram: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="fd-nakshatra">Nakshatra</label>
-                <input
-                  id="fd-nakshatra"
-                  value={form.nakshatra}
-                  onChange={(e) => setForm({ ...form, nakshatra: e.target.value })}
-                />
-              </div>
+              <RitualSelect
+                id="fd-gotram"
+                field="gotram"
+                label="Gotram"
+                value={form.gotram}
+                onChange={(gotram) => setForm({ ...form, gotram })}
+              />
+              <RitualSelect
+                id="fd-nakshatra"
+                field="nakshatra"
+                label="Nakshatra"
+                value={form.nakshatra}
+                onChange={(nakshatra) => setForm({ ...form, nakshatra })}
+              />
               <div className="formGroup">
                 <label htmlFor="fd-dob">Date of birth</label>
                 <input
@@ -589,14 +588,13 @@ function FrontDeskDevoteesPageInner() {
                         onChange={(e) => setFamilyForm({ ...familyForm, phone: e.target.value })}
                       />
                     </div>
-                    <div className="formGroup">
-                      <label htmlFor="fm-gotram">Gotram</label>
-                      <input
-                        id="fm-gotram"
-                        value={familyForm.gotram}
-                        onChange={(e) => setFamilyForm({ ...familyForm, gotram: e.target.value })}
-                      />
-                    </div>
+                    <RitualSelect
+                      id="fm-gotram"
+                      field="gotram"
+                      label="Gotram"
+                      value={familyForm.gotram}
+                      onChange={(gotram) => setFamilyForm({ ...familyForm, gotram })}
+                    />
                     <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
                       <div className={styles.detailActions}>
                         <Button type="submit" size="sm" disabled={busy}>

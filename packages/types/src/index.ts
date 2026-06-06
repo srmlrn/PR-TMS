@@ -17,3 +17,4 @@ export * from './analytics';
 export * from './staff';
 export * from './volunteer';
 export * from './tenants';
+export * from './ritual';
