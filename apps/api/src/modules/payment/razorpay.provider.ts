@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { Currency } from '@tms/types';
-import { isRazorpayLive, toRazorpayAmount } from './payment-config';
+import { isRazorpayLive, razorpayWebhookSecret, toRazorpayAmount } from './payment-config';
 
 export interface RazorpayOrderResult {
   orderId: string;
@@ -30,6 +31,7 @@ export class RazorpayProvider {
     currency: Currency;
     purpose: string;
     sessionId: string;
+    tenantId: string;
     devoteeId?: string;
   }): Promise<RazorpayOrderResult | null> {
     const razorpay = this.getClient();
@@ -44,6 +46,7 @@ export class RazorpayProvider {
       notes: {
         purpose: opts.purpose,
         sessionId: opts.sessionId,
+        tenantId: opts.tenantId,
         ...(opts.devoteeId ? { devoteeId: opts.devoteeId } : {}),
       },
     });
@@ -60,5 +63,19 @@ export class RazorpayProvider {
     }
     const order = await razorpay.orders.fetch(orderId);
     return order.status ?? null;
+  }
+
+  verifyWebhookSignature(payload: Buffer | string, signature: string): boolean {
+    const secret = razorpayWebhookSecret();
+    if (!secret) {
+      throw new UnauthorizedException('RAZORPAY_WEBHOOK_SECRET is not configured');
+    }
+    const body = typeof payload === 'string' ? payload : payload.toString('utf8');
+    const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
+    if (expected !== signature) {
+      this.logger.warn('Razorpay webhook signature verification failed');
+      throw new UnauthorizedException('Invalid Razorpay webhook signature');
+    }
+    return true;
   }
 }

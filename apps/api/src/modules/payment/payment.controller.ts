@@ -3,10 +3,12 @@ import {
   Controller,
   Get,
   Headers,
+  Optional,
   Param,
   Post,
   RawBodyRequest,
   Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import {
@@ -20,13 +22,19 @@ import {
   FxRates,
   PaymentProvidersResponse,
   PaymentSession,
+  TenantContext,
+  TenantEnvironment,
   UserRole,
 } from '@tms/types';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
+import { TenantContextStorage } from '../../common/context/tenant-context.storage';
+import { TenantResolverService } from '../../database/tenant-resolver.service';
 import { CreatePaymentSessionDto } from './dto/create-payment-session.dto';
 import { PaymentService } from './payment.service';
+import { razorpayWebhookSecret, stripeWebhookSecret } from './payment-config';
+import { RazorpayProvider } from './razorpay.provider';
 import { StripeProvider } from './stripe.provider';
 
 @ApiTags('payments')
@@ -36,6 +44,8 @@ export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService,
     private readonly stripeProvider: StripeProvider,
+    private readonly razorpayProvider: RazorpayProvider,
+    @Optional() private readonly tenantResolver?: TenantResolverService,
   ) {}
 
   @Get('fx-rates')
@@ -77,7 +87,7 @@ export class PaymentController {
 
   @Post('sessions/:id/confirm')
   @Roles(UserRole.ADMIN, UserRole.DEVOTEE, UserRole.FRONT_DESK)
-  @ApiOperation({ summary: 'Confirm payment (demo/stripe/razorpay/cash)' })
+  @ApiOperation({ summary: 'Confirm payment (demo/cash only)' })
   @ApiParam({ name: 'id', description: 'Payment session UUID' })
   @ApiResponse({ status: 200, description: 'Payment confirmed' })
   confirmSession(
@@ -89,39 +99,47 @@ export class PaymentController {
 
   @Get('sessions/:id')
   @Roles(UserRole.ADMIN, UserRole.DEVOTEE, UserRole.FRONT_DESK, UserRole.ACCOUNTANT)
-  @ApiOperation({ summary: 'Get payment session status' })
+  @ApiOperation({ summary: 'Get payment session status (poll after client checkout)' })
   @ApiParam({ name: 'id', description: 'Payment session UUID' })
   getSession(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-  ): PaymentSession {
+  ): Promise<PaymentSession> {
     return this.paymentService.getSession(tenantId, id);
   }
 
   @Public()
   @Post('webhooks/stripe')
-  @ApiOperation({ summary: 'Stripe webhook stub (payment_intent.succeeded)' })
+  @ApiOperation({ summary: 'Stripe webhook (payment_intent.succeeded)' })
   @ApiResponse({ status: 200, description: 'Webhook acknowledged' })
-  handleStripeWebhook(
+  async handleStripeWebhook(
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature?: string,
-  ): { received: boolean; sessionId?: string } {
+  ): Promise<{ received: boolean; sessionId?: string }> {
     const payload = req.rawBody ?? Buffer.from(JSON.stringify(req.body ?? {}));
 
-    if (signature) {
+    if (stripeWebhookSecret()) {
+      if (!signature) {
+        throw new UnauthorizedException('Missing stripe-signature header');
+      }
       const event = this.stripeProvider.constructWebhookEvent(payload, signature);
-      if (event?.type === 'payment_intent.succeeded') {
-        const intent = event.data.object as { id: string };
-        const session = this.paymentService.markSessionPaidByProviderRef(intent.id);
-        return { received: true, sessionId: session?.id };
+      if (event.type === 'payment_intent.succeeded') {
+        const intent = event.data.object as {
+          id: string;
+          metadata?: { tenantId?: string; sessionId?: string };
+        };
+        return this.markStripePaid(intent);
       }
       return { received: true };
     }
 
-    const body = req.body as { type?: string; data?: { object?: { id?: string } } };
-    if (body?.type === 'payment_intent.succeeded' && body.data?.object?.id) {
-      const session = this.paymentService.markSessionPaidByProviderRef(body.data.object.id);
-      return { received: true, sessionId: session?.id };
+    const body = req.body as {
+      type?: string;
+      data?: { object?: { id?: string; metadata?: { tenantId?: string; sessionId?: string } } };
+    };
+    const intent = body?.data?.object;
+    if (body?.type === 'payment_intent.succeeded' && intent?.id) {
+      return this.markStripePaid(intent as { id: string; metadata?: { tenantId?: string; sessionId?: string } });
     }
 
     return { received: true };
@@ -129,22 +147,79 @@ export class PaymentController {
 
   @Public()
   @Post('webhooks/razorpay')
-  @ApiOperation({ summary: 'Razorpay webhook stub (payment.captured)' })
+  @ApiOperation({ summary: 'Razorpay webhook (payment.captured)' })
   @ApiResponse({ status: 200, description: 'Webhook acknowledged' })
-  handleRazorpayWebhook(
+  async handleRazorpayWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('x-razorpay-signature') signature?: string,
     @Body()
-    body: {
+    body?: {
       event?: string;
-      payload?: { payment?: { entity?: { order_id?: string } } };
+      payload?: {
+        payment?: {
+          entity?: {
+            order_id?: string;
+            notes?: { tenantId?: string; sessionId?: string };
+          };
+        };
+      };
     },
-  ): { received: boolean; sessionId?: string } {
+  ): Promise<{ received: boolean; sessionId?: string }> {
+    const payload = req.rawBody ?? Buffer.from(JSON.stringify(body ?? {}));
+
+    if (razorpayWebhookSecret()) {
+      if (!signature) {
+        throw new UnauthorizedException('Missing x-razorpay-signature header');
+      }
+      this.razorpayProvider.verifyWebhookSignature(payload, signature);
+    }
+
     if (body?.event === 'payment.captured') {
-      const orderId = body.payload?.payment?.entity?.order_id;
-      if (orderId) {
-        const session = this.paymentService.markSessionPaidByProviderRef(orderId);
+      const payment = body.payload?.payment?.entity;
+      const orderId = payment?.order_id;
+      const tenantId = payment?.notes?.tenantId;
+      if (orderId && tenantId) {
+        const session = await this.runInTenantContext(tenantId, () =>
+          this.paymentService.markSessionPaidByProviderRef(tenantId, orderId),
+        );
         return { received: true, sessionId: session?.id };
       }
     }
+
     return { received: true };
+  }
+
+  private async markStripePaid(intent: {
+    id: string;
+    metadata?: { tenantId?: string; sessionId?: string };
+  }): Promise<{ received: boolean; sessionId?: string }> {
+    const tenantId = intent.metadata?.tenantId;
+    if (!tenantId) {
+      return { received: true };
+    }
+
+    const session = await this.runInTenantContext(tenantId, () =>
+      this.paymentService.markSessionPaidByProviderRef(tenantId, intent.id),
+    );
+    return { received: true, sessionId: session?.id };
+  }
+
+  private async runInTenantContext<T>(
+    tenantId: string,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    if (this.tenantResolver) {
+      const ctx = await this.tenantResolver.resolve(tenantId, TenantEnvironment.PROD);
+      return TenantContextStorage.run(ctx, fn);
+    }
+
+    const ctx: TenantContext = {
+      tenantId,
+      tenantSlug: 'sv-temple',
+      environment: TenantEnvironment.PROD,
+      environmentId: `memory-${TenantEnvironment.PROD}`,
+      dbName: `tms_sv_temple_${TenantEnvironment.PROD}`,
+    };
+    return TenantContextStorage.run(ctx, fn);
   }
 }

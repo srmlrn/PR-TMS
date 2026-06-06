@@ -116,14 +116,14 @@ export class BookingService
     await this.assertNoConflict(tenantId, input.serviceId, scheduledAt, service.durationMinutes);
 
     let paymentStatus = PaymentStatus.PAID;
-    if (input.paymentSessionId) {
-      const session = this.paymentService.assertPaidSession(
-        tenantId,
-        input.paymentSessionId,
-        service.price,
-        service.currency,
-      );
-      paymentStatus = session.status;
+    const paidSession = await this.paymentService.enforcePaidCheckout(
+      tenantId,
+      input.paymentSessionId,
+      service.price,
+      service.currency,
+    );
+    if (paidSession) {
+      paymentStatus = paidSession.status;
     }
 
     const sankalpa = this.buildSankalpa(input);

@@ -182,14 +182,16 @@ export class DonationService
     const tax = this.resolveTaxDoc(input.currency);
 
     let paymentStatus = PaymentStatus.PAID;
-    if (input.paymentSessionId && !input.isInKind) {
-      const session = this.paymentService.assertPaidSession(
+    if (!input.isInKind) {
+      const paidSession = await this.paymentService.enforcePaidCheckout(
         tenantId,
         input.paymentSessionId,
         input.amount,
         input.currency,
       );
-      paymentStatus = session.status;
+      if (paidSession) {
+        paymentStatus = paidSession.status;
+      }
     }
 
     if (this.usePostgres) {

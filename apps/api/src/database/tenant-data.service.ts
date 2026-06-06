@@ -21,6 +21,7 @@ import {
   QueueTokenEntity,
   StaffEntity,
   VolunteerShiftEntity,
+  PaymentSessionEntity,
 } from './entities/tenant';
 
 @Injectable()
@@ -146,5 +147,11 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(VolunteerShiftEntity);
+  }
+
+  async paymentSessions() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(PaymentSessionEntity);
   }
 }

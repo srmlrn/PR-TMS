@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import Stripe from 'stripe';
 import { Currency } from '@tms/types';
-import { isStripeLive, toStripeAmount } from './payment-config';
+import { isStripeLive, stripeWebhookSecret, toStripeAmount } from './payment-config';
 
 export interface StripeIntentResult {
   paymentIntentId: string;
@@ -30,6 +30,7 @@ export class StripeProvider {
     currency: Currency;
     purpose: string;
     sessionId: string;
+    tenantId: string;
     devoteeId?: string;
   }): Promise<StripeIntentResult | null> {
     const stripe = this.getClient();
@@ -43,6 +44,7 @@ export class StripeProvider {
       description: opts.purpose,
       metadata: {
         sessionId: opts.sessionId,
+        tenantId: opts.tenantId,
         ...(opts.devoteeId ? { devoteeId: opts.devoteeId } : {}),
       },
       automatic_payment_methods: { enabled: true },
@@ -65,12 +67,20 @@ export class StripeProvider {
     return intent.status;
   }
 
-  constructWebhookEvent(payload: Buffer, signature: string): Stripe.Event | null {
-    const stripe = this.getClient();
-    const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-    if (!stripe || !secret) {
-      return null;
+  constructWebhookEvent(payload: Buffer, signature: string): Stripe.Event {
+    const secret = stripeWebhookSecret();
+    if (!secret) {
+      throw new UnauthorizedException('STRIPE_WEBHOOK_SECRET is not configured');
     }
-    return stripe.webhooks.constructEvent(payload, signature, secret);
+    const stripe = this.getClient();
+    if (!stripe) {
+      throw new UnauthorizedException('Stripe live mode is not configured');
+    }
+    try {
+      return stripe.webhooks.constructEvent(payload, signature, secret);
+    } catch (err) {
+      this.logger.warn(`Stripe webhook signature verification failed: ${String(err)}`);
+      throw new UnauthorizedException('Invalid Stripe webhook signature');
+    }
   }
 }

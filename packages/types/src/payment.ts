@@ -18,6 +18,8 @@ export interface PaymentSession extends TenantScoped, Timestamps {
   /** Stripe client secret for Elements / Payment Element (live mode only). */
   clientSecret?: string;
   paymentMode?: PaymentMode;
+  /** ISO timestamp when an unpaid session expires (typically 30 minutes after creation). */
+  expiresAt?: string;
 }
 
 export interface CreatePaymentSessionInput {

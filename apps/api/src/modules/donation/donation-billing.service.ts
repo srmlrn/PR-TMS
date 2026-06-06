@@ -86,8 +86,7 @@ export class DonationBillingService
   async runBillingCheck(asOf: Date): Promise<void> {
     const due = await this.findDueSubscriptions(asOf);
     for (const sub of due) {
-      const provider =
-        sub.currency === Currency.INR ? 'razorpay' : ('stripe' as const);
+      const provider = 'demo' as const;
 
       const session = await this.paymentService.createSession(sub.tenantId, {
         amount: sub.amount,
