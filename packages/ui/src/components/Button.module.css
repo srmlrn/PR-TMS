@@ -25,8 +25,8 @@
 
 .primary {
   background: linear-gradient(135deg, var(--amber), var(--amber2));
-  color: #1a0800;
-  box-shadow: 0 4px 20px var(--aglow);
+  color: #ffffff;
+  box-shadow: 0 4px 16px var(--aglow);
 }
 
 .glass {

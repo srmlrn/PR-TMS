@@ -1,18 +1,20 @@
 .tile {
   background: var(--glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: var(--card-backdrop);
+  -webkit-backdrop-filter: var(--card-backdrop);
   border: 1px solid var(--b);
   border-radius: var(--r);
+  box-shadow: var(--card-shadow);
   padding: 1.3rem;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s, transform 0.2s;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
 .tile:hover {
-  border-color: rgba(245, 166, 35, 0.25);
-  transform: translateY(-2px);
+  border-color: var(--b2);
+  box-shadow: var(--card-hover-shadow, var(--card-shadow));
+  transform: translateY(-1px);
 }
 
 .icon {

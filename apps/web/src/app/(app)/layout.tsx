@@ -65,7 +65,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     <div className={isKiosk ? 'kioskMode' : undefined}>
       {!isKiosk && !isFullscreenPage && (
         <>
-          <DockNav items={config.nav} />
+          <DockNav items={config.nav} variant="sidebar" brandLabel="TMS" />
           <TopBar
             title={title}
             envLabel={environment.toUpperCase()}

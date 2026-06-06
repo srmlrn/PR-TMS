@@ -9,12 +9,61 @@
   align-items: center;
   gap: 3px;
   padding: 0.8rem 0.5rem;
-  background: rgba(12, 14, 24, 0.9);
+  background: var(--dock-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--b2);
   border-radius: 22px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--dock-shadow);
+}
+
+.sidebar {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  transform: none;
+  width: var(--dock-width);
+  align-items: stretch;
+  gap: 0.1rem;
+  padding: 1.25rem 1rem 1.5rem;
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  border-right: 1px solid var(--b);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.5rem 1rem;
+  margin-bottom: 0.25rem;
+  text-decoration: none;
+  color: var(--txt);
+  border-bottom: 1px solid var(--b);
+}
+
+.brandIcon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.brandText {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--txt);
+}
+
+.sectionLabel {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--txt3);
+  padding: 0.75rem 0.5rem 0.35rem;
+  margin: 0;
 }
 
 .item {
@@ -34,17 +83,53 @@
   text-decoration: none;
 }
 
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.58rem 0.75rem;
+  border-radius: 10px;
+  color: var(--txt2);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
 .item:hover {
   color: var(--amber);
   background: var(--adim);
 }
 
+.sidebarItem:hover {
+  color: var(--txt);
+  background: var(--ink4);
+}
+
 .active {
-  color: var(--amber);
-  background: linear-gradient(135deg, rgba(245, 166, 35, 0.22), rgba(245, 166, 35, 0.08));
+  color: var(--nav-active-text);
+  background: var(--nav-active-bg);
   box-shadow:
     inset 0 0 0 1px rgba(245, 166, 35, 0.3),
     0 0 14px rgba(245, 166, 35, 0.2);
+}
+
+.sidebar .active {
+  color: var(--nav-active-text);
+  background: var(--nav-active-bg);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.itemIcon {
+  font-size: 1.05rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.itemLabel {
+  line-height: 1.2;
 }
 
 .tip {
@@ -52,7 +137,7 @@
   left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(12, 14, 24, 0.95);
+  background: var(--dock-bg);
   border: 1px solid var(--b2);
   border-radius: var(--rs);
   padding: 0.3rem 0.7rem;
@@ -62,6 +147,7 @@
   pointer-events: none;
   transition: opacity 0.15s;
   color: var(--txt);
+  box-shadow: var(--card-shadow);
 }
 
 .item:hover .tip {

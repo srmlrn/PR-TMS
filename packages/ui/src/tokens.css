@@ -1,4 +1,4 @@
-/* ────────────────────── TOKENS (mockui-sn46) ────────────────────── */
+/* ────────────────────── TOKENS ────────────────────── */
 :root {
   --ink: #07090f;
   --ink2: #0c0e18;
@@ -24,6 +24,8 @@
   --bldim: rgba(95, 164, 249, 0.1);
   --red: #f87171;
   --reddim: rgba(248, 113, 113, 0.1);
+  --purple: #8b5cf6;
+  --purpledim: rgba(139, 92, 246, 0.1);
   --r: 14px;
   --rs: 8px;
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -31,6 +33,88 @@
   --topbar-height: 3.25rem;
   --content-padding-x: 1.5rem;
   --content-offset-left: calc(var(--dock-width) + 2.25rem);
+  --card-shadow: none;
+  --card-hover-shadow: none;
+  --card-backdrop: blur(16px);
+  --nav-active-bg: linear-gradient(135deg, rgba(245, 166, 35, 0.22), rgba(245, 166, 35, 0.08));
+  --nav-active-text: var(--amber);
+  --table-head-bg: rgba(12, 14, 24, 0.5);
+  --table-row-hover: rgba(255, 255, 255, 0.02);
+  --table-row-border: rgba(255, 255, 255, 0.04);
+  --topbar-bg: rgba(7, 9, 15, 0.75);
+  --dock-bg: rgba(12, 14, 24, 0.9);
+  --dock-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --input-bg: var(--ink3);
+  --callout-bg: rgba(245, 166, 35, 0.07);
+  --callout-border: rgba(245, 166, 35, 0.18);
+}
+
+/* ────────────────────── LIGHT THEME (filllo-inspired) ────────────────────── */
+[data-theme='light'] {
+  color-scheme: light;
+  --ink: #f4f7f6;
+  --ink2: #ffffff;
+  --ink3: #ffffff;
+  --ink4: #f0f3f2;
+  --glass: #ffffff;
+  --glass2: #ffffff;
+  --b: #e6ebe9;
+  --b2: #d8dfdc;
+  --amber: #1a9b6e;
+  --amber2: #34c38a;
+  --adim: rgba(26, 155, 110, 0.1);
+  --aglow: rgba(26, 155, 110, 0.22);
+  --crimson: #e2557a;
+  --cdim: rgba(226, 85, 122, 0.1);
+  --gold: #f59e0b;
+  --txt: #1a2b34;
+  --txt2: #6b7a86;
+  --txt3: #9aa8b3;
+  --gr: #1a9b6e;
+  --grdim: rgba(26, 155, 110, 0.1);
+  --bl: #4f8ef7;
+  --bldim: rgba(79, 142, 247, 0.1);
+  --red: #ef5f5f;
+  --reddim: rgba(239, 95, 95, 0.1);
+  --purple: #7c5cfc;
+  --purpledim: rgba(124, 92, 252, 0.1);
+  --r: 16px;
+  --rs: 10px;
+  --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --dock-width: 232px;
+  --topbar-height: 3.5rem;
+  --content-padding-x: 1.75rem;
+  --content-offset-left: calc(var(--dock-width) + 1.75rem);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --card-hover-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+  --card-backdrop: none;
+  --nav-active-bg: #e8f7f0;
+  --nav-active-text: #1a9b6e;
+  --table-head-bg: #f8faf9;
+  --table-row-hover: #f8faf9;
+  --table-row-border: #eef2f0;
+  --topbar-bg: rgba(255, 255, 255, 0.92);
+  --dock-bg: #ffffff;
+  --dock-shadow: none;
+  --input-bg: #f8faf9;
+  --callout-bg: rgba(26, 155, 110, 0.06);
+  --callout-border: rgba(26, 155, 110, 0.16);
+}
+
+[data-theme='light'] .orbs {
+  display: none;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: #d0d8d4;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: #b8c4be;
 }
 
 *,

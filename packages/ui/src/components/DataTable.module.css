@@ -16,13 +16,13 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   border-bottom: 1px solid var(--b);
-  background: rgba(12, 14, 24, 0.5);
+  background: var(--table-head-bg);
   font-weight: 700;
 }
 
 .td {
   padding: 0.7rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--table-row-border);
 }
 
 .row:last-child .td {
@@ -30,7 +30,7 @@
 }
 
 .row:hover .td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--table-row-hover);
 }
 
 .amountGreen {

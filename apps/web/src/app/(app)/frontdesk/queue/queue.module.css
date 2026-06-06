@@ -20,7 +20,7 @@
 
 .filterSelect {
   padding: 0.45rem 0.65rem;
-  background: var(--ink3);
+  background: var(--input-bg);
   border: 1px solid var(--b);
   border-radius: var(--rs);
   color: var(--txt);
@@ -40,10 +40,11 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.55rem;
-  background: rgba(245, 166, 35, 0.08);
-  border: 1px solid rgba(245, 166, 35, 0.2);
+  background: var(--callout-bg);
+  border: 1px solid var(--callout-border);
   border-radius: var(--rs);
   font-size: 0.78rem;
+  box-shadow: var(--card-shadow);
 }
 
 .callingChip strong {

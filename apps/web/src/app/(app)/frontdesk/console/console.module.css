@@ -35,8 +35,8 @@
 .devoteeChip {
   margin-top: 0.5rem;
   padding: 0.55rem 0.65rem;
-  background: rgba(245, 166, 35, 0.06);
-  border: 1px solid rgba(245, 166, 35, 0.16);
+  background: var(--callout-bg);
+  border: 1px solid var(--callout-border);
   border-radius: var(--rs);
   font-size: 0.78rem;
   line-height: 1.45;
@@ -56,7 +56,7 @@
 .todayList {
   margin-top: 0.45rem;
   padding-top: 0.45rem;
-  border-top: 1px solid rgba(245, 166, 35, 0.12);
+  border-top: 1px solid var(--callout-border);
 }
 
 .todayRow {

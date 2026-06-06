@@ -78,10 +78,11 @@
 
 .roleCard {
   background: var(--glass);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: var(--card-backdrop);
+  -webkit-backdrop-filter: var(--card-backdrop);
   border: 1px solid var(--b);
   border-radius: var(--r);
+  box-shadow: var(--card-shadow);
   padding: 1.7rem 1.25rem;
   cursor: pointer;
   transition: all 0.3s;
@@ -232,7 +233,7 @@
 .formGroup textarea {
   width: 100%;
   padding: 0.55rem 0.88rem;
-  background: var(--ink3);
+  background: var(--input-bg);
   border: 1px solid var(--b);
   border-radius: var(--rs);
   color: var(--txt);
@@ -244,13 +245,13 @@
 
 .formGroup input:focus,
 .formGroup select:focus {
-  border-color: rgba(245, 166, 35, 0.45);
-  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.09);
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px var(--adim);
 }
 
 .calloutAmber {
-  background: rgba(245, 166, 35, 0.07);
-  border: 1px solid rgba(245, 166, 35, 0.18);
+  background: var(--callout-bg);
+  border: 1px solid var(--callout-border);
   border-radius: var(--rs);
   padding: 0.75rem;
   font-size: 0.82rem;
