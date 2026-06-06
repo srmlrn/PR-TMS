@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, Chip } from '@tms/ui';
 import { Currency, type PaymentProvider } from '@tms/types';
@@ -12,13 +12,8 @@ import { formatMoney } from '@/lib/api/endpoints';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PaymentModeBadge } from '@/components/PaymentModeBadge';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
-import {
-  checkoutAndPay,
-  createLivePaymentGate,
-  defaultPaymentProvider,
-} from '@/lib/payment-flow';
-import { LivePaymentModal } from '@/components/LivePaymentModal';
-import type { PaymentSession } from '@tms/types';
+import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
+import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
 import styles from './book.module.css';
 
@@ -45,22 +40,14 @@ export default function BookSevaPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [lastBookingId, setLastBookingId] = useState<string | null>(null);
-  const [livePayment, setLivePayment] = useState<{
-    session: PaymentSession;
-    resolve: () => void;
-    reject: (err: Error) => void;
-  } | null>(null);
-
-  const livePaymentGate = useMemo(
-    () =>
-      createLivePaymentGate(
-        (session) =>
-          new Promise<void>((resolve, reject) => {
-            setLivePayment({ session, resolve, reject });
-          }),
-      ),
-    [],
+  const getPayer = useCallback(
+    () => ({
+      name: sponsorName || user?.name,
+      email: user?.email,
+    }),
+    [sponsorName, user],
   );
+  const { gate: livePaymentGate, livePaymentModal } = useLivePaymentGate(getPayer);
 
   const { data: services, loading, error } = useApi((ep) => ep.getServices());
 
@@ -279,20 +266,7 @@ export default function BookSevaPage() {
         </GlassCard>
       </div>
 
-      {livePayment && (
-        <LivePaymentModal
-          session={livePayment.session}
-          payerName={sponsorName || user?.name}
-          onSuccess={() => {
-            livePayment.resolve();
-            setLivePayment(null);
-          }}
-          onCancel={() => {
-            livePayment.reject(new Error('Payment cancelled'));
-            setLivePayment(null);
-          }}
-        />
-      )}
+      {livePaymentModal}
     </>
   );
 }

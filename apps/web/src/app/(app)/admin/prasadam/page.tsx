@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Badge,
   BentoGrid,
@@ -23,6 +23,7 @@ import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoin
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
+import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './prasadam.module.css';
 
@@ -186,6 +187,12 @@ export default function AdminPrasadamPage() {
     courierAddress: '',
   });
 
+  const getPayer = useCallback(
+    () => ({ name: bookForm.sponsorName }),
+    [bookForm.sponsorName],
+  );
+  const { gate, livePaymentModal } = useLivePaymentGate(getPayer);
+
   const { data, loading, error, refetch } = useApi((ep) => ep.getPrasadamSponsorships({ limit: 20 }));
   const { data: availabilityData, loading: calLoading } = useApi(
     (ep) =>
@@ -236,13 +243,17 @@ export default function AdminPrasadamPage() {
     setKitchenOrderId(null);
     try {
       const ep = createEndpoints(api);
-      await checkoutAndPay(ep, {
-        amount: packageAmount,
-        currency: Currency.USD,
-        purpose: `Prasadam sponsorship — ${TYPE_LABELS[prasadamType]} — ${bookingDate}`,
-        devoteeId: bookForm.devoteeId,
-        provider: paymentProvider,
-      });
+      await checkoutAndPay(
+        ep,
+        {
+          amount: packageAmount,
+          currency: Currency.USD,
+          purpose: `Prasadam sponsorship — ${TYPE_LABELS[prasadamType]} — ${bookingDate}`,
+          devoteeId: bookForm.devoteeId,
+          provider: paymentProvider,
+        },
+        gate,
+      );
 
       const created = await ep.createPrasadamSponsorship({
         type: prasadamType,
@@ -545,6 +556,7 @@ export default function AdminPrasadamPage() {
           getRowKey={(r) => r.id}
         />
       </GlassCard>
+      {livePaymentModal}
     </>
   );
 }

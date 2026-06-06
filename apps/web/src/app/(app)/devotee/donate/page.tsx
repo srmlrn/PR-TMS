@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, ProgressBar } from '@tms/ui';
 import { Currency, DonationFrequency, type PaymentProvider, type TaxReceipt } from '@tms/types';
@@ -11,13 +11,8 @@ import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PaymentModeBadge } from '@/components/PaymentModeBadge';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
-import {
-  checkoutAndPay,
-  createLivePaymentGate,
-  defaultPaymentProvider,
-} from '@/lib/payment-flow';
-import { LivePaymentModal } from '@/components/LivePaymentModal';
-import type { PaymentSession } from '@tms/types';
+import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
+import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
 import styles from './donate.module.css';
 
@@ -56,22 +51,14 @@ export default function DonatePage() {
   const [inKindDescription, setInKindDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [livePayment, setLivePayment] = useState<{
-    session: PaymentSession;
-    resolve: () => void;
-    reject: (err: Error) => void;
-  } | null>(null);
-
-  const livePaymentGate = useMemo(
-    () =>
-      createLivePaymentGate(
-        (session) =>
-          new Promise<void>((resolve, reject) => {
-            setLivePayment({ session, resolve, reject });
-          }),
-      ),
-    [],
+  const getPayer = useCallback(
+    () => ({
+      name: user?.name,
+      email: user?.email,
+    }),
+    [user],
   );
+  const { gate: livePaymentGate, livePaymentModal } = useLivePaymentGate(getPayer);
 
   const { data: campaigns, loading, error } = useApi((ep) => ep.getCampaigns());
 
@@ -370,20 +357,7 @@ export default function DonatePage() {
         </GlassCard>
       </div>
 
-      {livePayment && (
-        <LivePaymentModal
-          session={livePayment.session}
-          payerName={user?.name}
-          onSuccess={() => {
-            livePayment.resolve();
-            setLivePayment(null);
-          }}
-          onCancel={() => {
-            livePayment.reject(new Error('Payment cancelled'));
-            setLivePayment(null);
-          }}
-        />
-      )}
+      {livePaymentModal}
     </>
   );
 }

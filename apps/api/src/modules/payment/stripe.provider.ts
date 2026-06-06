@@ -47,7 +47,10 @@ export class StripeProvider {
         tenantId: opts.tenantId,
         ...(opts.devoteeId ? { devoteeId: opts.devoteeId } : {}),
       },
-      automatic_payment_methods: { enabled: true },
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'always',
+      },
     });
 
     this.logger.log(`Created Stripe PaymentIntent ${intent.id} for session ${opts.sessionId}`);

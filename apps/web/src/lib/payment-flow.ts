@@ -2,7 +2,7 @@ import type { Currency, PaymentProvider, PaymentSession } from '@tms/types';
 import type { Endpoints } from './api/endpoints';
 
 export const PAYMENT_PROVIDER_LABELS: Record<PaymentProvider, string> = {
-  stripe: 'Stripe (card)',
+  stripe: 'Card · Apple Pay · Google Pay',
   razorpay: 'Razorpay (INR)',
   demo: 'Demo / test',
   cash: 'Cash (counter)',

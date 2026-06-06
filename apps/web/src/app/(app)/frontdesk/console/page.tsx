@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
 import {
@@ -17,6 +17,7 @@ import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { CounterBookingForm } from '@/components/CounterBookingForm';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
+import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './console.module.css';
 
@@ -57,6 +58,15 @@ export default function FrontDeskConsolePage() {
     defaultPaymentProvider(Currency.USD, 'counter'),
   );
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+
+  const getPayer = useCallback(
+    () => ({
+      name: lookup?.devotee?.name,
+      phone: lookup?.devotee?.phone,
+    }),
+    [lookup],
+  );
+  const { gate, livePaymentModal } = useLivePaymentGate(getPayer);
 
   const { data: stats, loading, error, refetch } = useApi((ep) => ep.getQueueStats());
   const { data: services } = useApi((ep) => ep.getServices());
@@ -223,13 +233,17 @@ export default function FrontDeskConsolePage() {
     setActionMsg(null);
     try {
       const ep = createEndpoints(api);
-      const paymentSessionId = await checkoutAndPay(ep, {
-        amount: donateAmount,
-        currency: Currency.USD,
-        purpose: 'Counter donation',
-        devoteeId,
-        provider: paymentProvider,
-      });
+      const paymentSessionId = await checkoutAndPay(
+        ep,
+        {
+          amount: donateAmount,
+          currency: Currency.USD,
+          purpose: 'Counter donation',
+          devoteeId,
+          provider: paymentProvider,
+        },
+        gate,
+      );
       const donation = await ep.createDonation({
         devoteeId,
         amount: donateAmount,
@@ -517,6 +531,7 @@ export default function FrontDeskConsolePage() {
         </GlassCard>
       </div>
       {actionMsg && <p className={[styles.statusMsg, styles.statusMsgOk].join(' ')}>{actionMsg}</p>}
+      {livePaymentModal}
     </div>
   );
 }

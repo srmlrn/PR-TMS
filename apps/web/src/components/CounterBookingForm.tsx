@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@tms/ui';
 import type { Currency, DevoteeLookupResult, PaymentProvider, SevaService } from '@tms/types';
 import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney } from '@/lib/api/endpoints';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
+import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 
 interface Props {
@@ -29,6 +30,15 @@ export function CounterBookingForm({ ep, devotee, services, onSuccess, onError }
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
     defaultPaymentProvider(services[0]?.currency ?? 'USD', 'counter'),
   );
+
+  const getPayer = useCallback(
+    () => ({
+      name: devotee.name,
+      phone: devotee.phone,
+    }),
+    [devotee],
+  );
+  const { gate, livePaymentModal } = useLivePaymentGate(getPayer);
 
   const selectedService = useMemo(
     () => services.find((s) => s.id === serviceId),
@@ -63,13 +73,17 @@ export function CounterBookingForm({ ep, devotee, services, onSuccess, onError }
     }
     setBusy(true);
     try {
-      const paymentSessionId = await checkoutAndPay(ep, {
-        amount: selectedService.price,
-        currency: selectedService.currency as Currency,
-        purpose: `Counter: ${selectedService.name}`,
-        devoteeId: devotee.id,
-        provider: paymentProvider,
-      });
+      const paymentSessionId = await checkoutAndPay(
+        ep,
+        {
+          amount: selectedService.price,
+          currency: selectedService.currency as Currency,
+          purpose: `Counter: ${selectedService.name}`,
+          devoteeId: devotee.id,
+          provider: paymentProvider,
+        },
+        gate,
+      );
       const scheduledAt = new Date(`${date}T${slot}`).toISOString();
       const booking = await ep.createBooking({
         devoteeId: devotee.id,
@@ -95,6 +109,7 @@ export function CounterBookingForm({ ep, devotee, services, onSuccess, onError }
   }
 
   return (
+    <>
     <div className="formGrid" style={{ gap: '0.45rem' }}>
       <PaymentProviderPicker
         value={paymentProvider}
@@ -165,5 +180,7 @@ export function CounterBookingForm({ ep, devotee, services, onSuccess, onError }
         </Button>
       </div>
     </div>
+    {livePaymentModal}
+    </>
   );
 }

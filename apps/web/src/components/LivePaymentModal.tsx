@@ -11,6 +11,7 @@ import {
 import { Button } from '@tms/ui';
 import type { PaymentSession } from '@tms/types';
 import { formatMoney } from '@/lib/api/endpoints';
+import { useTheme } from '@/lib/theme-context';
 import styles from './live-payment-modal.module.css';
 
 declare global {
@@ -108,7 +109,13 @@ function StripeCheckoutForm({ session, onSuccess, onError }: StripeCheckoutFormP
 
   return (
     <div className={styles.stripeForm}>
-      <PaymentElement />
+      <PaymentElement
+        options={{
+          layout: { type: 'tabs', defaultCollapsed: false },
+          wallets: { applePay: 'auto', googlePay: 'auto' },
+        }}
+      />
+      <p className={styles.walletHint}>Apple Pay and Google Pay appear when supported on this device.</p>
       <Button
         variant="primary"
         fullWidth
@@ -139,8 +146,23 @@ export function LivePaymentModal({
   payerEmail,
   payerPhone,
 }: LivePaymentModalProps) {
+  const { theme } = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [razorpayReady, setRazorpayReady] = useState(false);
+
+  const stripeElementsOptions = useMemo(
+    () => ({
+      clientSecret: session.clientSecret!,
+      appearance: {
+        theme: (theme === 'light' ? 'stripe' : 'night') as 'stripe' | 'night',
+        variables: {
+          colorPrimary: theme === 'light' ? '#1a9b6e' : '#c9a227',
+        },
+      },
+      wallets: { applePay: 'auto' as const, googlePay: 'auto' as const },
+    }),
+    [session.clientSecret, theme],
+  );
 
   const stripePromise = useMemo(() => {
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
@@ -203,7 +225,7 @@ export function LivePaymentModal({
 
   const title =
     session.provider === 'stripe'
-      ? 'Pay with card (Stripe)'
+      ? 'Pay with Apple Pay, Google Pay, or card'
       : session.provider === 'razorpay'
         ? 'Pay with Razorpay'
         : 'Complete payment';
@@ -227,13 +249,7 @@ export function LivePaymentModal({
             ) : !stripePromise ? (
               <p className={styles.error}>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not configured.</p>
             ) : (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret: session.clientSecret,
-                  appearance: { theme: 'night', variables: { colorPrimary: '#c9a227' } },
-                }}
-              >
+              <Elements stripe={stripePromise} options={stripeElementsOptions}>
                 <StripeCheckoutForm
                   session={session}
                   onSuccess={onSuccess}
