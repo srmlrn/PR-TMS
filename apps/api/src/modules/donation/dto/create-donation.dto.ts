@@ -46,4 +46,9 @@ export class CreateDonationDto {
   @IsOptional()
   @IsString()
   taxId?: string;
+
+  @ApiPropertyOptional({ description: 'Confirmed payment session UUID' })
+  @IsOptional()
+  @IsUUID()
+  paymentSessionId?: string;
 }

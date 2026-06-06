@@ -3,6 +3,7 @@ import {
   CreateDevoteeInput,
   Currency,
   Devotee,
+  DevoteeDuplicateCheck,
   PaginatedResponse,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
@@ -122,31 +123,50 @@ export class DevoteeService
     return devotee;
   }
 
+  async checkDuplicates(
+    tenantId: string,
+    phone?: string,
+    email?: string,
+  ): Promise<DevoteeDuplicateCheck> {
+    const result: DevoteeDuplicateCheck = {};
+
+    if (phone?.trim()) {
+      const normalized = this.normalizePhone(phone);
+      const { data } = await this.findAll(tenantId, 1, 5, { phone });
+      const match = data.find(
+        (d) => this.normalizePhone(d.phone) === normalized,
+      );
+      if (match) {
+        result.phoneMatch = this.duplicateSummary(match);
+      }
+    }
+
+    if (email?.trim()) {
+      const term = email.trim().toLowerCase();
+      const items = this.usePostgres
+        ? (await this.findAll(tenantId, 1, 100)).data
+        : this.scoped(tenantId);
+      const match = items.find((d) => d.email?.toLowerCase() === term);
+      if (match) {
+        result.emailMatch = this.duplicateSummary(match);
+      }
+    }
+
+    return result;
+  }
+
   async create(tenantId: string, input: CreateDevoteeInput): Promise<DevoteeRecord> {
+    const payload = this.buildDevoteePayload(input);
+
     if (this.usePostgres) {
       const repo = await this.tenantData.devotees();
-      const entity = repo.create({
-        firstName: input.firstName,
-        lastName: input.lastName,
-        email: input.email,
-        phone: input.phone,
-        country: input.country,
-        gotram: input.gotram,
-        nakshatra: input.nakshatra,
-        status: 'active',
-      });
+      const entity = repo.create({ ...payload, status: 'active' });
       const saved = await repo.save(entity);
       return this.toDevotee(saved);
     }
 
     return this.createEntity(tenantId, {
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: input.email,
-      phone: input.phone,
-      country: input.country,
-      gotram: input.gotram,
-      nakshatra: input.nakshatra,
+      ...payload,
       status: 'active',
     });
   }
@@ -167,6 +187,34 @@ export class DevoteeService
         ...(dto.country !== undefined && { country: dto.country }),
         ...(dto.gotram !== undefined && { gotram: dto.gotram }),
         ...(dto.nakshatra !== undefined && { nakshatra: dto.nakshatra }),
+        ...(dto.rashi !== undefined && { rashi: dto.rashi }),
+        ...(dto.gender !== undefined && { gender: dto.gender }),
+        ...(dto.dateOfBirth !== undefined && { dateOfBirth: dto.dateOfBirth }),
+        ...(dto.photoUrl !== undefined && { photoUrl: dto.photoUrl }),
+        ...(dto.familyId !== undefined && { familyId: dto.familyId }),
+        ...(dto.taxId !== undefined && { taxId: dto.taxId }),
+        ...(dto.isNri !== undefined && { isNri: dto.isNri }),
+        ...(dto.communicationOptIn !== undefined && {
+          communicationOptIn: dto.communicationOptIn,
+        }),
+        ...(dto.preferredLanguage !== undefined && {
+          preferredLanguage: dto.preferredLanguage,
+        }),
+        ...(dto.importantDates !== undefined && {
+          importantDates: dto.importantDates,
+        }),
+        ...(dto.address !== undefined && {
+          address: dto.address.line1
+            ? {
+                line1: dto.address.line1,
+                line2: dto.address.line2,
+                city: dto.address.city ?? '',
+                state: dto.address.state,
+                postalCode: dto.address.postalCode,
+                country: dto.address.country ?? '',
+              }
+            : undefined,
+        }),
         ...(dto.membershipTier !== undefined && { membershipTier: dto.membershipTier }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.membershipExpiresAt !== undefined && {
@@ -191,6 +239,20 @@ export class DevoteeService
     if (dto.country !== undefined) patch.country = dto.country;
     if (dto.gotram !== undefined) patch.gotram = dto.gotram;
     if (dto.nakshatra !== undefined) patch.nakshatra = dto.nakshatra;
+    if (dto.rashi !== undefined) patch.rashi = dto.rashi;
+    if (dto.gender !== undefined) patch.gender = dto.gender;
+    if (dto.dateOfBirth !== undefined) patch.dateOfBirth = dto.dateOfBirth;
+    if (dto.photoUrl !== undefined) patch.photoUrl = dto.photoUrl;
+    if (dto.familyId !== undefined) patch.familyId = dto.familyId;
+    if (dto.taxId !== undefined) patch.taxId = dto.taxId;
+    if (dto.isNri !== undefined) patch.isNri = dto.isNri;
+    if (dto.communicationOptIn !== undefined) {
+      patch.communicationOptIn = dto.communicationOptIn;
+    }
+    if (dto.preferredLanguage !== undefined) {
+      patch.preferredLanguage = dto.preferredLanguage;
+    }
+    if (dto.importantDates !== undefined) patch.importantDates = dto.importantDates;
     if (dto.membershipTier !== undefined) patch.membershipTier = dto.membershipTier;
     if (dto.status !== undefined) patch.status = dto.status;
     if (dto.membershipExpiresAt !== undefined) {
@@ -244,11 +306,57 @@ export class DevoteeService
       country: row.country,
       gotram: row.gotram,
       nakshatra: row.nakshatra,
+      rashi: row.rashi,
+      gender: row.gender as Devotee['gender'],
+      dateOfBirth: row.dateOfBirth,
+      photoUrl: row.photoUrl,
+      familyId: row.familyId,
+      taxId: row.taxId,
+      isNri: row.isNri,
+      communicationOptIn: row.communicationOptIn,
+      preferredLanguage: row.preferredLanguage,
+      importantDates: row.importantDates,
+      address: row.address,
       membershipTier: row.membershipTier,
       membershipExpiresAt: row.membershipExpiresAt,
       status: row.status,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+    };
+  }
+
+  private buildDevoteePayload(input: CreateDevoteeInput) {
+    return {
+      firstName: input.firstName,
+      lastName: input.lastName,
+      email: input.email,
+      phone: input.phone,
+      country: input.country,
+      gotram: input.gotram,
+      nakshatra: input.nakshatra,
+      rashi: input.rashi,
+      gender: input.gender,
+      dateOfBirth: input.dateOfBirth,
+      photoUrl: input.photoUrl,
+      familyId: input.familyId,
+      taxId: input.taxId,
+      isNri: input.isNri ?? false,
+      communicationOptIn: input.communicationOptIn ?? true,
+      preferredLanguage: input.preferredLanguage,
+      importantDates: input.importantDates,
+      address: input.address,
+    };
+  }
+
+  private duplicateSummary(
+    devotee: DevoteeRecord,
+  ): DevoteeDuplicateCheck['phoneMatch'] {
+    return {
+      id: devotee.id,
+      firstName: devotee.firstName,
+      lastName: devotee.lastName,
+      phone: devotee.phone,
+      email: devotee.email,
     };
   }
 

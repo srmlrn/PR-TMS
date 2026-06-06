@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -11,6 +11,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { BookingQueryDto, ServiceSlotsQueryDto } from './dto/booking-query.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { BookingService } from './booking.service';
 import { SevaCatalogService, TimeSlot } from './seva-catalog.service';
 
@@ -46,6 +47,38 @@ export class BookingController {
         devoteeId: query.devoteeId,
       },
     );
+  }
+
+  @Get('bookings/honorarium')
+  @Roles(UserRole.PRIEST, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Total honorarium for completed sevas on a date' })
+  async getHonorarium(
+    @TenantId() tenantId: string,
+    @Query('date') date?: string,
+  ) {
+    const target = date ?? new Date().toISOString().slice(0, 10);
+    const total = await this.bookingService.getHonorariumTotal(tenantId, target);
+    return { date: target, total, currency: 'USD' };
+  }
+
+  @Get('bookings/:id/receipt')
+  @Roles(UserRole.ADMIN, UserRole.DEVOTEE, UserRole.FRONT_DESK, UserRole.PRIEST)
+  @ApiOperation({ summary: 'Get booking payment receipt' })
+  @ApiParam({ name: 'id', description: 'Booking UUID' })
+  async getReceipt(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.bookingService.getReceipt(tenantId, id);
+  }
+
+  @Patch('bookings/:id/status')
+  @Roles(UserRole.PRIEST, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update booking status (e.g. mark seva complete)' })
+  @ApiParam({ name: 'id', description: 'Booking UUID' })
+  async updateStatus(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateBookingStatusDto,
+  ): Promise<Booking> {
+    return this.bookingService.updateStatus(tenantId, id, dto.status);
   }
 
   @Post('bookings')

@@ -26,6 +26,12 @@ export class DonationEntity {
   @Column({ name: 'tax_compliant', default: true })
   taxCompliant!: boolean;
 
+  @Column({ name: 'tax_id', length: 64, nullable: true })
+  taxId?: string;
+
+  @Column({ name: 'payment_status', length: 32, default: 'paid' })
+  paymentStatus!: string;
+
   @Column({ name: 'campaign_id', type: 'uuid', nullable: true })
   campaignId?: string;
 

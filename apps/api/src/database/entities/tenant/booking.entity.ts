@@ -35,6 +35,12 @@ export class BookingEntity {
   @Column({ length: 16, default: 'app' })
   channel!: string;
 
+  @Column({ name: 'payment_status', length: 32, default: 'paid' })
+  paymentStatus!: string;
+
+  @Column({ name: 'honorarium_amount', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  honorariumAmount?: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

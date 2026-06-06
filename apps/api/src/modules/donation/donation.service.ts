@@ -7,7 +7,11 @@ import {
   DonationCampaign,
   DonationFrequency,
   PaginatedResponse,
+  PaymentStatus,
+  TaxReceipt,
 } from '@tms/types';
+import { PaymentService } from '../payment/payment.service';
+import { validateTaxId } from '../payment/tax-validation.util';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { DonationCampaignEntity } from '../../database/entities/tenant/donation-campaign.entity';
@@ -30,7 +34,10 @@ export class DonationService
   private readonly campaignStore = new Map<string, CampaignRecord>();
   private readonly receiptCounters = new Map<string, number>();
 
-  constructor(private readonly tenantData: TenantDataService) {
+  constructor(
+    private readonly tenantData: TenantDataService,
+    private readonly paymentService: PaymentService,
+  ) {
     super();
   }
 
@@ -160,7 +167,18 @@ export class DonationService
   }
 
   async createDonation(tenantId: string, input: CreateDonationInput): Promise<DonationRecord> {
+    validateTaxId(input.currency, input.taxId);
     const tax = this.resolveTaxDoc(input.currency);
+
+    let paymentStatus = PaymentStatus.PAID;
+    if (input.paymentSessionId) {
+      this.paymentService.assertPaidSession(
+        tenantId,
+        input.paymentSessionId,
+        input.amount,
+        input.currency,
+      );
+    }
 
     if (this.usePostgres) {
       if (input.campaignId) {
@@ -180,6 +198,8 @@ export class DonationService
         frequency: input.frequency ?? DonationFrequency.ONE_TIME,
         receiptNumber: await this.generateReceiptNumber(tenantId),
         taxCompliant: tax.taxCompliant,
+        taxId: input.taxId,
+        paymentStatus,
         campaignId: input.campaignId,
       });
       const saved = await repo.save(entity);
@@ -214,6 +234,8 @@ export class DonationService
       receiptNumber: this.generateReceiptNumberSync(tenantId),
       taxCompliant: tax.taxCompliant,
       taxDocType: tax.taxDocType,
+      taxId: input.taxId,
+      paymentStatus,
       campaignId: input.campaignId,
     });
 
@@ -284,6 +306,39 @@ export class DonationService
     return this.withProgress(campaign);
   }
 
+  async findDonationById(tenantId: string, id: string): Promise<DonationRecord> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.donations();
+      const row = await repo.findOne({ where: { id } });
+      if (!row) {
+        throw new NotFoundException(`Donation ${id} not found`);
+      }
+      return this.toDonation(row);
+    }
+
+    const donation = this.findOneScoped(tenantId, id);
+    if (!donation) {
+      throw new NotFoundException(`Donation ${id} not found`);
+    }
+    return donation;
+  }
+
+  async getReceipt(tenantId: string, id: string): Promise<TaxReceipt> {
+    const donation = await this.findDonationById(tenantId, id);
+    const tax = this.resolveTaxDoc(donation.currency);
+    return {
+      receiptNumber: donation.receiptNumber,
+      amount: donation.amount,
+      currency: donation.currency,
+      taxDocType: tax.taxDocType,
+      taxId: donation.taxId,
+      devoteeId: donation.devoteeId,
+      purpose: donation.purpose,
+      issuedAt: donation.createdAt.toISOString(),
+      templeName: 'Sri Venkateswara Temple',
+    };
+  }
+
   private toDonation(row: DonationEntity): DonationRecord {
     const tax = this.resolveTaxDoc(row.currency as Currency);
     return {
@@ -297,6 +352,8 @@ export class DonationService
       receiptNumber: row.receiptNumber,
       taxCompliant: row.taxCompliant,
       taxDocType: tax.taxDocType,
+      taxId: row.taxId,
+      paymentStatus: row.paymentStatus as PaymentStatus,
       campaignId: row.campaignId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

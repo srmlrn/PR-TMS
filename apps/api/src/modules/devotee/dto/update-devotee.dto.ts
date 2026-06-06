@@ -1,5 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -8,10 +11,10 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { Devotee } from '@tms/types';
+import { Devotee, DevoteeGender, ImportantDateType } from '@tms/types';
 
 const DEVOTEE_STATUSES = ['active', 'inactive', 'renewal_due'] as const satisfies readonly Devotee['status'][];
+const GENDERS = ['male', 'female', 'other'] as const satisfies readonly DevoteeGender[];
 
 class UpdateAddressDto {
   @ApiPropertyOptional({ example: '123 Temple Way' })
@@ -43,6 +46,20 @@ class UpdateAddressDto {
   @IsOptional()
   @IsString()
   country?: string;
+}
+
+class ImportantDateDto {
+  @ApiPropertyOptional({ example: 'Birthday' })
+  @IsString()
+  label!: string;
+
+  @ApiPropertyOptional({ example: '1985-03-15' })
+  @IsDateString()
+  date!: string;
+
+  @ApiPropertyOptional({ enum: ['birthday', 'anniversary', 'star_day', 'other'] })
+  @IsEnum(['birthday', 'anniversary', 'star_day', 'other'] as const)
+  type!: ImportantDateType;
 }
 
 export class UpdateDevoteeDto {
@@ -84,6 +101,58 @@ export class UpdateDevoteeDto {
   @IsOptional()
   @IsString()
   nakshatra?: string;
+
+  @ApiPropertyOptional({ example: 'Vrishabha' })
+  @IsOptional()
+  @IsString()
+  rashi?: string;
+
+  @ApiPropertyOptional({ enum: GENDERS })
+  @IsOptional()
+  @IsEnum(GENDERS)
+  gender?: DevoteeGender;
+
+  @ApiPropertyOptional({ example: '1985-03-15' })
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  familyId?: string;
+
+  @ApiPropertyOptional({ example: 'ABCDE1234F' })
+  @IsOptional()
+  @IsString()
+  taxId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isNri?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  communicationOptIn?: boolean;
+
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  @IsString()
+  preferredLanguage?: string;
+
+  @ApiPropertyOptional({ type: [ImportantDateDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ImportantDateDto)
+  importantDates?: ImportantDateDto[];
 
   @ApiPropertyOptional({ example: 'Patron' })
   @IsOptional()

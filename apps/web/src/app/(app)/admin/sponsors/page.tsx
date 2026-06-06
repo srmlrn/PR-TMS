@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Badge,
   BentoGrid,
@@ -13,8 +14,9 @@ import {
   StatTile,
   dataTableAmountStyles,
 } from '@tms/ui';
-import { SponsorTier, type Sponsor } from '@tms/types';
-import { formatMoney, formatShortDate } from '@/lib/api/endpoints';
+import { Currency, SponsorTier, type Sponsor } from '@tms/types';
+import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoints';
+import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import styles from './sponsors.module.css';
 
@@ -143,7 +145,36 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 }
 
 export default function AdminSponsorsPage() {
-  const { data, loading, error } = useApi((ep) => ep.getSponsors({ limit: 50 }));
+  const { api } = useTenant();
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formMsg, setFormMsg] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: '',
+    type: 'corporate' as Sponsor['type'],
+    tier: SponsorTier.GOLD,
+    primaryContact: '',
+    committedAmount: 5000,
+    currency: Currency.USD,
+  });
+
+  const { data, loading, error, refetch } = useApi((ep) => ep.getSponsors({ limit: 50 }));
+
+  async function handleCreate() {
+    setSaving(true);
+    setFormMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      await ep.createSponsor(form);
+      setShowForm(false);
+      refetch();
+      setFormMsg('Sponsor created.');
+    } catch (err) {
+      setFormMsg(err instanceof Error ? err.message : 'Create failed');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const sponsors: SponsorRow[] =
     data?.data.length && !error ? data.data.map(mapSponsor) : FALLBACK_SPONSORS;
@@ -156,8 +187,35 @@ export default function AdminSponsorsPage() {
       <PageHeader
         title="Sponsor Management"
         subtitle="Ubayam, event sponsors, corporate partners — CRM for sponsors"
-        actions={<Button variant="primary">+ Add Sponsor</Button>}
+        actions={
+          <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? 'Cancel' : '+ Add Sponsor'}
+          </Button>
+        }
       />
+
+      {showForm && (
+        <GlassCard title="New sponsor" className="mb2">
+          <div className="formGrid">
+            <div className="formGroup">
+              <label>Name</label>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>Primary contact</label>
+              <input value={form.primaryContact} onChange={(e) => setForm({ ...form, primaryContact: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>Committed amount</label>
+              <input type="number" value={form.committedAmount} onChange={(e) => setForm({ ...form, committedAmount: Number(e.target.value) })} />
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <Button onClick={handleCreate} disabled={saving}>{saving ? 'Saving…' : 'Create sponsor'}</Button>
+              {formMsg && <p className="tms-t2 mt1">{formMsg}</p>}
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       <ApiBanner loading={loading} error={error} />
 

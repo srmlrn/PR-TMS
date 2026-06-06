@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, Chip } from '@tms/ui';
 import { Currency } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
@@ -9,11 +10,14 @@ import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { formatMoney } from '@/lib/api/endpoints';
 import { ApiBanner } from '@/components/ApiBanner';
+import { checkoutAndPay } from '@/lib/payment-flow';
 import styles from './book.module.css';
 
 export default function BookSevaPage() {
   const { user } = useAuth();
   const { api } = useTenant();
+  const searchParams = useSearchParams();
+  const channel = (searchParams.get('channel') as 'app' | 'kiosk' | 'counter') ?? 'app';
   const [serviceId, setServiceId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [slot, setSlot] = useState('');
@@ -50,11 +54,22 @@ export default function BookSevaPage() {
     try {
       const ep = createEndpoints(api);
       const scheduledAt = new Date(`${date}T${slot}`).toISOString();
-      await ep.createBooking({
+      const svc = selectedService;
+      if (!svc) return;
+
+      const paymentSessionId = await checkoutAndPay(ep, {
+        amount: svc.price,
+        currency: svc.currency,
+        purpose: `Seva: ${svc.name}`,
+        devoteeId: user.devoteeId,
+      });
+
+      const booking = await ep.createBooking({
         devoteeId: user.devoteeId,
         serviceId,
         scheduledAt,
-        channel: 'app',
+        channel,
+        paymentSessionId,
         sankalpa: sponsorName
           ? {
               sponsorName,
@@ -65,7 +80,7 @@ export default function BookSevaPage() {
             }
           : undefined,
       });
-      setMessage('Booking confirmed! Check your home page for details.');
+      setMessage(`Booking confirmed! Receipt ${booking.receiptNumber ?? booking.id.slice(0, 8)}.`);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Booking failed');
     } finally {

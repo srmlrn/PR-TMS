@@ -11,7 +11,10 @@ import {
   CreateBookingInput,
   Currency,
   PaginatedResponse,
+  PaymentStatus,
+  TaxReceipt,
 } from '@tms/types';
+import { PaymentService } from '../payment/payment.service';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { BookingEntity } from '../../database/entities/tenant/booking.entity';
@@ -39,6 +42,7 @@ export class BookingService
     private readonly sevaCatalogService: SevaCatalogService,
     private readonly devoteeService: DevoteeService,
     private readonly tenantData: TenantDataService,
+    private readonly paymentService: PaymentService,
   ) {
     super();
   }
@@ -111,6 +115,16 @@ export class BookingService
 
     await this.assertNoConflict(tenantId, input.serviceId, scheduledAt, service.durationMinutes);
 
+    let paymentStatus = PaymentStatus.PAID;
+    if (input.paymentSessionId) {
+      this.paymentService.assertPaidSession(
+        tenantId,
+        input.paymentSessionId,
+        service.price,
+        service.currency,
+      );
+    }
+
     if (this.usePostgres) {
       const repo = await this.tenantData.bookings();
       const entity = repo.create({
@@ -123,6 +137,7 @@ export class BookingService
         sankalpa: input.sankalpa as Record<string, string> | undefined,
         receiptNumber: await this.generateReceiptNumber(tenantId),
         channel: input.channel ?? 'app',
+        paymentStatus,
       });
       const saved = await repo.save(entity);
       return this.toBooking(saved);
@@ -138,7 +153,76 @@ export class BookingService
       sankalpa: input.sankalpa,
       receiptNumber: this.generateReceiptNumberSync(tenantId),
       channel: input.channel ?? 'app',
+      paymentStatus,
     });
+  }
+
+  async updateStatus(
+    tenantId: string,
+    id: string,
+    status: BookingStatus,
+  ): Promise<BookingRecord> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.bookings();
+      const row = await repo.findOne({ where: { id } });
+      if (!row) {
+        throw new NotFoundException(`Booking ${id} not found`);
+      }
+      row.status = status;
+      if (status === BookingStatus.COMPLETED) {
+        row.honorariumAmount = Number(row.amount);
+      }
+      const saved = await repo.save(row);
+      return this.toBooking(saved);
+    }
+
+    const existing = this.findOneScoped(tenantId, id);
+    if (!existing) {
+      throw new NotFoundException(`Booking ${id} not found`);
+    }
+
+    const patch: Partial<BookingRecord> = { status };
+    if (status === BookingStatus.COMPLETED) {
+      patch.honorariumAmount = existing.amount;
+    }
+    return this.updateEntity(tenantId, id, patch);
+  }
+
+  async findOne(tenantId: string, id: string): Promise<BookingRecord> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.bookings();
+      const row = await repo.findOne({ where: { id } });
+      if (!row) {
+        throw new NotFoundException(`Booking ${id} not found`);
+      }
+      return this.toBooking(row);
+    }
+
+    const booking = this.findOneScoped(tenantId, id);
+    if (!booking) {
+      throw new NotFoundException(`Booking ${id} not found`);
+    }
+    return booking;
+  }
+
+  async getReceipt(tenantId: string, id: string): Promise<TaxReceipt> {
+    const booking = await this.findOne(tenantId, id);
+    return {
+      receiptNumber: booking.receiptNumber ?? `BKG-${booking.id.slice(0, 8)}`,
+      amount: booking.amount,
+      currency: booking.currency,
+      devoteeId: booking.devoteeId,
+      purpose: `Seva booking — ${booking.serviceId}`,
+      issuedAt: booking.createdAt.toISOString(),
+      templeName: 'Sri Venkateswara Temple',
+    };
+  }
+
+  async getHonorariumTotal(tenantId: string, date: string): Promise<number> {
+    const { data } = await this.findAll(tenantId, 1, 100, { date });
+    return data
+      .filter((b) => b.status === BookingStatus.COMPLETED)
+      .reduce((sum, b) => sum + (b.honorariumAmount ?? b.amount), 0);
   }
 
   async getServiceSlots(
@@ -271,6 +355,10 @@ export class BookingService
       sankalpa: row.sankalpa as Booking['sankalpa'],
       receiptNumber: row.receiptNumber,
       channel: row.channel as Booking['channel'],
+      paymentStatus: row.paymentStatus as PaymentStatus,
+      honorariumAmount: row.honorariumAmount
+        ? Number(row.honorariumAmount)
+        : undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

@@ -1,4 +1,4 @@
-import { Currency, DonationFrequency } from './enums';
+import { Currency, DonationFrequency, PaymentStatus } from './enums';
 import { TenantScoped, Timestamps } from './common';
 
 export interface Donation extends TenantScoped, Timestamps {
@@ -11,6 +11,8 @@ export interface Donation extends TenantScoped, Timestamps {
   receiptNumber: string;
   taxCompliant: boolean;
   taxDocType?: 'irs_501c3' | '80g' | 'cra';
+  taxId?: string;
+  paymentStatus?: PaymentStatus;
   campaignId?: string;
 }
 
@@ -30,4 +32,6 @@ export interface CreateDonationInput {
   purpose: string;
   frequency?: DonationFrequency;
   campaignId?: string;
+  taxId?: string;
+  paymentSessionId?: string;
 }

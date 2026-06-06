@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Badge,
   BentoGrid,
@@ -11,7 +12,8 @@ import {
   ProgressBar,
 } from '@tms/ui';
 import { EventLifecycleStage, type TempleEvent } from '@tms/types';
-import { formatMoney, formatShortDate } from '@/lib/api/endpoints';
+import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoints';
+import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import styles from './events.module.css';
 
@@ -161,7 +163,36 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 }
 
 export default function AdminEventsPage() {
-  const { data: pipeline, loading, error } = useApi((ep) => ep.getEventPipeline());
+  const { api } = useTenant();
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    type: 'festival' as TempleEvent['type'],
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date().toISOString().slice(0, 10),
+    venues: 'Main Hall',
+  });
+
+  const { data: pipeline, loading, error, refetch } = useApi((ep) => ep.getEventPipeline());
+
+  async function handleCreate() {
+    setSaving(true);
+    try {
+      const ep = createEndpoints(api);
+      await ep.createEvent({
+        name: form.name,
+        type: form.type,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        venues: form.venues.split(',').map((v) => v.trim()).filter(Boolean),
+      });
+      setShowForm(false);
+      refetch();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const columns = pipeline && !error ? pipelineToColumns(pipeline) : FALLBACK_PIPELINE;
   const featured =
@@ -176,10 +207,40 @@ export default function AdminEventsPage() {
       <PageHeader
         title="Event Management"
         subtitle="Full lifecycle — Enquiry → Contract → Live → Report"
-        actions={<Button variant="primary">+ New Event</Button>}
+        actions={
+          <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? 'Cancel' : '+ New Event'}
+          </Button>
+        }
       />
 
       <ApiBanner loading={loading} error={error} />
+
+      {showForm && (
+        <GlassCard title="New event" className="mb2">
+          <div className="formGrid">
+            <div className="formGroup">
+              <label>Name</label>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>Start date</label>
+              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>End date</label>
+              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>Venues (comma-separated)</label>
+              <input value={form.venues} onChange={(e) => setForm({ ...form, venues: e.target.value })} />
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <Button onClick={handleCreate} disabled={saving || !form.name}>{saving ? 'Saving…' : 'Create event'}</Button>
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       <div className="mb2">
         <div className="sectionLabel">Event Pipeline</div>

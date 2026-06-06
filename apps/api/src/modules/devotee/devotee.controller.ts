@@ -49,6 +49,18 @@ export class DevoteeController {
     );
   }
 
+  @Get('check-duplicate')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Check for existing devotee by phone or email' })
+  @ApiResponse({ status: 200, description: 'Duplicate matches if any' })
+  async checkDuplicate(
+    @TenantId() tenantId: string,
+    @Query('phone') phone?: string,
+    @Query('email') email?: string,
+  ) {
+    return this.devoteeService.checkDuplicates(tenantId, phone, email);
+  }
+
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'Get devotee by ID' })
@@ -70,7 +82,20 @@ export class DevoteeController {
     @TenantId() tenantId: string,
     @Body() dto: CreateDevoteeDto,
   ): Promise<Devotee> {
-    return this.devoteeService.create(tenantId, dto);
+    const { address, ...rest } = dto;
+    return this.devoteeService.create(tenantId, {
+      ...rest,
+      address: address?.line1
+        ? {
+            line1: address.line1,
+            line2: address.line2,
+            city: address.city ?? '',
+            state: address.state,
+            postalCode: address.postalCode,
+            country: address.country ?? rest.country,
+          }
+        : undefined,
+    });
   }
 
   @Patch(':id')

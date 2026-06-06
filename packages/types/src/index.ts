@@ -11,3 +11,4 @@ export * from './prasadam';
 export * from './donation';
 export * from './finance';
 export * from './frontdesk';
+export * from './payment';

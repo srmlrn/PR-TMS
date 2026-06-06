@@ -12,6 +12,7 @@ import { PrasadamModule } from './modules/prasadam/prasadam.module';
 import { DonationModule } from './modules/donation/donation.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { FrontDeskModule } from './modules/frontdesk/frontdesk.module';
+import { PaymentModule } from './modules/payment/payment.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantDataModule } from './database/tenant-data.module';
 
@@ -31,6 +32,7 @@ const usePostgres = process.env.STORAGE_MODE === 'postgres';
     DonationModule,
     FinanceModule,
     FrontDeskModule,
+    PaymentModule,
   ],
   providers: [
     TenantContextMiddleware,

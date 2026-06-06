@@ -38,6 +38,7 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
       { id: 'd-home', emoji: '🏠', label: 'Home', href: '/devotee/home' },
       { id: 'd-book', emoji: '🙏', label: 'Book Seva', href: '/devotee/book' },
       { id: 'd-donate', emoji: '💝', label: 'Donate', href: '/devotee/donate' },
+      { id: 'd-profile', emoji: '👤', label: 'My Profile', href: '/devotee/profile' },
     ],
   },
   [UserRole.ADMIN]: {
@@ -183,6 +184,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/devotee/home': 'Home',
   '/devotee/book': 'Book Seva',
   '/devotee/donate': 'Donate',
+  '/devotee/profile': 'My Profile',
   '/admin/dashboard': 'Temple Dashboard',
   '/admin/devotees': 'Devotee CRM',
   '/admin/events': 'Event Management',

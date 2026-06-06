@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Badge,
   BentoGrid,
@@ -12,7 +13,8 @@ import {
   StatTile,
 } from '@tms/ui';
 import { PrasadamPackageTier, PrasadamSponsorshipType, type PrasadamSponsorship } from '@tms/types';
-import { formatMoney, formatShortDate } from '@/lib/api/endpoints';
+import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoints';
+import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import styles from './prasadam.module.css';
 
@@ -144,7 +146,40 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 }
 
 export default function AdminPrasadamPage() {
-  const { data, loading, error } = useApi((ep) => ep.getPrasadamSponsorships({ limit: 20 }));
+  const { api } = useTenant();
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    devoteeId: 'dev-rajan-krishnamurthy',
+    deity: 'Lord Venkateswara',
+    scheduledDate: new Date().toISOString().slice(0, 10),
+    sponsorName: 'Rajan Krishnamurthy',
+    gotram: 'Bharadwaja',
+  });
+
+  const { data, loading, error, refetch } = useApi((ep) => ep.getPrasadamSponsorships({ limit: 20 }));
+
+  async function handleCreate() {
+    setSaving(true);
+    try {
+      const ep = createEndpoints(api);
+      await ep.createPrasadamSponsorship({
+        type: PrasadamSponsorshipType.DAILY,
+        packageTier: PrasadamPackageTier.GOLD,
+        devoteeId: form.devoteeId,
+        scheduledDate: form.scheduledDate,
+        deity: form.deity,
+        sankalpa: {
+          sponsorName: form.sponsorName,
+          gotram: form.gotram,
+        },
+      });
+      setShowForm(false);
+      refetch();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const recent: SponsorshipRow[] =
     data?.data.length && !error ? data.data.map(mapSponsorship) : FALLBACK_RECENT;
@@ -161,13 +196,37 @@ export default function AdminPrasadamPage() {
         subtitle="Sponsor deity prasadam, annadanam, festival kits — online & NRI"
         actions={
           <div className="flexRow">
-            <Button variant="primary">+ New Sponsorship</Button>
+            <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
+              {showForm ? 'Cancel' : '+ New Sponsorship'}
+            </Button>
             <Button size="sm">Kitchen Orders</Button>
           </div>
         }
       />
 
       <ApiBanner loading={loading} error={error} />
+
+      {showForm && (
+        <GlassCard title="Book prasadam sponsorship" className="mb2">
+          <div className="formGrid">
+            <div className="formGroup">
+              <label>Devotee ID</label>
+              <input value={form.devoteeId} onChange={(e) => setForm({ ...form, devoteeId: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>Scheduled date</label>
+              <input type="date" value={form.scheduledDate} onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>Sponsor name</label>
+              <input value={form.sponsorName} onChange={(e) => setForm({ ...form, sponsorName: e.target.value })} />
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <Button onClick={handleCreate} disabled={saving}>{saving ? 'Booking…' : 'Create sponsorship'}</Button>
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       <BentoGrid className="mb2">
         <BentoItem span={3}>

@@ -13,11 +13,11 @@ export default function KioskPage() {
       <p className={styles.sub}>Sri Venkateswara Temple · Self-Service</p>
 
       <div className="kioskGrid">
-        <button type="button" className="kioskTile" onClick={() => router.push('/devotee/book')}>
+        <button type="button" className="kioskTile" onClick={() => router.push('/devotee/book?channel=kiosk')}>
           <span aria-hidden>🙏</span>
           Book Seva
         </button>
-        <button type="button" className="kioskTile" onClick={() => router.push('/devotee/donate')}>
+        <button type="button" className="kioskTile" onClick={() => router.push('/devotee/donate?channel=kiosk')}>
           <span aria-hidden>💝</span>
           Donate
         </button>

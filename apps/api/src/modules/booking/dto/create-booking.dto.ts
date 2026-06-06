@@ -64,4 +64,9 @@ export class CreateBookingDto {
   @IsOptional()
   @IsEnum(BOOKING_CHANNELS)
   channel?: Booking['channel'];
+
+  @ApiPropertyOptional({ description: 'Confirmed payment session UUID' })
+  @IsOptional()
+  @IsString()
+  paymentSessionId?: string;
 }

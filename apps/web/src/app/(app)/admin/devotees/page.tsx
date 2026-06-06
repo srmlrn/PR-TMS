@@ -35,6 +35,14 @@ const EMPTY_FORM = {
   country: 'US',
   gotram: '',
   nakshatra: '',
+  rashi: '',
+  gender: '' as '' | 'male' | 'female' | 'other',
+  dateOfBirth: '',
+  familyId: '',
+  taxId: '',
+  isNri: false,
+  addressLine1: '',
+  city: '',
 };
 
 export default function DevoteesPage() {
@@ -44,6 +52,7 @@ export default function DevoteesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formMsg, setFormMsg] = useState<string | null>(null);
+  const [dupWarning, setDupWarning] = useState<string | null>(null);
 
   const { data, loading, error, refetch } = useApi(
     (ep) => ep.getDevotees({ limit: 50, name: search || undefined }),
@@ -63,6 +72,24 @@ export default function DevoteesPage() {
         }))
       : FALLBACK;
 
+  async function checkDuplicate(phone: string, email?: string) {
+    if (!phone && !email) return;
+    try {
+      const ep = createEndpoints(api);
+      const dup = await ep.checkDevoteeDuplicate({ phone, email });
+      const parts: string[] = [];
+      if (dup.phoneMatch) {
+        parts.push(`Phone matches ${dup.phoneMatch.firstName} ${dup.phoneMatch.lastName}`);
+      }
+      if (dup.emailMatch) {
+        parts.push(`Email matches ${dup.emailMatch.firstName} ${dup.emailMatch.lastName}`);
+      }
+      setDupWarning(parts.length ? parts.join(' · ') : null);
+    } catch {
+      setDupWarning(null);
+    }
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -77,6 +104,15 @@ export default function DevoteesPage() {
         email: form.email || undefined,
         gotram: form.gotram || undefined,
         nakshatra: form.nakshatra || undefined,
+        rashi: form.rashi || undefined,
+        gender: form.gender || undefined,
+        dateOfBirth: form.dateOfBirth || undefined,
+        familyId: form.familyId || undefined,
+        taxId: form.taxId || undefined,
+        isNri: form.isNri,
+        address: form.addressLine1
+          ? { line1: form.addressLine1, city: form.city, country: form.country }
+          : undefined,
       });
       setForm(EMPTY_FORM);
       setShowForm(false);
@@ -135,6 +171,7 @@ export default function DevoteesPage() {
                 required
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                onBlur={() => checkDuplicate(form.phone, form.email)}
               />
             </div>
             <div className="formGroup">
@@ -171,6 +208,49 @@ export default function DevoteesPage() {
                 onChange={(e) => setForm({ ...form, nakshatra: e.target.value })}
               />
             </div>
+            <div className="formGroup">
+              <label htmlFor="rashi">Rashi</label>
+              <input id="rashi" value={form.rashi} onChange={(e) => setForm({ ...form, rashi: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="gender">Gender</label>
+              <select id="gender" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value as typeof form.gender })}>
+                <option value="">—</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="formGroup">
+              <label htmlFor="dob">Date of birth</label>
+              <input id="dob" type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="familyId">Family ID</label>
+              <input id="familyId" value={form.familyId} onChange={(e) => setForm({ ...form, familyId: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="taxId">Tax ID</label>
+              <input id="taxId" value={form.taxId} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="address">Address</label>
+              <input id="address" value={form.addressLine1} onChange={(e) => setForm({ ...form, addressLine1: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="city">City</label>
+              <input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>
+                <input type="checkbox" checked={form.isNri} onChange={(e) => setForm({ ...form, isNri: e.target.checked })} /> NRI
+              </label>
+            </div>
+            {dupWarning && (
+              <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+                <p className="tms-t2" style={{ color: 'var(--amber)' }}>⚠ {dupWarning}</p>
+              </div>
+            )}
             <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
               <Button type="submit" disabled={saving}>
                 {saving ? 'Saving…' : 'Create devotee'}

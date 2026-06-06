@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import type { Address, ImportantDate } from '@tms/types';
 
 @Entity('devotees')
 export class DevoteeEntity {
@@ -31,6 +32,39 @@ export class DevoteeEntity {
 
   @Column({ length: 64, nullable: true })
   nakshatra?: string;
+
+  @Column({ length: 64, nullable: true })
+  rashi?: string;
+
+  @Column({ length: 16, nullable: true })
+  gender?: string;
+
+  @Column({ name: 'date_of_birth', type: 'date', nullable: true })
+  dateOfBirth?: string;
+
+  @Column({ name: 'photo_url', length: 512, nullable: true })
+  photoUrl?: string;
+
+  @Column({ name: 'family_id', type: 'uuid', nullable: true })
+  familyId?: string;
+
+  @Column({ name: 'tax_id', length: 64, nullable: true })
+  taxId?: string;
+
+  @Column({ name: 'is_nri', default: false })
+  isNri!: boolean;
+
+  @Column({ name: 'communication_opt_in', default: true })
+  communicationOptIn!: boolean;
+
+  @Column({ name: 'preferred_language', length: 16, nullable: true })
+  preferredLanguage?: string;
+
+  @Column({ name: 'important_dates', type: 'jsonb', nullable: true })
+  importantDates?: ImportantDate[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  address?: Address;
 
   @Column({ name: 'membership_tier', length: 32, nullable: true })
   membershipTier?: string;

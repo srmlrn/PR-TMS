@@ -1,8 +1,11 @@
 'use client';
 
-import { Badge, DataTable, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import { useState } from 'react';
+import { Badge, Button, DataTable, GlassCard, PageHeader, StatTile } from '@tms/ui';
 import { Booking, BookingStatus, Devotee } from '@tms/types';
 import { formatMoney, formatTime } from '@/lib/api/endpoints';
+import { createEndpoints } from '@/lib/api/endpoints';
+import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './schedule.module.css';
@@ -43,17 +46,37 @@ function devoteeName(devotees: Devotee[] | undefined, devoteeId: string): string
 }
 
 export default function PriestSchedulePage() {
+  const { api } = useTenant();
+  const [completing, setCompleting] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
-  const { data, loading, error } = useApi((ep) =>
+
+  const { data, loading, error, refetch } = useApi((ep) =>
     Promise.all([
       ep.getBookings({ limit: 20, date: today }),
       ep.getDevotees({ limit: 100 }),
-    ]).then(([bookings, devotees]) => ({ bookings, devotees })),
+      ep.getHonorarium(today),
+    ]).then(([bookings, devotees, honorarium]) => ({
+      bookings,
+      devotees,
+      honorarium,
+    })),
   );
 
   const bookings = data?.bookings?.data ?? [];
   const devotees = data?.devotees?.data;
   const confirmed = bookings.filter((b) => b.status === BookingStatus.CONFIRMED).length;
+  const honorariumTotal = data?.honorarium?.total ?? 0;
+
+  async function markComplete(id: string) {
+    setCompleting(id);
+    try {
+      const ep = createEndpoints(api);
+      await ep.updateBookingStatus(id, BookingStatus.COMPLETED);
+      refetch();
+    } finally {
+      setCompleting(null);
+    }
+  }
 
   const rows: ScheduleRow[] = bookings.map((b) => ({
     id: b.id,
@@ -70,14 +93,19 @@ export default function PriestSchedulePage() {
     <>
       <PageHeader
         title="Today's Schedule"
-        subtitle={`Pooja list with devotee name and sankalpa for ritual recital — ${new Date().toLocaleDateString()}`}
+        subtitle={`Pooja list with devotee name and sankalpa — ${new Date().toLocaleDateString()}`}
       />
       <ApiBanner loading={loading} error={error} />
 
       <div className={styles.stats}>
         <StatTile label="Today's Sevas" value={String(bookings.length)} icon="📿" />
         <StatTile label="Confirmed" value={String(confirmed)} icon="✅" />
-        <StatTile label="Honorarium (est.)" value="$420" icon="💰" change="Today" />
+        <StatTile
+          label="Honorarium (completed)"
+          value={formatMoney(honorariumTotal)}
+          icon="💰"
+          change="Today"
+        />
       </div>
 
       <GlassCard title="Pooja Schedule" noBodyPadding>
@@ -93,27 +121,26 @@ export default function PriestSchedulePage() {
               key: 'status',
               header: 'Status',
               render: (r) => (
-                <Badge variant={r.status === 'confirmed' ? 'ok' : 'pending'}>{r.status}</Badge>
+                <Badge variant={r.status === 'completed' ? 'ok' : 'pending'}>{r.status}</Badge>
               ),
             },
             { key: 'amount', header: 'Dakshina', render: (r) => r.amount, align: 'right' },
+            {
+              key: 'action',
+              header: '',
+              render: (r) =>
+                r.status === BookingStatus.CONFIRMED ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => markComplete(r.id)}
+                    disabled={completing === r.id}
+                  >
+                    {completing === r.id ? '…' : 'Complete'}
+                  </Button>
+                ) : null,
+            },
           ]}
-          data={
-            rows.length
-              ? rows
-              : [
-                  {
-                    id: '1',
-                    time: '9:00 AM',
-                    service: 'Archana',
-                    devotee: 'Rajan Krishnamurthy',
-                    sankalpa: 'Rajan K · Gotram: Bharadwaja · Nakshatra: Rohini',
-                    status: 'confirmed',
-                    amount: '$51',
-                    channel: 'app',
-                  },
-                ]
-          }
+          data={rows}
         />
       </GlassCard>
     </>

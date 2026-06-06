@@ -1,4 +1,4 @@
-import { BookingStatus, Currency } from './enums';
+import { BookingStatus, Currency, PaymentStatus } from './enums';
 import { Sankalpa, TenantScoped, Timestamps } from './common';
 
 export interface SevaService extends TenantScoped, Timestamps {
@@ -24,6 +24,8 @@ export interface Booking extends TenantScoped, Timestamps {
   sankalpa?: Sankalpa;
   receiptNumber?: string;
   channel: 'app' | 'counter' | 'online' | 'kiosk';
+  paymentStatus?: PaymentStatus;
+  honorariumAmount?: number;
 }
 
 export interface CreateBookingInput {
@@ -32,4 +34,5 @@ export interface CreateBookingInput {
   scheduledAt: string;
   sankalpa?: Sankalpa;
   channel?: Booking['channel'];
+  paymentSessionId?: string;
 }

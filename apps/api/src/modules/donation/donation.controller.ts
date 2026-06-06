@@ -59,6 +59,17 @@ export class DonationController {
     return this.donationService.findCampaigns(tenantId);
   }
 
+  @Get('donations/:id/receipt')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.DEVOTEE, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Download tax receipt for a donation' })
+  @ApiOkResponse({ description: 'Tax receipt JSON' })
+  async getReceipt(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.donationService.getReceipt(tenantId, id);
+  }
+
   @Get('campaigns/:id')
   @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.FRONT_DESK, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'Get a donation campaign by ID' })
