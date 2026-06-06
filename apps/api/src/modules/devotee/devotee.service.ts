@@ -8,9 +8,12 @@ import {
   CreateDevoteeInput,
   CreateDevoteeResponse,
   Currency,
+  DEMO_TENANT_IDS,
   Devotee,
   DevoteeDuplicateCheck,
+  GANESHA_TEMPLE_ID,
   PaginatedResponse,
+  SV_TEMPLE_ID,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
@@ -20,7 +23,7 @@ import { UpdateDevoteeDto } from './dto/update-devotee.dto';
 
 type DevoteeRecord = Devotee & TenantEntity;
 
-const DEMO_TENANT = '00000000-0000-0000-0000-000000000001';
+const DEMO_TENANT = SV_TEMPLE_ID;
 
 @Injectable()
 export class DevoteeService
@@ -39,7 +42,9 @@ export class DevoteeService
 
   onModuleInit(): void {
     if (!this.usePostgres) {
-      this.seedDemoData();
+      for (const tenantId of DEMO_TENANT_IDS) {
+        this.seedDemoData(tenantId);
+      }
     }
   }
 
@@ -412,17 +417,59 @@ export class DevoteeService
     return phone.replace(/\D/g, '');
   }
 
-  private seedDemoData(): void {
-    if (this.scoped(DEMO_TENANT).length > 0) {
+  private seedDemoData(tenantId: string): void {
+    if (this.scoped(tenantId).length > 0) {
       return;
     }
 
     const now = new Date();
+    const isGanesha = tenantId === GANESHA_TEMPLE_ID;
 
-    const seedDevotees: Array<Omit<DevoteeRecord, 'createdAt' | 'updatedAt'>> = [
+    const seedDevotees: Array<Omit<DevoteeRecord, 'createdAt' | 'updatedAt'>> = isGanesha
+      ? [
+          {
+            id: 'sgt-dev-amit-reddy',
+            tenantId,
+            firstName: 'Amit',
+            lastName: 'Reddy',
+            email: 'amit@ex.com',
+            phone: '+1 615-555-0142',
+            country: 'US',
+            gotram: 'Kashyapa',
+            nakshatra: 'Ashwini',
+            membershipTier: 'Patron',
+            ytdDonations: { amount: 2200, currency: Currency.USD },
+            status: 'active',
+          },
+          {
+            id: 'sgt-dev-priya-iyer',
+            tenantId,
+            firstName: 'Priya',
+            lastName: 'Iyer',
+            phone: '+1 615-555-0198',
+            country: 'US',
+            gotram: 'Bharadwaja',
+            membershipTier: 'Annual',
+            ytdDonations: { amount: 650, currency: Currency.USD },
+            status: 'active',
+          },
+          {
+            id: 'sgt-dev-raj-natarajan',
+            tenantId,
+            firstName: 'Raj',
+            lastName: 'Natarajan',
+            phone: '+1 615-555-0211',
+            country: 'US',
+            gotram: 'Atri',
+            membershipTier: 'Annual',
+            ytdDonations: { amount: 400, currency: Currency.USD },
+            status: 'active',
+          },
+        ]
+      : [
       {
         id: 'dev-rajan-krishnamurthy',
-        tenantId: DEMO_TENANT,
+        tenantId,
         firstName: 'Rajan',
         lastName: 'Krishnamurthy',
         email: 'rajan@ex.com',

@@ -19,9 +19,10 @@ import { TenantEnvironmentEntity } from '../../database/entities/control/tenant-
 import { UsageMeterEntity } from '../../database/entities/control/usage-meter.entity';
 import { EnvironmentProvisionerService } from '../../database/environment-provisioner.service';
 import {
+  getMemoryTenant,
   getMemoryUsage,
   MEMORY_ENVIRONMENTS,
-  MEMORY_TENANT,
+  MEMORY_TENANTS,
 } from './platform.memory';
 
 @Injectable()
@@ -45,17 +46,16 @@ export class PlatformService {
   }
 
   async listTenants(): Promise<Tenant[]> {
-    if (!this.usePostgres) return [MEMORY_TENANT];
+    if (!this.usePostgres) return MEMORY_TENANTS;
     const tenants = await this.tenantRepo!.find({ order: { name: 'ASC' } });
     return tenants.map((t) => this.toTenant(t));
   }
 
   async getTenant(tenantId: string): Promise<Tenant> {
     if (!this.usePostgres) {
-      if (tenantId !== MEMORY_TENANT.id) {
-        throw new NotFoundException(`Tenant ${tenantId} not found`);
-      }
-      return MEMORY_TENANT;
+      const tenant = getMemoryTenant(tenantId);
+      if (!tenant) throw new NotFoundException(`Tenant ${tenantId} not found`);
+      return tenant;
     }
     const tenant = await this.tenantRepo!.findOne({ where: { id: tenantId } });
     if (!tenant) throw new NotFoundException(`Tenant ${tenantId} not found`);
@@ -64,8 +64,7 @@ export class PlatformService {
 
   async listEnvironments(tenantId: string): Promise<TenantEnvironmentRecord[]> {
     if (!this.usePostgres) {
-      if (tenantId !== MEMORY_TENANT.id) return [];
-      return MEMORY_ENVIRONMENTS;
+      return MEMORY_ENVIRONMENTS.filter((e) => e.tenantId === tenantId);
     }
     const envs = await this.envRepo!.find({
       where: { tenantId },
@@ -157,7 +156,7 @@ export class PlatformService {
 
   async getUsageByTenant(tenantId: string): Promise<EnvironmentUsageSummary[]> {
     if (!this.usePostgres) {
-      return tenantId === MEMORY_TENANT.id ? getMemoryUsage() : [];
+      return getMemoryTenant(tenantId) ? getMemoryUsage(tenantId) : [];
     }
 
     const envs = await this.envRepo!.find({ where: { tenantId } });

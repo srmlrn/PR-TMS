@@ -13,8 +13,7 @@ import { TenantEnvironment } from '@tms/types';
 import { useAuth } from './auth-context';
 import { createApiClient, type ApiClient } from './api/client';
 
-const TENANT_ID =
-  process.env.NEXT_PUBLIC_TENANT_ID ?? '00000000-0000-0000-0000-000000000001';
+import { readSelectedTenantId } from './tenant-selection';
 
 interface TenantContextValue {
   tenantId: string;
@@ -26,7 +25,8 @@ interface TenantContextValue {
 const TenantCtx = createContext<TenantContextValue | null>(null);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
+  const [tenantId, setTenantId] = useState(readSelectedTenantId);
   const [environment, setEnvironmentState] = useState<TenantEnvironment>(
     TenantEnvironment.PROD,
   );
@@ -37,7 +37,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     if (stored && Object.values(TenantEnvironment).includes(stored as TenantEnvironment)) {
       setEnvironmentState(stored as TenantEnvironment);
     }
-  }, []);
+    setTenantId(user?.tenantId ?? readSelectedTenantId());
+  }, [user?.tenantId]);
 
   const setEnvironment = useCallback((env: TenantEnvironment) => {
     setEnvironmentState(env);
@@ -50,16 +51,21 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     () =>
       createApiClient({
         baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1',
-        tenantId: TENANT_ID,
+        tenantId: user?.tenantId ?? tenantId,
         environment,
         accessToken: accessToken ?? undefined,
       }),
-    [environment, accessToken],
+    [environment, accessToken, tenantId, user?.tenantId],
   );
 
   const value = useMemo(
-    () => ({ tenantId: TENANT_ID, environment, setEnvironment, api }),
-    [environment, setEnvironment, api],
+    () => ({
+      tenantId: user?.tenantId ?? tenantId,
+      environment,
+      setEnvironment,
+      api,
+    }),
+    [environment, setEnvironment, api, tenantId, user?.tenantId],
   );
 
   return <TenantCtx.Provider value={value}>{children}</TenantCtx.Provider>;

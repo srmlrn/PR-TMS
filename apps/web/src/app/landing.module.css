@@ -1,0 +1,213 @@
+.page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+.signInLink {
+  position: fixed;
+  top: 0.9rem;
+  left: 1.1rem;
+  z-index: 10;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--txt2);
+  text-decoration: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.signInLink:hover {
+  color: var(--txt);
+  border-color: var(--b);
+}
+
+.portal {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4.5rem 1.25rem 2.5rem;
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.tenantPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.tenantChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--b);
+  background: var(--glass);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.tenantChip:hover {
+  border-color: color-mix(in srgb, var(--amber) 40%, var(--b));
+}
+
+.tenantChipActive {
+  border-color: var(--amber);
+  background: color-mix(in srgb, var(--adim) 50%, var(--glass));
+}
+
+.tenantChipIcon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tenantLogo {
+  height: 1.1rem;
+  width: auto;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+.tenantChipName {
+  font-size: 0.68rem;
+  font-weight: 700;
+  max-width: 9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.medallionLogo {
+  width: auto;
+  height: 2.25rem;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.medallion {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0 auto 1rem;
+  display: grid;
+  place-items: center;
+  font-size: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--b);
+  background: radial-gradient(circle at 35% 30%, var(--adim), transparent 65%);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--amber) 6%, transparent);
+  animation: sacred-pulse 4s ease-in-out infinite;
+}
+
+.templeName {
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.tagline {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: var(--txt3);
+  letter-spacing: 0.02em;
+}
+
+.prompt {
+  margin: 0 0 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--txt3);
+  align-self: stretch;
+  text-align: center;
+}
+
+.grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 5.5rem;
+  padding: 0.65rem 0.4rem;
+  border-radius: var(--r);
+  border: 1px solid var(--b);
+  background: var(--glass);
+  text-decoration: none;
+  color: inherit;
+  text-align: center;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.tile:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--b));
+  background: color-mix(in srgb, var(--adim) 40%, var(--glass));
+  box-shadow: 0 12px 32px var(--aglow);
+}
+
+.tileEmoji {
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.tileLabel {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--txt2);
+}
+
+.tile:hover .tileLabel {
+  color: var(--txt);
+}
+
+.hint {
+  margin: 1.1rem 0 0;
+  font-size: 0.65rem;
+  color: var(--txt3);
+}
+
+.hint code {
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--txt2);
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tile {
+    min-height: 5rem;
+  }
+}

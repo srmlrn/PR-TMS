@@ -21,12 +21,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    if (
+      dto.tenantId &&
+      dto.tenantId !== record.tenantId &&
+      record.role !== UserRole.SUPER_ADMIN
+    ) {
+      throw new UnauthorizedException('Invalid email or password for this temple');
+    }
+
     const tenantId = dto.tenantId ?? record.tenantId ?? DEMO_TENANT_ID;
     const environment = dto.environment ?? record.environment ?? TenantEnvironment.PROD;
 
     let devoteeId: string | undefined;
     if (record.role === UserRole.DEVOTEE && record.devoteeEmail) {
-      const devotees = await this.devoteeService.findAll(tenantId, 1, 50, { name: 'Rajan' });
+      const devotees = await this.devoteeService.findAll(tenantId, 1, 50);
       const match = devotees.data.find(
         (d) => d.email?.toLowerCase() === record.devoteeEmail?.toLowerCase(),
       );

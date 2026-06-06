@@ -1,18 +1,27 @@
 'use client';
 
-import { FormEvent, Suspense, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { getTenantBranding } from '@tms/types';
 import { Button, GlassCard } from '@tms/ui';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { getLandingRoles } from '@/lib/landing-roles';
 import { getDefaultHrefForRole } from '@/lib/route-access';
-import { LANDING_ROLES, type AppRole } from '@/lib/roles';
+import type { AppRole } from '@/lib/roles';
+import { readSelectedTenantId, writeSelectedTenantId } from '@/lib/tenant-selection';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const tenantParam = searchParams.get('tenant');
+  const [tenantId, setTenantId] = useState(tenantParam ?? readSelectedTenantId());
+  const tenant = getTenantBranding(tenantId);
+  const landingRoles = getLandingRoles(tenantId);
+
   const [email, setEmail] = useState(searchParams.get('email') ?? '');
   const [password, setPassword] = useState('demo123');
   const [error, setError] = useState<string | null>(null);
@@ -21,12 +30,19 @@ function LoginForm() {
   const redirect = searchParams.get('redirect');
   const roleHint = searchParams.get('role') as AppRole | null;
 
+  useEffect(() => {
+    if (tenantParam) {
+      setTenantId(tenantParam);
+      writeSelectedTenantId(tenantParam);
+    }
+  }, [tenantParam]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const user = await login(email, password);
+      const user = await login(email, password, tenantId);
       const target =
         redirect && redirect !== '/login'
           ? redirect
@@ -43,13 +59,25 @@ function LoginForm() {
     <div className="loginPage compactUi">
       <PublicThemeBar />
       <div className="loginHero">
-        <span className="landingIcon" aria-hidden>
-          🛕
-        </span>
+        {tenant.logoSrc ? (
+          <Image
+            src={tenant.logoSrc}
+            alt=""
+            width={200}
+            height={56}
+            style={{ height: '3rem', width: 'auto', borderRadius: '8px' }}
+          />
+        ) : (
+          <span className="landingIcon" aria-hidden>
+            {tenant.icon}
+          </span>
+        )}
         <h1 className="landingTitle">
           <span className="landingShine">Sign in</span>
         </h1>
-        <p className="landingSub">Sri Venkateswara Temple · Demo tenant</p>
+        <p className="landingSub">
+          {tenant.name} · {tenant.subtitle}
+        </p>
       </div>
 
       <GlassCard title="Temple Management System" className="loginCard">
@@ -87,7 +115,7 @@ function LoginForm() {
       </GlassCard>
 
       <div className="loginRoles">
-        {LANDING_ROLES.map((role) => (
+        {landingRoles.map((role) => (
           <button
             key={role.role}
             type="button"

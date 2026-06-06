@@ -6,8 +6,11 @@ import {
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import {
+  DEMO_TENANT_IDS,
   EventChecklistItem,
   EventLifecycleStage,
+  GANESHA_TEMPLE_ID,
+  SV_TEMPLE_ID,
   TempleEvent,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
@@ -47,7 +50,7 @@ const STAGE_ORDER: EventLifecycleStage[] = [
   EventLifecycleStage.COMPLETED,
 ];
 
-const DEMO_TENANT = '00000000-0000-0000-0000-000000000001';
+const DEMO_TENANT = SV_TEMPLE_ID;
 
 @Injectable()
 export class EventService
@@ -67,7 +70,9 @@ export class EventService
 
   onModuleInit(): void {
     if (!this.usePostgres) {
-      this.seedDemoData();
+      for (const tenantId of DEMO_TENANT_IDS) {
+        this.seedDemoData(tenantId);
+      }
     }
   }
 
@@ -424,12 +429,71 @@ export class EventService
     return entity;
   }
 
-  private seedDemoData(): void {
-    if (this.scoped(DEMO_TENANT).length > 0) {
+  private seedDemoData(tenantId: string): void {
+    if (this.scoped(tenantId).length > 0) {
       return;
     }
 
-    const brahmotsavam = this.seedEntityWithId(DEMO_TENANT, 'evt-brahmotsavam-2026', {
+    if (tenantId === GANESHA_TEMPLE_ID) {
+      const chaturthi = this.seedEntityWithId(tenantId, 'evt-sgt-chaturthi-2026', {
+        name: 'Ganesha Chaturthi 2026',
+        type: 'festival',
+        stage: EventLifecycleStage.CONFIRMED,
+        startDate: new Date('2026-08-26'),
+        endDate: new Date('2026-09-06'),
+        venues: ['Main Shrine', 'Cultural Hall', 'Parking Lot'],
+        expectedFootfall: 3200,
+        budgetPlanned: 58_000,
+        revenueTarget: 72_000,
+        volunteerCategory: 'festival',
+        volunteersNeeded: 28,
+        volunteerRoles: [
+          { role: 'setup', slotsNeeded: 8, description: 'Murti & mandap setup' },
+          { role: 'kitchen', slotsNeeded: 10, description: 'Modak & annadanam' },
+          { role: 'parking', slotsNeeded: 6, description: 'Festival parking' },
+        ],
+        checklistProgress: { done: 4, total: 7 },
+      });
+
+      this.seedEntityWithId(tenantId, 'evt-sgt-diwali-2026', {
+        name: 'Diwali 2026',
+        type: 'festival',
+        stage: EventLifecycleStage.CONFIRMED,
+        startDate: new Date('2026-11-01'),
+        endDate: new Date('2026-11-03'),
+        venues: ['Main Shrine', 'Cultural Hall'],
+        expectedFootfall: 1800,
+        volunteerCategory: 'cultural',
+        volunteersNeeded: 12,
+        checklistProgress: { done: 1, total: 5 },
+      });
+
+      this.seedEntityWithId(tenantId, 'evt-sgt-sunday-annadanam', {
+        name: 'Sunday Annadanam',
+        type: 'community',
+        stage: EventLifecycleStage.IN_PROGRESS,
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-12-31'),
+        venues: ['Community Kitchen', 'Dining Hall'],
+        volunteerCategory: 'annadanam',
+        volunteersNeeded: 12,
+        checklistProgress: { done: 2, total: 2 },
+      });
+
+      const checklistItems: Omit<EventChecklistItem, 'id' | 'tenantId'>[] = [
+        { eventId: chaturthi.id, title: 'Ganesha murti preparation', department: 'Religious', isDone: true },
+        { eventId: chaturthi.id, title: 'Volunteer roster', department: 'Volunteers', isDone: true },
+        { eventId: chaturthi.id, title: 'Modak kitchen supplies', department: 'Kitchen', isDone: false },
+      ];
+
+      for (const item of checklistItems) {
+        const entity: EventChecklistItem = { id: uuidv4(), tenantId, ...item };
+        this.checklistStore.set(entity.id, entity);
+      }
+      return;
+    }
+
+    const brahmotsavam = this.seedEntityWithId(tenantId, 'evt-brahmotsavam-2026', {
       name: 'Brahmotsavam 2026',
       type: 'festival',
       stage: EventLifecycleStage.CONFIRMED,
@@ -449,7 +513,7 @@ export class EventService
       checklistProgress: { done: 3, total: 6 },
     });
 
-    this.seedEntityWithId(DEMO_TENANT, 'evt-navaratri-2026', {
+    this.seedEntityWithId(tenantId, 'evt-navaratri-2026', {
       name: 'Navaratri 2026',
       type: 'festival',
       stage: EventLifecycleStage.CONFIRMED,
@@ -462,7 +526,7 @@ export class EventService
       checklistProgress: { done: 1, total: 4 },
     });
 
-    this.seedEntityWithId(DEMO_TENANT, 'evt-sunday-annadanam', {
+    this.seedEntityWithId(tenantId, 'evt-sunday-annadanam', {
       name: 'Sunday Annadanam',
       type: 'community',
       stage: EventLifecycleStage.IN_PROGRESS,
@@ -484,7 +548,7 @@ export class EventService
     ];
 
     for (const item of checklistItems) {
-      const entity: EventChecklistItem = { id: uuidv4(), tenantId: DEMO_TENANT, ...item };
+      const entity: EventChecklistItem = { id: uuidv4(), tenantId, ...item };
       this.checklistStore.set(entity.id, entity);
     }
   }

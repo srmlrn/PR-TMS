@@ -11,6 +11,7 @@ import {
 } from 'react';
 import type { AuthUser, LoginResponse } from '@tms/types';
 import { ApiError, createApiClient } from './api/client';
+import { readSelectedTenantId, writeSelectedTenantId } from './tenant-selection';
 
 const TOKEN_KEY = 'tms-access-token';
 const USER_KEY = 'tms-auth-user';
@@ -20,7 +21,7 @@ interface AuthContextValue {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, tenantId?: string) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -48,15 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, tenantId?: string) => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
-    const tenantId =
-      process.env.NEXT_PUBLIC_TENANT_ID ?? '00000000-0000-0000-0000-000000000001';
+    const resolvedTenantId = tenantId ?? readSelectedTenantId();
 
-    const client = createApiClient({ baseUrl, tenantId });
+    const client = createApiClient({ baseUrl, tenantId: resolvedTenantId });
     let response: LoginResponse;
     try {
-      response = await client.post<LoginResponse>('/auth/login', { email, password });
+      response = await client.post<LoginResponse>('/auth/login', {
+        email,
+        password,
+        tenantId: resolvedTenantId,
+      });
     } catch (err) {
       if (err instanceof ApiError) {
         throw new Error(err.message);
@@ -64,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw err;
     }
 
+    writeSelectedTenantId(response.user.tenantId);
     localStorage.setItem(TOKEN_KEY, response.accessToken);
     localStorage.setItem(USER_KEY, JSON.stringify(response.user));
     setAccessToken(response.accessToken);

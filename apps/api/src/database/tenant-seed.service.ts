@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { TenantContext } from '@tms/types';
+import { GANESHA_TEMPLE_ID, TenantContext } from '@tms/types';
 import { TenantConnectionService } from './tenant-connection.service';
 import {
   DevoteeEntity,
@@ -42,6 +42,12 @@ export class TenantSeedService {
     }
 
     this.logger.log(`Seeding tenant-env DB: ${ctx.dbName}`);
+
+    if (ctx.tenantSlug === 'sri-ganesha-temple' || ctx.tenantId === GANESHA_TEMPLE_ID) {
+      await this.seedGaneshaTemple(ctx);
+      this.seeded.add(k);
+      return;
+    }
 
     const [rajan, priya, meena] = await devoteeRepo.save([
       devoteeRepo.create({
@@ -338,5 +344,152 @@ export class TenantSeedService {
     ]);
 
     this.seeded.add(k);
+  }
+
+  private async seedGaneshaTemple(ctx: TenantContext): Promise<void> {
+    const ds = await this.connections.getDataSource(ctx);
+    const devoteeRepo = ds.getRepository(DevoteeEntity);
+
+    const [amit] = await devoteeRepo.save([
+      devoteeRepo.create({
+        firstName: 'Amit',
+        lastName: 'Reddy',
+        email: 'amit@ex.com',
+        phone: '+1 615-555-0142',
+        country: 'US',
+        gotram: 'Kashyapa',
+        nakshatra: 'Ashwini',
+        membershipTier: 'Patron',
+        status: 'active',
+      }),
+      devoteeRepo.create({
+        firstName: 'Priya',
+        lastName: 'Iyer',
+        phone: '+1 615-555-0198',
+        country: 'US',
+        gotram: 'Bharadwaja',
+        membershipTier: 'Annual',
+        status: 'active',
+      }),
+    ]);
+
+    const sevaRepo = ds.getRepository(SevaServiceEntity);
+    const services = await sevaRepo.save([
+      sevaRepo.create({
+        name: 'Archana',
+        deity: 'Lord Ganesha',
+        price: 25,
+        currency: 'USD',
+        durationMinutes: 30,
+      }),
+      sevaRepo.create({
+        name: 'Abhishekam',
+        deity: 'Lord Ganesha',
+        price: 101,
+        currency: 'USD',
+        durationMinutes: 60,
+      }),
+      sevaRepo.create({
+        name: 'Homam',
+        deity: 'Lord Ganesha',
+        price: 251,
+        currency: 'USD',
+        durationMinutes: 90,
+      }),
+    ]);
+
+    const bookingRepo = ds.getRepository(BookingEntity);
+    await bookingRepo.save(
+      bookingRepo.create({
+        devoteeId: amit.id,
+        serviceId: services[0].id,
+        scheduledAt: new Date('2026-06-07T10:00:00Z'),
+        status: 'confirmed',
+        amount: 25,
+        currency: 'USD',
+        channel: 'app',
+        sankalpa: { sponsorName: 'Amit R.', gotram: 'Kashyapa', nakshatra: 'Ashwini' },
+        receiptNumber: 'SGT-2026-0101',
+      }),
+    );
+
+    const eventRepo = ds.getRepository(TempleEventEntity);
+    const chaturthi = await eventRepo.save(
+      eventRepo.create({
+        id: 'evt-sgt-chaturthi-2026',
+        name: 'Ganesha Chaturthi 2026',
+        type: 'festival',
+        stage: 'confirmed',
+        startDate: new Date('2026-08-26'),
+        endDate: new Date('2026-09-06'),
+        venues: ['Main Shrine', 'Cultural Hall'],
+        expectedFootfall: 3200,
+        budgetPlanned: 58_000,
+        revenueTarget: 72_000,
+        volunteerCategory: 'festival',
+        volunteersNeeded: 28,
+        volunteerRoles: [
+          { role: 'setup', slotsNeeded: 8, description: 'Mandap setup' },
+          { role: 'kitchen', slotsNeeded: 10, description: 'Modak & annadanam' },
+        ],
+        checklistProgress: { done: 4, total: 7 },
+      }),
+    );
+
+    await eventRepo.save(
+      eventRepo.create({
+        id: 'evt-sgt-sunday-annadanam',
+        name: 'Sunday Annadanam',
+        type: 'community',
+        stage: 'in_progress',
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-12-31'),
+        venues: ['Community Kitchen', 'Dining Hall'],
+        volunteerCategory: 'annadanam',
+        volunteersNeeded: 12,
+        checklistProgress: { done: 2, total: 2 },
+      }),
+    );
+
+    const shiftRepo = ds.getRepository(VolunteerShiftEntity);
+    await shiftRepo.save([
+      shiftRepo.create({
+        id: 'sgt-vol-shift-001',
+        title: 'Chaturthi Mandap Setup',
+        date: '2026-08-26',
+        startTime: '09:00',
+        endTime: '13:00',
+        slots: 8,
+        role: 'setup',
+        category: 'festival',
+        location: 'Main Shrine',
+        description: 'Ganesha mandap and floral decorations.',
+        eventId: chaturthi.id,
+        eventName: 'Ganesha Chaturthi 2026',
+        coordinator: 'Priya Iyer',
+        signups: [],
+      }),
+    ]);
+
+    const staffRepo = ds.getRepository(StaffEntity);
+    await staffRepo.save(
+      staffRepo.create({
+        id: 'user-ganesha-priest-001',
+        name: 'Sri Murugan',
+        role: 'priest',
+        email: 'priest@sgtemple.org',
+        isActive: true,
+      }),
+    );
+
+    const campaignRepo = ds.getRepository(DonationCampaignEntity);
+    await campaignRepo.save(
+      campaignRepo.create({
+        name: 'Temple Expansion Fund',
+        targetAmount: 75000,
+        raisedAmount: 42000,
+        currency: 'USD',
+      }),
+    );
   }
 }

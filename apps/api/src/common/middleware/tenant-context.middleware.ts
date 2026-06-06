@@ -1,6 +1,12 @@
 import { Injectable, NestMiddleware, Optional } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { AuthUser, TenantContext, TenantEnvironment } from '@tms/types';
+import {
+  AuthUser,
+  getTenantBranding,
+  SV_TEMPLE_ID,
+  TenantContext,
+  TenantEnvironment,
+} from '@tms/types';
 import { TenantResolverService } from '../../database/tenant-resolver.service';
 import { TenantContextStorage } from '../context/tenant-context.storage';
 
@@ -11,7 +17,7 @@ export interface TenantRequest extends Request {
   user?: AuthUser;
 }
 
-const DEFAULT_TENANT = '00000000-0000-0000-0000-000000000001';
+const DEFAULT_TENANT = SV_TEMPLE_ID;
 const DEFAULT_ENV = TenantEnvironment.PROD;
 
 function parseEnvironment(value: string | undefined): TenantEnvironment {
@@ -36,14 +42,16 @@ export class TenantContextMiddleware implements NestMiddleware {
     );
 
     if (process.env.STORAGE_MODE !== 'postgres') {
-      req.tenantId = tenantKey;
+      const brand = getTenantBranding(tenantKey);
+      const slugDb = brand.slug.replace(/-/g, '_');
+      req.tenantId = brand.id;
       req.environment = environment;
       req.tenantContext = {
-        tenantId: tenantKey,
-        tenantSlug: 'sv-temple',
+        tenantId: brand.id,
+        tenantSlug: brand.slug,
         environment,
-        environmentId: `memory-${environment}`,
-        dbName: `tms_sv_temple_${environment}`,
+        environmentId: `memory-${brand.id}-${environment}`,
+        dbName: `tms_${slugDb}_${environment}`,
       };
       TenantContextStorage.run(req.tenantContext, () => next());
       return;

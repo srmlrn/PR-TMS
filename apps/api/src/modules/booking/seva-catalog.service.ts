@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { Currency, SevaService } from '@tms/types';
+import { Currency, DEMO_TENANT_IDS, getTenantBranding, GANESHA_TEMPLE_ID, SevaService } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { SevaServiceEntity } from '../../database/entities/tenant/seva-service.entity';
@@ -38,7 +38,9 @@ export class SevaCatalogService
 
   onModuleInit(): void {
     if (!this.usePostgres) {
-      this.seedServices(DEMO_TENANT);
+      for (const tenantId of DEMO_TENANT_IDS) {
+        this.seedServices(tenantId);
+      }
     }
   }
 
@@ -152,12 +154,14 @@ export class SevaCatalogService
     }
 
     const now = new Date();
+    const deity = getTenantBranding(tenantId).deity;
+    const prefix = tenantId === GANESHA_TEMPLE_ID ? 'sgt-' : '';
     const services: Array<Omit<SevaServiceRecord, 'createdAt' | 'updatedAt'>> = [
       {
-        id: 'svc-archana',
+        id: `${prefix}svc-archana`,
         tenantId,
         name: 'Archana',
-        deity: 'Lord Venkateswara',
+        deity,
         description: 'Daily archana with sankalpa name, gotram, and nakshatra',
         price: 25,
         currency: Currency.USD,
@@ -165,10 +169,10 @@ export class SevaCatalogService
         isActive: true,
       },
       {
-        id: 'svc-abhishekam',
+        id: `${prefix}svc-abhishekam`,
         tenantId,
         name: 'Abhishekam',
-        deity: 'Lord Venkateswara',
+        deity,
         description: 'Special abhishekam ritual bathing of the deity',
         price: 101,
         currency: Currency.USD,
@@ -176,10 +180,10 @@ export class SevaCatalogService
         isActive: true,
       },
       {
-        id: 'svc-homam',
+        id: `${prefix}svc-homam`,
         tenantId,
         name: 'Homam',
-        deity: 'Lord Venkateswara',
+        deity,
         description: 'Sacred fire ritual with priest-led homam',
         price: 251,
         currency: Currency.USD,
@@ -187,10 +191,10 @@ export class SevaCatalogService
         isActive: true,
       },
       {
-        id: 'svc-vip-darshan',
+        id: `${prefix}svc-vip-darshan`,
         tenantId,
         name: 'VIP Darshan',
-        deity: 'Lord Venkateswara',
+        deity,
         description: 'Priority darshan with shorter queue wait',
         price: 51,
         currency: Currency.USD,

@@ -72,3 +72,21 @@ VALUES
   ('00000000-0000-0000-0000-000000000001', 'uat',  'active', 'tms_sv_temple_uat',  'sv-temple.uat',  NOW()),
   ('00000000-0000-0000-0000-000000000001', 'test', 'active', 'tms_sv_temple_test', 'sv-temple.test', NOW()),
   ('00000000-0000-0000-0000-000000000001', 'dev',  'active', 'tms_sv_temple_dev',  'sv-temple.dev',  NOW());
+
+-- Sri Ganesha Temple — Hindu Cultural Center of Tennessee
+INSERT INTO tenants (id, slug, name, country, base_currency, plan)
+VALUES (
+  '00000000-0000-0000-0000-000000000002',
+  'sri-ganesha-temple',
+  'Sri Ganesha Temple',
+  'US',
+  'USD',
+  'pro'
+);
+
+INSERT INTO tenant_environments (tenant_id, env, status, db_name, subdomain, provisioned_at)
+VALUES
+  ('00000000-0000-0000-0000-000000000002', 'prod', 'active', 'tms_sri_ganesha_temple_prod', 'sri-ganesha-temple.prod', NOW()),
+  ('00000000-0000-0000-0000-000000000002', 'uat',  'active', 'tms_sri_ganesha_temple_uat',  'sri-ganesha-temple.uat',  NOW()),
+  ('00000000-0000-0000-0000-000000000002', 'test', 'active', 'tms_sri_ganesha_temple_test', 'sri-ganesha-temple.test', NOW()),
+  ('00000000-0000-0000-0000-000000000002', 'dev',  'active', 'tms_sri_ganesha_temple_dev',  'sri-ganesha-temple.dev',  NOW());

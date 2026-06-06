@@ -8,8 +8,11 @@ import {
 import {
   AuthUser,
   CreateVolunteerShiftInput,
+  DEMO_TENANT_IDS,
   EventLifecycleStage,
+  GANESHA_TEMPLE_ID,
   GenerateEventShiftsResult,
+  SV_TEMPLE_ID,
   TempleEvent,
   VolunteerBadgeTier,
   VolunteerCategory,
@@ -29,7 +32,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 type VolunteerShiftRecord = VolunteerShift & TenantEntity;
 
-const DEMO_TENANT = '00000000-0000-0000-0000-000000000001';
+const DEMO_TENANT = SV_TEMPLE_ID;
 
 /** Fixed demo event IDs — must match event.service seedDemoData */
 export const DEMO_EVENT_IDS = {
@@ -37,6 +40,12 @@ export const DEMO_EVENT_IDS = {
   navaratri: 'evt-navaratri-2026',
   shivaratri: 'evt-shivaratri-2026',
   sundayAnnadanam: 'evt-sunday-annadanam',
+} as const;
+
+export const GANESHA_EVENT_IDS = {
+  chaturthi: 'evt-sgt-chaturthi-2026',
+  diwali: 'evt-sgt-diwali-2026',
+  sundayAnnadanam: 'evt-sgt-sunday-annadanam',
 } as const;
 
 const DEFAULT_EVENT_SHIFTS: Record<
@@ -184,7 +193,9 @@ export class VolunteerService
 
   onModuleInit(): void {
     if (!this.usePostgres) {
-      this.seedDemoShifts(DEMO_TENANT);
+      for (const tenantId of DEMO_TENANT_IDS) {
+        this.seedDemoShifts(tenantId);
+      }
     }
   }
 
@@ -192,10 +203,116 @@ export class VolunteerService
     if (this.scoped(tenantId).length > 0) return;
 
     const now = new Date();
+    const isGanesha = tenantId === GANESHA_TEMPLE_ID;
+    const volunteerUserId = isGanesha ? 'user-ganesha-volunteer-001' : 'user-volunteer-001';
+    const volunteerUserName = isGanesha ? 'Volunteer Lakshmi' : 'Volunteer Priya';
+    const idPrefix = isGanesha ? 'sgt-' : '';
     const pastCheckIn = new Date('2026-03-15T09:05:00').toISOString();
     const pastCheckOut = new Date('2026-03-15T12:45:00').toISOString();
 
-    const shifts: Array<Omit<VolunteerShiftRecord, 'createdAt' | 'updatedAt'>> = [
+    const shifts: Array<Omit<VolunteerShiftRecord, 'createdAt' | 'updatedAt'>> = isGanesha
+      ? [
+          {
+            id: `${idPrefix}vol-shift-past-001`,
+            tenantId,
+            title: 'Spring Cleanup',
+            date: '2026-03-15',
+            startTime: '09:00',
+            endTime: '13:00',
+            slots: 6,
+            role: 'general',
+            category: 'festival',
+            location: 'Temple Grounds',
+            description: 'Post-event cleanup.',
+            eventId: GANESHA_EVENT_IDS.chaturthi,
+            eventName: 'Spring Seva 2026',
+            coordinator: 'Venkat Rao',
+            signups: [
+              {
+                userId: volunteerUserId,
+                userName: volunteerUserName,
+                signedUpAt: '2026-03-10T10:00:00.000Z',
+                status: 'confirmed',
+                checkedIn: true,
+                checkedInAt: pastCheckIn,
+                checkedOut: true,
+                checkedOutAt: pastCheckOut,
+                hoursLogged: hoursBetween(pastCheckIn, pastCheckOut),
+              },
+            ],
+          },
+          {
+            id: `${idPrefix}vol-shift-001`,
+            tenantId,
+            title: 'Chaturthi Mandap Setup',
+            date: '2026-08-26',
+            startTime: '09:00',
+            endTime: '13:00',
+            slots: 8,
+            role: 'setup',
+            category: 'festival',
+            location: 'Main Shrine',
+            description: 'Ganesha mandap, flowers, and lighting.',
+            eventId: GANESHA_EVENT_IDS.chaturthi,
+            eventName: 'Ganesha Chaturthi 2026',
+            coordinator: 'Priya Iyer',
+            signups: [],
+          },
+          {
+            id: `${idPrefix}vol-shift-002`,
+            tenantId,
+            title: 'Modak Kitchen',
+            date: '2026-08-27',
+            startTime: '10:00',
+            endTime: '14:00',
+            slots: 10,
+            role: 'kitchen',
+            category: 'annadanam',
+            location: 'Community Kitchen',
+            description: 'Prepare modaks and festival meals.',
+            eventId: GANESHA_EVENT_IDS.chaturthi,
+            eventName: 'Ganesha Chaturthi 2026',
+            coordinator: 'Lakshmi Natarajan',
+            signups: [],
+          },
+          {
+            id: `${idPrefix}vol-shift-003`,
+            tenantId,
+            title: 'Festival Parking',
+            date: '2026-08-28',
+            startTime: '08:00',
+            endTime: '13:00',
+            slots: 6,
+            role: 'parking',
+            category: 'festival',
+            location: 'South Lot',
+            description: 'Direct traffic during Chaturthi.',
+            eventId: GANESHA_EVENT_IDS.chaturthi,
+            eventName: 'Ganesha Chaturthi 2026',
+            coordinator: 'Arun Patel',
+            signups: [],
+          },
+          {
+            id: `${idPrefix}vol-shift-recurring-001`,
+            tenantId,
+            title: 'Sunday Annadanam — Kitchen',
+            date: '2026-06-08',
+            startTime: '09:00',
+            endTime: '13:00',
+            slots: 6,
+            role: 'kitchen',
+            category: 'annadanam',
+            location: 'Community Kitchen',
+            description: 'Weekly annadanam seva.',
+            eventId: GANESHA_EVENT_IDS.sundayAnnadanam,
+            eventName: 'Sunday Annadanam',
+            coordinator: 'Lakshmi Natarajan',
+            isRecurringTemplate: true,
+            templateKey: 'sunday-annadanam',
+            signups: [],
+          },
+        ]
+      : [
       {
         id: 'vol-shift-past-001',
         tenantId,
@@ -213,8 +330,8 @@ export class VolunteerService
         coordinator: 'Ravi Kumar',
         signups: [
           {
-            userId: 'user-volunteer-001',
-            userName: 'Volunteer Priya',
+            userId: volunteerUserId,
+            userName: volunteerUserName,
             signedUpAt: '2026-03-10T10:00:00.000Z',
             status: 'confirmed',
             checkedIn: true,
