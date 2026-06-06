@@ -16,6 +16,7 @@ interface Props {
   onCheckIn?: (bookingId: string) => void;
   checkInBusy?: boolean;
   refreshToken?: number;
+  showCrmLink?: boolean;
 }
 
 function serviceLabel(services: SevaService[], serviceId: string): string {
@@ -35,6 +36,7 @@ export function DevoteeProfilePanel({
   onCheckIn,
   checkInBusy,
   refreshToken = 0,
+  showCrmLink = true,
 }: Props) {
   const [profile, setProfile] = useState<DevoteeProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,11 +97,13 @@ export function DevoteeProfilePanel({
         </div>
         <div className={styles.headActions}>
           <Badge variant={profile.status === 'active' ? 'ok' : 'pending'}>{profile.status}</Badge>
-          <Link href="/admin/devotees">
-            <Button size="sm" variant="outline">
-              Open CRM
-            </Button>
-          </Link>
+          {showCrmLink && (
+            <Link href="/admin/devotees">
+              <Button size="sm" variant="outline">
+                Open CRM
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

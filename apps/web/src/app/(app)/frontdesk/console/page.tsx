@@ -17,19 +17,10 @@ import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { CounterBookingForm } from '@/components/CounterBookingForm';
-import { DevoteeProfilePanel } from '@/components/DevoteeProfilePanel';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './console.module.css';
-
-const EMPTY_WALK_IN = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  gotram: '',
-  nakshatra: '',
-};
 
 function isToday(value: string | Date): boolean {
   const d = typeof value === 'string' ? new Date(value) : value;
@@ -50,10 +41,7 @@ export default function FrontDeskConsolePage() {
   const [lookup, setLookup] = useState<DevoteeLookupResult | null>(null);
   const [matches, setMatches] = useState<DevoteeLookupMatch[]>([]);
   const [selectedDevoteeId, setSelectedDevoteeId] = useState<string | null>(null);
-  const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
-  const [walkIn, setWalkIn] = useState(EMPTY_WALK_IN);
-  const [registering, setRegistering] = useState(false);
   const [lastToken, setLastToken] = useState<QueueToken | null>(null);
   const [tokenResult, setTokenResult] = useState<string | null>(null);
   const [priorityToken, setPriorityToken] = useState(false);
@@ -64,8 +52,6 @@ export default function FrontDeskConsolePage() {
     defaultPaymentProvider(Currency.USD, 'counter'),
   );
   const [actionMsg, setActionMsg] = useState<string | null>(null);
-  const [profileRefresh, setProfileRefresh] = useState(0);
-
   const getPayer = useCallback(
     () => ({
       name: lookup?.devotee?.name,
@@ -115,7 +101,6 @@ export default function FrontDeskConsolePage() {
       matches: result?.matches ?? matches,
       devotee: result?.devotee?.id === match.id ? result.devotee : { ...match },
     });
-    setShowRegisterForm(false);
   }
 
   async function handleLookup() {
@@ -131,8 +116,6 @@ export default function FrontDeskConsolePage() {
     setTokenResult(null);
     setLastToken(null);
     setActionMsg(null);
-    setShowRegisterForm(false);
-    setWalkIn(EMPTY_WALK_IN);
     try {
       const result = await refreshLookup();
       setLookup(result);
@@ -140,37 +123,10 @@ export default function FrontDeskConsolePage() {
       if (result.found && result.devotee) {
         setSelectedDevoteeId(result.devotee.id);
       } else {
-        setLookupMessage('No devotee found — use New devotee to register.');
-        setShowRegisterForm(true);
+        setLookupMessage('No devotee found — open Devotees to register.');
       }
     } catch (err) {
       setLookupMessage(err instanceof Error ? err.message : 'Lookup failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleSelectDevoteeId(id: string) {
-    const hit = matches.find((m) => m.id === id);
-    if (hit) {
-      selectMatch(hit);
-      return;
-    }
-    setBusy(true);
-    try {
-      const ep = createEndpoints(api);
-      const profile = await ep.getDevoteeProfile(id);
-      const match: DevoteeLookupMatch = {
-        id: profile.id,
-        name: `${profile.firstName} ${profile.lastName}`,
-        phone: profile.phone,
-        gotram: profile.gotram,
-        nakshatra: profile.nakshatra,
-        membershipTier: profile.membershipTier,
-      };
-      selectMatch(match);
-      setPhone(profile.phone);
-      setName(`${profile.firstName} ${profile.lastName}`);
     } finally {
       setBusy(false);
     }
@@ -185,50 +141,10 @@ export default function FrontDeskConsolePage() {
       const result = await refreshLookup();
       setLookup(result);
       setActionMsg('Checked in for today\'s seva.');
-      setProfileRefresh((n) => n + 1);
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Check-in failed');
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function handleRegisterWalkIn() {
-    if (!walkIn.firstName.trim() || !walkIn.lastName.trim() || !phone.trim()) {
-      setLookupMessage('First name, last name, and phone are required.');
-      return;
-    }
-    setRegistering(true);
-    setLookupMessage(null);
-    try {
-      const ep = createEndpoints(api);
-      const created = await ep.createDevotee({
-        firstName: walkIn.firstName.trim(),
-        lastName: walkIn.lastName.trim(),
-        phone: phone.trim(),
-        email: walkIn.email.trim() || undefined,
-        country: 'US',
-        gotram: walkIn.gotram.trim() || undefined,
-        nakshatra: walkIn.nakshatra.trim() || undefined,
-      });
-      const fullName = `${created.firstName} ${created.lastName}`;
-      const match: DevoteeLookupMatch = {
-        id: created.id,
-        name: fullName,
-        phone: created.phone,
-        gotram: created.gotram,
-        nakshatra: created.nakshatra,
-      };
-      setMatches([match]);
-      setSelectedDevoteeId(created.id);
-      setLookup({ found: true, matches: [match], devotee: match });
-      setLookupMessage(`Registered — ${fullName}`);
-      setShowRegisterForm(false);
-      setWalkIn(EMPTY_WALK_IN);
-    } catch (err) {
-      setLookupMessage(err instanceof Error ? err.message : 'Registration failed');
-    } finally {
-      setRegistering(false);
     }
   }
 
@@ -379,19 +295,11 @@ export default function FrontDeskConsolePage() {
           title="Devotee lookup"
           className={styles.span2}
           headerRight={
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setShowRegisterForm(true);
-                setLookup(null);
-                setMatches([]);
-                setSelectedDevoteeId(null);
-                setLookupMessage(null);
-              }}
-            >
-              + New devotee
-            </Button>
+            <Link href="/frontdesk/devotees">
+              <Button size="sm" variant="outline">
+                Manage devotees →
+              </Button>
+            </Link>
           }
         >
           <div className={styles.lookupRow}>
@@ -444,74 +352,50 @@ export default function FrontDeskConsolePage() {
             </div>
           )}
           {activeDevoteeId && devotee && (
-            <DevoteeProfilePanel
-              ep={ep}
-              devoteeId={activeDevoteeId}
-              services={serviceList}
-              onSelectMember={handleSelectDevoteeId}
-              onCheckIn={handleCheckIn}
-              checkInBusy={busy}
-              refreshToken={profileRefresh}
-            />
-          )}
-          {showRegisterForm && (
-            <div className={styles.walkInForm}>
-              <p className={styles.hint}>Register new devotee</p>
-              <div className={styles.walkInGrid}>
-                <div className="formGroup">
-                  <label htmlFor="wiFirst">First name</label>
-                  <input
-                    id="wiFirst"
-                    value={walkIn.firstName}
-                    onChange={(e) => setWalkIn({ ...walkIn, firstName: e.target.value })}
-                  />
-                </div>
-                <div className="formGroup">
-                  <label htmlFor="wiLast">Last name</label>
-                  <input
-                    id="wiLast"
-                    value={walkIn.lastName}
-                    onChange={(e) => setWalkIn({ ...walkIn, lastName: e.target.value })}
-                  />
-                </div>
-                <div className="formGroup">
-                  <label htmlFor="wiEmail">Email</label>
-                  <input
-                    id="wiEmail"
-                    type="email"
-                    value={walkIn.email}
-                    onChange={(e) => setWalkIn({ ...walkIn, email: e.target.value })}
-                  />
-                </div>
-                <div className="formGroup">
-                  <label htmlFor="wiGotram">Gotram</label>
-                  <input
-                    id="wiGotram"
-                    value={walkIn.gotram}
-                    onChange={(e) => setWalkIn({ ...walkIn, gotram: e.target.value })}
-                  />
-                </div>
-                <div className="formGroup">
-                  <label htmlFor="wiNakshatra">Nakshatra</label>
-                  <input
-                    id="wiNakshatra"
-                    value={walkIn.nakshatra}
-                    onChange={(e) => setWalkIn({ ...walkIn, nakshatra: e.target.value })}
-                  />
-                </div>
+            <div className={styles.devoteeChip}>
+              <strong>{devotee.name}</strong>
+              <div className={styles.devoteeMeta}>
+                {devotee.phone}
+                {devotee.gotram ? ` · ${devotee.gotram}` : ''}
+                {devotee.nakshatra ? ` · ${devotee.nakshatra}` : ''}
+                {devotee.membershipTier ? ` · ${devotee.membershipTier}` : ''}
+                {devotee.ytdDonations
+                  ? ` · YTD ${formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}`
+                  : ''}
               </div>
-              <div className={styles.registerActions}>
-                <Button size="sm" onClick={handleRegisterWalkIn} disabled={registering || busy}>
-                  {registering ? 'Saving…' : 'Save devotee'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowRegisterForm(false)}
-                  disabled={registering}
-                >
-                  Cancel
-                </Button>
+              {devotee.todayBookings && devotee.todayBookings.length > 0 && (
+                <div className={styles.todayList}>
+                  {devotee.todayBookings.map((b) => (
+                    <div key={b.id} className={styles.todayRow}>
+                      <span>
+                        {new Date(b.scheduledAt).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                        {' · '}
+                        {b.status}
+                        {b.checkedIn ? ' · ✓' : ''}
+                      </span>
+                      {!b.checkedIn && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCheckIn(b.id)}
+                          disabled={busy}
+                        >
+                          Check in
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className={styles.tokenActions} style={{ marginTop: '0.5rem' }}>
+                <Link href={`/frontdesk/devotees?id=${activeDevoteeId}`}>
+                  <Button size="sm" variant="outline">
+                    Full profile →
+                  </Button>
+                </Link>
               </div>
             </div>
           )}

@@ -59,6 +59,7 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     defaultHref: '/frontdesk/console',
     nav: [
       { id: 'fd', emoji: '🖥️', label: 'Reception Console', href: '/frontdesk/console' },
+      { id: 'fd-devotees', emoji: '👥', label: 'Devotees', href: '/frontdesk/devotees' },
       { id: 'fd-queue', emoji: '🎫', label: 'Queue Manager', href: '/frontdesk/queue' },
       { id: 'fd-display', emoji: '📺', label: 'Display Board', href: '/frontdesk/display' },
       { id: 'kiosk', emoji: '🏧', label: 'Kiosk Mode', href: '/kiosk' },
@@ -195,6 +196,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/sponsors': 'Sponsor Management',
   '/admin/settings': 'Settings & Environments',
   '/frontdesk/console': 'Reception Console',
+  '/frontdesk/devotees': 'Devotee Management',
   '/frontdesk/queue': 'Queue Manager',
   '/frontdesk/display': 'Display Board',
   '/frontdesk/token-print': 'Darshan Token',

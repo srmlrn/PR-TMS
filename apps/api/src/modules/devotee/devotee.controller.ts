@@ -148,7 +148,7 @@ export class DevoteeController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
   @ApiOperation({ summary: 'Delete a devotee profile' })
   @ApiParam({ name: 'id', description: 'Devotee UUID' })
   @ApiResponse({ status: 200, description: 'Devotee deleted' })

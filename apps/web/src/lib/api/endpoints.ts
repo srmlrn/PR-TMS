@@ -193,6 +193,9 @@ export function createEndpoints(client: ApiClient) {
     updateDevotee: (id: string, body: Partial<DevoteeFormBody & { status?: Devotee['status'] }>) =>
       client.patch<Devotee>(`/devotees/${id}`, body),
 
+    deleteDevotee: (id: string) =>
+      client.delete<{ deleted: true }>(`/devotees/${id}`),
+
     getEventPipeline: () => client.get<EventPipeline>('/events/pipeline'),
 
     getEvents: (params?: { page?: number; limit?: number; stage?: EventLifecycleStage }) =>
