@@ -12,6 +12,7 @@ export interface StatTileProps {
   changeTone?: StatChangeTone;
   accent?: StatAccent;
   valueSize?: 'default' | 'sm';
+  compact?: boolean;
   sparkline?: ReactNode;
   className?: string;
 }
@@ -37,12 +38,12 @@ export function StatTile({
   changeTone = 'neutral',
   accent = 'amber',
   valueSize = 'default',
+  compact = false,
   sparkline,
   className,
 }: StatTileProps) {
-  return (
-    <div className={[styles.tile, accentClass[accent], className ?? ''].filter(Boolean).join(' ')}>
-      {icon !== undefined && <span className={styles.icon}>{icon}</span>}
+  const content = (
+    <>
       <div className={styles.label}>{label}</div>
       <div className={[styles.value, valueSize === 'sm' ? styles.valueSm : ''].filter(Boolean).join(' ')}>
         {value}
@@ -50,6 +51,22 @@ export function StatTile({
       {change !== undefined && (
         <div className={[styles.change, changeToneClass[changeTone]].join(' ')}>{change}</div>
       )}
+    </>
+  );
+
+  return (
+    <div
+      className={[
+        styles.tile,
+        accentClass[accent],
+        compact ? styles.compact : '',
+        className ?? '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {icon !== undefined && <span className={styles.icon}>{icon}</span>}
+      {compact ? <div className={styles.meta}>{content}</div> : content}
       {sparkline !== undefined && <div className={styles.spark}>{sparkline}</div>}
     </div>
   );

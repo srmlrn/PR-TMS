@@ -65,32 +65,32 @@ export default function FrontDeskQueuePage() {
     token: t.tokenNumber,
     name: t.devoteeName ?? '—',
     position: String(t.position),
-    wait: `~${t.estimatedWaitMinutes} min`,
+    wait: `~${t.estimatedWaitMinutes}m`,
     type: t.priority ? 'VIP' : (t.queueType ?? 'darshan'),
     priority: t.priority,
   }));
 
   return (
-    <>
+    <div className={styles.queue}>
       <PageHeader
         title="Queue Manager"
-        subtitle="Call next, mark served — updates display board in real time"
+        subtitle="Call next · mark served"
         actions={
-          <Button onClick={handleCallNext} disabled={busy}>
+          <Button size="sm" onClick={handleCallNext} disabled={busy}>
             Call next
           </Button>
         }
       />
       <ApiBanner loading={loading} error={error} />
 
-      <div className={styles.stats}>
-        <StatTile label="Waiting" value={String(stats?.inQueue ?? waiting.length)} icon="🎫" />
-        <StatTile label="Called now" value={String(stats?.calledNow ?? calledTokens.length)} icon="📢" />
-        <StatTile label="Served today" value={String(stats?.servedToday ?? 0)} icon="✅" />
-      </div>
-
-      <GlassCard title="Filter" className="mb2">
+      <div className={styles.toolbar}>
+        <div className={styles.stats}>
+          <StatTile compact accent="amber" label="Waiting" value={String(stats?.inQueue ?? waiting.length)} icon="🎫" />
+          <StatTile compact accent="blue" label="Calling" value={String(stats?.calledNow ?? calledTokens.length)} icon="📢" />
+          <StatTile compact accent="green" label="Served" value={String(stats?.servedToday ?? 0)} icon="✅" />
+        </div>
         <select
+          className={styles.filterSelect}
           value={queueType}
           onChange={(e) => setQueueType(e.target.value as QueueType | '')}
           aria-label="Queue type"
@@ -100,38 +100,40 @@ export default function FrontDeskQueuePage() {
           <option value="seva">Seva</option>
           <option value="priority">Priority</option>
         </select>
-      </GlassCard>
+      </div>
 
       {calledTokens.length > 0 && (
-        <GlassCard title="Now calling" className="mb2">
+        <div className={styles.callingPanel}>
           {calledTokens.map((t) => (
-            <div key={t.id} className={styles.callingRow}>
+            <div key={t.id} className={styles.callingChip}>
               <strong>{t.tokenNumber}</strong>
               <span>{t.devoteeName ?? 'Guest'}</span>
               <Button variant="outline" size="sm" onClick={() => handleServe(t.id)} disabled={busy}>
-                Mark served
+                Served
               </Button>
             </div>
           ))}
-        </GlassCard>
+        </div>
       )}
 
-      <GlassCard title="Waiting queue" noBodyPadding>
+      <GlassCard compact title="Waiting" noBodyPadding>
         <DataTable
           getRowKey={(r) => r.id}
           columns={[
             { key: 'token', header: 'Token', render: (r) => r.token },
             { key: 'name', header: 'Devotee', render: (r) => r.name },
-            { key: 'type', header: 'Type', render: (r) => (
-              <Badge variant={r.priority ? 'pending' : 'ok'}>{r.type}</Badge>
-            ) },
-            { key: 'position', header: 'Pos', render: (r) => r.position },
-            { key: 'wait', header: 'Est. wait', render: (r) => r.wait },
+            {
+              key: 'type',
+              header: 'Type',
+              render: (r) => <Badge variant={r.priority ? 'pending' : 'ok'}>{r.type}</Badge>,
+            },
+            { key: 'position', header: '#', render: (r) => r.position },
+            { key: 'wait', header: 'Wait', render: (r) => r.wait },
           ]}
           data={rows}
         />
       </GlassCard>
-      {msg && <p className="tms-t2 mt1">{msg}</p>}
-    </>
+      {msg && <p className={styles.statusMsg}>{msg}</p>}
+    </div>
   );
 }

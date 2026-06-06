@@ -259,51 +259,58 @@ export default function FrontDeskConsolePage() {
   const serviceList = services ?? [];
 
   return (
-    <>
+    <div className={styles.console}>
       <PageHeader
         title="Reception Console"
-        subtitle="Lookup, tokens, check-in, counter book & donate"
+        subtitle="Lookup · tokens · check-in · book · donate"
         actions={
-          <Link href="/frontdesk/queue">
-            <Button variant="outline">Open queue</Button>
-          </Link>
+          <div className={styles.actionBar}>
+            <Link href="/frontdesk/queue">
+              <Button variant="outline" size="sm">Queue</Button>
+            </Link>
+            <Link href="/frontdesk/display">
+              <Button variant="outline" size="sm">Display</Button>
+            </Link>
+          </div>
         }
       />
       <ApiBanner loading={loading} error={error} />
 
-      <div className={styles.stats}>
-        <StatTile label="In Queue" value={String(stats?.inQueue ?? 0)} icon="🎫" />
-        <StatTile label="Avg Wait" value={`${stats?.averageWaitMinutes ?? 0} min`} icon="⏱️" />
-        <StatTile label="Served Today" value={String(stats?.servedToday ?? 0)} icon="✅" />
+      <div className={styles.metrics}>
+        <StatTile compact accent="amber" label="In queue" value={String(stats?.inQueue ?? 0)} icon="🎫" />
+        <StatTile compact accent="blue" label="Avg wait" value={`${stats?.averageWaitMinutes ?? 0}m`} icon="⏱️" />
+        <StatTile compact accent="green" label="Served" value={String(stats?.servedToday ?? 0)} icon="✅" />
+        <StatTile
+          compact
+          accent="amber"
+          label="Bookings"
+          value={formatMoney(posBookingTotal, posCurrency)}
+          icon="🙏"
+          change={`${counterBookings.length} today`}
+        />
+        <StatTile
+          compact
+          accent="green"
+          label="Donations"
+          value={formatMoney(posDonationTotal, posCurrency)}
+          icon="💝"
+          change={`${counterDonations.length} today`}
+        />
+        <StatTile
+          compact
+          accent="amber"
+          label="POS total"
+          value={formatMoney(posTotal, posCurrency)}
+          icon="🧾"
+        />
       </div>
-
-      <GlassCard title="Today's Counter Sales (POS)" className={styles.posPanel}>
-        <ApiBanner loading={posLoading} error={posError} />
-        <div className={styles.posGrid}>
-          <div>
-            <p className={styles.posLabel}>Seva bookings</p>
-            <p className={styles.posValue}>
-              {counterBookings.length} · {formatMoney(posBookingTotal, posCurrency)}
-            </p>
-          </div>
-          <div>
-            <p className={styles.posLabel}>Donations</p>
-            <p className={styles.posValue}>
-              {counterDonations.length} · {formatMoney(posDonationTotal, posCurrency)}
-            </p>
-          </div>
-          <div>
-            <p className={styles.posLabel}>Total</p>
-            <p className={styles.posTotal}>{formatMoney(posTotal, posCurrency)}</p>
-          </div>
-        </div>
-      </GlassCard>
+      <ApiBanner loading={posLoading} error={posError} />
 
       <div className={styles.grid}>
-        <GlassCard title="Devotee Lookup">
-          <div className={styles.lookupGrid}>
+        <GlassCard compact title="Devotee lookup" className={styles.span2}>
+          <div className={styles.lookupRow}>
             <div className="formGroup">
-              <label htmlFor="phone">Phone number</label>
+              <label htmlFor="phone">Phone</label>
               <input
                 id="phone"
                 value={phone}
@@ -320,37 +327,30 @@ export default function FrontDeskConsolePage() {
                 placeholder="Rajan Kumar"
               />
             </div>
+            <Button size="sm" onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
+              Look up
+            </Button>
           </div>
-          <Button onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
-            Look up
-          </Button>
           {lookupMessage && (
-            <p className="tms-t2 mt1" style={devotee ? { color: 'var(--gr)' } : undefined}>
+            <p className={[styles.statusMsg, devotee ? styles.statusMsgOk : ''].filter(Boolean).join(' ')}>
               {lookupMessage}
             </p>
           )}
           {devotee && (
-            <div className="calloutAmber mt1">
+            <div className={styles.devoteeChip}>
               <strong>{devotee.name}</strong>
-              <p className="tms-t3">
+              <div className={styles.devoteeMeta}>
                 {devotee.phone}
-                {devotee.gotram ? ` · Gotram: ${devotee.gotram}` : ''}
-                {devotee.nakshatra ? ` · Nakshatra: ${devotee.nakshatra}` : ''}
-              </p>
-              {devotee.membershipTier && (
-                <p className="tms-t3">Membership: {devotee.membershipTier}</p>
-              )}
-              {devotee.ytdDonations && (
-                <p className="tms-t3">
-                  YTD donations: {formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}
-                </p>
-              )}
-              {devotee.upcomingBooking && (
-                <p className="tms-t3">Next booking: {devotee.upcomingBooking}</p>
-              )}
+                {devotee.gotram ? ` · ${devotee.gotram}` : ''}
+                {devotee.nakshatra ? ` · ${devotee.nakshatra}` : ''}
+                {devotee.membershipTier ? ` · ${devotee.membershipTier}` : ''}
+                {devotee.ytdDonations
+                  ? ` · YTD ${formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}`
+                  : ''}
+                {devotee.upcomingBooking ? ` · Next: ${devotee.upcomingBooking}` : ''}
+              </div>
               {devotee.todayBookings && devotee.todayBookings.length > 0 && (
-                <div className="mt1">
-                  <p className="tms-t3"><strong>Today&apos;s bookings</strong></p>
+                <div className={styles.todayList}>
                   {devotee.todayBookings.map((b) => (
                     <div key={b.id} className={styles.todayRow}>
                       <span>
@@ -360,7 +360,7 @@ export default function FrontDeskConsolePage() {
                         })}
                         {' · '}
                         {b.status}
-                        {b.checkedIn ? ' · ✓ checked in' : ''}
+                        {b.checkedIn ? ' · ✓' : ''}
                       </span>
                       {!b.checkedIn && (
                         <Button
@@ -380,7 +380,7 @@ export default function FrontDeskConsolePage() {
           )}
           {showWalkInForm && (
             <div className={styles.walkInForm}>
-              <p className="tms-t3 mb1">Quick walk-in registration</p>
+              <p className={styles.hint}>Walk-in registration</p>
               <div className={styles.walkInGrid}>
                 <div className="formGroup">
                   <label htmlFor="wiFirst">First name</label>
@@ -415,25 +415,30 @@ export default function FrontDeskConsolePage() {
                   />
                 </div>
               </div>
-              <Button onClick={handleRegisterWalkIn} disabled={registering || busy}>
-                {registering ? 'Registering…' : 'Register walk-in'}
+              <Button size="sm" onClick={handleRegisterWalkIn} disabled={registering || busy}>
+                {registering ? 'Registering…' : 'Register'}
               </Button>
             </div>
           )}
         </GlassCard>
 
-        <GlassCard title="Issue Queue Token">
-          <div className="formGroup">
-            <label htmlFor="queueType">Queue</label>
-            <select
-              id="queueType"
-              value={queueType}
-              onChange={(e) => setQueueType(e.target.value as QueueType)}
-              disabled={priorityToken}
-            >
-              <option value="darshan">Darshan</option>
-              <option value="seva">Seva</option>
-            </select>
+        <GlassCard compact title="Queue token">
+          <div className={styles.tokenRow}>
+            <div className="formGroup">
+              <label htmlFor="queueType">Queue</label>
+              <select
+                id="queueType"
+                value={queueType}
+                onChange={(e) => setQueueType(e.target.value as QueueType)}
+                disabled={priorityToken}
+              >
+                <option value="darshan">Darshan</option>
+                <option value="seva">Seva</option>
+              </select>
+            </div>
+            <Button size="sm" onClick={handleIssueToken} disabled={busy}>
+              Issue
+            </Button>
           </div>
           <label className={styles.checkRow}>
             <input
@@ -441,15 +446,13 @@ export default function FrontDeskConsolePage() {
               checked={priorityToken}
               onChange={(e) => setPriorityToken(e.target.checked)}
             />
-            Priority / VIP (insert at front)
+            VIP · front of queue
           </label>
-          <Button onClick={handleIssueToken} disabled={busy} className="mt1">
-            Issue Token
-          </Button>
-          {tokenResult && <p className="tms-t2 mt1">{tokenResult}</p>}
+          {tokenResult && <p className={styles.statusMsg}>{tokenResult}</p>}
           {lastToken && (
             <div className={styles.tokenActions}>
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => {
                   const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
@@ -458,16 +461,16 @@ export default function FrontDeskConsolePage() {
                   );
                 }}
               >
-                Reprint token
+                Reprint
               </Button>
-              <Button variant="outline" onClick={handleNotifySms} disabled={busy || !devotee?.phone}>
-                Send SMS
+              <Button size="sm" variant="outline" onClick={handleNotifySms} disabled={busy || !devotee?.phone}>
+                SMS
               </Button>
             </div>
           )}
         </GlassCard>
 
-        <GlassCard title="Quick Donate (counter)">
+        <GlassCard compact title="Quick donate">
           <PaymentProviderPicker
             value={paymentProvider}
             onChange={setPaymentProvider}
@@ -484,12 +487,12 @@ export default function FrontDeskConsolePage() {
               onChange={(e) => setDonateAmount(Number(e.target.value))}
             />
           </div>
-          <Button onClick={handleQuickDonate} disabled={busy || !devotee}>
-            Record {formatMoney(donateAmount)} donation
+          <Button size="sm" onClick={handleQuickDonate} disabled={busy || !devotee}>
+            Record {formatMoney(donateAmount)}
           </Button>
         </GlassCard>
 
-        <GlassCard title="Counter Booking">
+        <GlassCard compact title="Counter booking" className={styles.span2}>
           {devotee && serviceList.length > 0 ? (
             <CounterBookingForm
               ep={ep}
@@ -502,20 +505,18 @@ export default function FrontDeskConsolePage() {
               onError={(msg) => setActionMsg(msg)}
             />
           ) : (
-            <p className="tms-t3">Look up a devotee to book seva with date, slot, and sankalpa.</p>
+            <p className={styles.hint}>Look up a devotee to book seva with date, slot, and sankalpa.</p>
           )}
         </GlassCard>
 
-        <GlassCard title="Prasadam & kiosk">
-          <p className="tms-t3">
-            Self-service prasadam sponsorship and donations at the kiosk terminal.
-          </p>
-          <Link href="/kiosk" className="mt1" style={{ display: 'inline-block' }}>
-            <Button variant="outline">Open kiosk</Button>
+        <GlassCard compact title="Kiosk">
+          <p className={styles.hint}>Self-service prasadam & donations.</p>
+          <Link href="/kiosk">
+            <Button size="sm" variant="outline">Open kiosk</Button>
           </Link>
         </GlassCard>
       </div>
-      {actionMsg && <p className="tms-t2 mt1">{actionMsg}</p>}
-    </>
+      {actionMsg && <p className={[styles.statusMsg, styles.statusMsgOk].join(' ')}>{actionMsg}</p>}
+    </div>
   );
 }

@@ -33,3 +33,16 @@
 .noPadding {
   padding: 0;
 }
+
+.compact .header {
+  padding: 0.5rem 0.8rem;
+}
+
+.compact .headerTitle {
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+}
+
+.compact .body {
+  padding: 0.7rem 0.8rem;
+}

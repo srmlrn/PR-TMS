@@ -8,6 +8,7 @@ export interface GlassCardProps {
   className?: string;
   bodyClassName?: string;
   noBodyPadding?: boolean;
+  compact?: boolean;
 }
 
 export function GlassCard({
@@ -17,11 +18,16 @@ export function GlassCard({
   className,
   bodyClassName,
   noBodyPadding = false,
+  compact = false,
 }: GlassCardProps) {
   const hasHeader = title !== undefined || headerRight !== undefined;
 
   return (
-    <div className={[styles.card, className ?? ''].filter(Boolean).join(' ')}>
+    <div
+      className={[styles.card, compact ? styles.compact : '', className ?? '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       {hasHeader && (
         <div className={styles.header}>
           {title !== undefined && <h4 className={styles.headerTitle}>{title}</h4>}

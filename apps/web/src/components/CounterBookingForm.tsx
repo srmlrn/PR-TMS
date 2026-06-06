@@ -95,7 +95,7 @@ export function CounterBookingForm({ ep, devotee, services, onSuccess, onError }
   }
 
   return (
-    <div className="formGrid">
+    <div className="formGrid" style={{ gap: '0.45rem' }}>
       <PaymentProviderPicker
         value={paymentProvider}
         onChange={setPaymentProvider}
@@ -159,8 +159,8 @@ export function CounterBookingForm({ ep, devotee, services, onSuccess, onError }
         <label htmlFor="cbOccasion">Occasion</label>
         <input id="cbOccasion" value={occasion} onChange={(e) => setOccasion(e.target.value)} />
       </div>
-      <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-        <Button onClick={handleBook} disabled={busy}>
+      <div className="formGroup" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+        <Button size="sm" onClick={handleBook} disabled={busy}>
           {busy ? 'Booking…' : `Book & pay ${selectedService ? formatMoney(selectedService.price, selectedService.currency) : ''}`}
         </Button>
       </div>
