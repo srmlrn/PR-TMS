@@ -1,0 +1,137 @@
+'use client';
+
+import { useState } from 'react';
+import { Badge, Button, DataTable, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import type { QueueToken, QueueType } from '@tms/types';
+import { useTenant } from '@/lib/tenant-context';
+import { createEndpoints } from '@/lib/api/endpoints';
+import { useApi } from '@/lib/api/use-api';
+import { ApiBanner } from '@/components/ApiBanner';
+import styles from './queue.module.css';
+
+export default function FrontDeskQueuePage() {
+  const { api } = useTenant();
+  const [queueType, setQueueType] = useState<QueueType | ''>('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const { data, loading, error, refetch } = useApi(
+    (ep) =>
+      ep.getFrontDeskQueue({
+        status: 'waiting',
+        queueType: queueType || undefined,
+      }),
+    [queueType],
+  );
+
+  const { data: called } = useApi((ep) => ep.getFrontDeskQueue({ status: 'called' }));
+  const { data: stats } = useApi((ep) => ep.getQueueStats());
+
+  const waiting = data?.data ?? [];
+  const calledTokens = called?.data ?? [];
+
+  async function handleCallNext() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      const res = await ep.callNextToken(queueType || undefined);
+      if (!res.data) {
+        setMsg('No tokens waiting.');
+      } else {
+        setMsg(`Called ${res.data.tokenNumber}${res.data.devoteeName ? ` — ${res.data.devoteeName}` : ''}`);
+      }
+      refetch();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Call failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleServe(id: string) {
+    setBusy(true);
+    try {
+      const ep = createEndpoints(api);
+      await ep.serveQueueToken(id);
+      refetch();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const rows = waiting.map((t: QueueToken) => ({
+    id: t.id,
+    token: t.tokenNumber,
+    name: t.devoteeName ?? '—',
+    position: String(t.position),
+    wait: `~${t.estimatedWaitMinutes} min`,
+    type: t.priority ? 'VIP' : (t.queueType ?? 'darshan'),
+    priority: t.priority,
+  }));
+
+  return (
+    <>
+      <PageHeader
+        title="Queue Manager"
+        subtitle="Call next, mark served — updates display board in real time"
+        actions={
+          <Button onClick={handleCallNext} disabled={busy}>
+            Call next
+          </Button>
+        }
+      />
+      <ApiBanner loading={loading} error={error} />
+
+      <div className={styles.stats}>
+        <StatTile label="Waiting" value={String(stats?.inQueue ?? waiting.length)} icon="🎫" />
+        <StatTile label="Called now" value={String(stats?.calledNow ?? calledTokens.length)} icon="📢" />
+        <StatTile label="Served today" value={String(stats?.servedToday ?? 0)} icon="✅" />
+      </div>
+
+      <GlassCard title="Filter" className="mb2">
+        <select
+          value={queueType}
+          onChange={(e) => setQueueType(e.target.value as QueueType | '')}
+          aria-label="Queue type"
+        >
+          <option value="">All queues</option>
+          <option value="darshan">Darshan</option>
+          <option value="seva">Seva</option>
+          <option value="priority">Priority</option>
+        </select>
+      </GlassCard>
+
+      {calledTokens.length > 0 && (
+        <GlassCard title="Now calling" className="mb2">
+          {calledTokens.map((t) => (
+            <div key={t.id} className={styles.callingRow}>
+              <strong>{t.tokenNumber}</strong>
+              <span>{t.devoteeName ?? 'Guest'}</span>
+              <Button variant="outline" size="sm" onClick={() => handleServe(t.id)} disabled={busy}>
+                Mark served
+              </Button>
+            </div>
+          ))}
+        </GlassCard>
+      )}
+
+      <GlassCard title="Waiting queue" noBodyPadding>
+        <DataTable
+          getRowKey={(r) => r.id}
+          columns={[
+            { key: 'token', header: 'Token', render: (r) => r.token },
+            { key: 'name', header: 'Devotee', render: (r) => r.name },
+            { key: 'type', header: 'Type', render: (r) => (
+              <Badge variant={r.priority ? 'pending' : 'ok'}>{r.type}</Badge>
+            ) },
+            { key: 'position', header: 'Pos', render: (r) => r.position },
+            { key: 'wait', header: 'Est. wait', render: (r) => r.wait },
+          ]}
+          data={rows}
+        />
+      </GlassCard>
+      {msg && <p className="tms-t2 mt1">{msg}</p>}
+    </>
+  );
+}

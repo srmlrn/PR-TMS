@@ -1,5 +1,8 @@
 import { TenantScoped, Timestamps } from './common';
 
+export type QueueType = 'darshan' | 'seva' | 'priority';
+export type QueueTokenStatus = 'waiting' | 'called' | 'served';
+
 export interface QueueToken extends TenantScoped, Timestamps {
   id: string;
   tokenNumber: string;
@@ -8,7 +11,17 @@ export interface QueueToken extends TenantScoped, Timestamps {
   position: number;
   queueSize: number;
   estimatedWaitMinutes: number;
-  status: 'waiting' | 'called' | 'served';
+  status: QueueTokenStatus;
+  queueType?: QueueType;
+  priority?: boolean;
+}
+
+export interface DevoteeTodayBooking {
+  id: string;
+  serviceId: string;
+  scheduledAt: string;
+  status: string;
+  checkedIn?: boolean;
 }
 
 export interface DevoteeLookupResult {
@@ -21,6 +34,8 @@ export interface DevoteeLookupResult {
     nakshatra?: string;
     membershipTier?: string;
     upcomingBooking?: string;
+    todayBookings?: DevoteeTodayBooking[];
+    ytdDonations?: { amount: number; currency: string };
   };
 }
 
@@ -28,9 +43,19 @@ export interface QueueStats {
   inQueue: number;
   averageWaitMinutes: number;
   servedToday: number;
+  calledNow?: number;
 }
 
 export interface IssueTokenInput {
   devoteeId?: string;
   devoteeName?: string;
+  queueType?: QueueType;
+  priority?: boolean;
+}
+
+export interface NowServing {
+  tokenNumber: string;
+  devoteeName?: string;
+  queueType: QueueType;
+  status: QueueTokenStatus;
 }

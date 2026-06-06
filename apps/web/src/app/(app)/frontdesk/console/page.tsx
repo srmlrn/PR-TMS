@@ -1,13 +1,21 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
-import { Currency, type DevoteeLookupResult, type PaymentProvider, type QueueToken } from '@tms/types';
+import {
+  Currency,
+  type DevoteeLookupResult,
+  type PaymentProvider,
+  type QueueToken,
+  type QueueType,
+} from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
+import { CounterBookingForm } from '@/components/CounterBookingForm';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './console.module.css';
@@ -34,12 +42,15 @@ export default function FrontDeskConsolePage() {
   const { api } = useTenant();
   const today = new Date().toISOString().slice(0, 10);
   const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
   const [lookup, setLookup] = useState<DevoteeLookupResult | null>(null);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
   const [walkIn, setWalkIn] = useState(EMPTY_WALK_IN);
   const [registering, setRegistering] = useState(false);
   const [lastToken, setLastToken] = useState<QueueToken | null>(null);
   const [tokenResult, setTokenResult] = useState<string | null>(null);
+  const [priorityToken, setPriorityToken] = useState(false);
+  const [queueType, setQueueType] = useState<QueueType>('darshan');
   const [busy, setBusy] = useState(false);
   const [donateAmount, setDonateAmount] = useState(51);
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
@@ -72,7 +83,19 @@ export default function FrontDeskConsolePage() {
   const posTotal = posBookingTotal + posDonationTotal;
   const posCurrency = counterBookings[0]?.currency ?? counterDonations[0]?.currency ?? Currency.USD;
 
+  async function refreshLookup() {
+    const ep = createEndpoints(api);
+    return ep.frontDeskLookup({
+      phone: phone.trim() || undefined,
+      name: name.trim() || undefined,
+    });
+  }
+
   async function handleLookup() {
+    if (!phone.trim() && !name.trim()) {
+      setLookupMessage('Enter phone or name to look up.');
+      return;
+    }
     setBusy(true);
     setLookup(null);
     setLookupMessage(null);
@@ -81,14 +104,29 @@ export default function FrontDeskConsolePage() {
     setActionMsg(null);
     setWalkIn(EMPTY_WALK_IN);
     try {
-      const ep = createEndpoints(api);
-      const result = await ep.frontDeskLookup(phone);
+      const result = await refreshLookup();
       setLookup(result);
       if (!result.found) {
         setLookupMessage('No devotee found — register walk-in below.');
       }
     } catch (err) {
       setLookupMessage(err instanceof Error ? err.message : 'Lookup failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCheckIn(bookingId: string) {
+    setBusy(true);
+    setActionMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      await ep.checkInBooking(bookingId);
+      const result = await refreshLookup();
+      setLookup(result);
+      setActionMsg('Checked in for today\'s seva.');
+    } catch (err) {
+      setActionMsg(err instanceof Error ? err.message : 'Check-in failed');
     } finally {
       setBusy(false);
     }
@@ -111,18 +149,18 @@ export default function FrontDeskConsolePage() {
         gotram: walkIn.gotram.trim() || undefined,
         nakshatra: walkIn.nakshatra.trim() || undefined,
       });
-      const name = `${created.firstName} ${created.lastName}`;
+      const fullName = `${created.firstName} ${created.lastName}`;
       setLookup({
         found: true,
         devotee: {
           id: created.id,
-          name,
+          name: fullName,
           phone: created.phone,
           gotram: created.gotram,
           nakshatra: created.nakshatra,
         },
       });
-      setLookupMessage(`Walk-in registered — ${name}`);
+      setLookupMessage(`Walk-in registered — ${fullName}`);
       setWalkIn(EMPTY_WALK_IN);
     } catch (err) {
       setLookupMessage(err instanceof Error ? err.message : 'Registration failed');
@@ -139,6 +177,8 @@ export default function FrontDeskConsolePage() {
       const token = await ep.issueToken({
         devoteeId: lookup?.devotee?.id,
         devoteeName: lookup?.devotee?.name ?? 'Walk-in guest',
+        queueType: priorityToken ? 'priority' : queueType,
+        priority: priorityToken,
       });
       setLastToken(token);
       setTokenResult(
@@ -151,6 +191,23 @@ export default function FrontDeskConsolePage() {
       );
     } catch (err) {
       setTokenResult(err instanceof Error ? err.message : 'Token issue failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleNotifySms() {
+    if (!lastToken || !lookup?.devotee?.phone) {
+      setTokenResult('Issue a token and look up devotee with phone first.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const ep = createEndpoints(api);
+      const res = await ep.notifyQueueToken(lastToken.id, lookup.devotee.phone);
+      setTokenResult(res.message);
+    } catch (err) {
+      setTokenResult(err instanceof Error ? err.message : 'SMS failed');
     } finally {
       setBusy(false);
     }
@@ -196,62 +253,28 @@ export default function FrontDeskConsolePage() {
     }
   }
 
-  async function handleQuickBook() {
-    const devoteeId = lookup?.devotee?.id;
-    const service = services?.[0];
-    if (!devoteeId || !service) {
-      setActionMsg('Look up devotee and ensure services are loaded.');
-      return;
-    }
-    setBusy(true);
-    setActionMsg(null);
-    try {
-      const ep = createEndpoints(api);
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
-      const paymentSessionId = await checkoutAndPay(ep, {
-        amount: service.price,
-        currency: service.currency,
-        purpose: `Counter: ${service.name}`,
-        devoteeId,
-        provider: paymentProvider,
-      });
-      const booking = await ep.createBooking({
-        devoteeId,
-        serviceId: service.id,
-        scheduledAt: tomorrow.toISOString(),
-        channel: 'counter',
-        paymentSessionId,
-        sankalpa: {
-          sponsorName: lookup?.devotee?.name ?? 'Counter guest',
-          gotram: lookup?.devotee?.gotram,
-          nakshatra: lookup?.devotee?.nakshatra,
-        },
-      });
-      setActionMsg(
-        `Booked ${service.name} (${paymentProvider}) · ${booking.receiptNumber ?? booking.id.slice(0, 8)}`,
-      );
-      refetchPos();
-    } catch (err) {
-      setActionMsg(err instanceof Error ? err.message : 'Booking failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const devotee = lookup?.devotee;
   const showWalkInForm = lookup && !lookup.found;
+  const ep = createEndpoints(api);
+  const serviceList = services ?? [];
 
   return (
     <>
-      <PageHeader title="Reception Console" subtitle="Lookup, tokens, quick book & donate at counter" />
+      <PageHeader
+        title="Reception Console"
+        subtitle="Lookup, tokens, check-in, counter book & donate"
+        actions={
+          <Link href="/frontdesk/queue">
+            <Button variant="outline">Open queue</Button>
+          </Link>
+        }
+      />
       <ApiBanner loading={loading} error={error} />
 
       <div className={styles.stats}>
-        <StatTile label="In Queue" value={String(stats?.inQueue ?? 12)} icon="🎫" />
-        <StatTile label="Avg Wait" value={`${stats?.averageWaitMinutes ?? 18} min`} icon="⏱️" />
-        <StatTile label="Served Today" value={String(stats?.servedToday ?? 84)} icon="✅" />
+        <StatTile label="In Queue" value={String(stats?.inQueue ?? 0)} icon="🎫" />
+        <StatTile label="Avg Wait" value={`${stats?.averageWaitMinutes ?? 0} min`} icon="⏱️" />
+        <StatTile label="Served Today" value={String(stats?.servedToday ?? 0)} icon="✅" />
       </div>
 
       <GlassCard title="Today's Counter Sales (POS)" className={styles.posPanel}>
@@ -278,16 +301,27 @@ export default function FrontDeskConsolePage() {
 
       <div className={styles.grid}>
         <GlassCard title="Devotee Lookup">
-          <div className="formGroup">
-            <label htmlFor="phone">Phone number</label>
-            <input
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 408-555-0101"
-            />
+          <div className={styles.lookupGrid}>
+            <div className="formGroup">
+              <label htmlFor="phone">Phone number</label>
+              <input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 408-555-0101"
+              />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="name">Name</label>
+              <input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Rajan Kumar"
+              />
+            </div>
           </div>
-          <Button onClick={handleLookup} disabled={busy || !phone}>
+          <Button onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
             Look up
           </Button>
           {lookupMessage && (
@@ -306,8 +340,41 @@ export default function FrontDeskConsolePage() {
               {devotee.membershipTier && (
                 <p className="tms-t3">Membership: {devotee.membershipTier}</p>
               )}
+              {devotee.ytdDonations && (
+                <p className="tms-t3">
+                  YTD donations: {formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}
+                </p>
+              )}
               {devotee.upcomingBooking && (
                 <p className="tms-t3">Next booking: {devotee.upcomingBooking}</p>
+              )}
+              {devotee.todayBookings && devotee.todayBookings.length > 0 && (
+                <div className="mt1">
+                  <p className="tms-t3"><strong>Today&apos;s bookings</strong></p>
+                  {devotee.todayBookings.map((b) => (
+                    <div key={b.id} className={styles.todayRow}>
+                      <span>
+                        {new Date(b.scheduledAt).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                        {' · '}
+                        {b.status}
+                        {b.checkedIn ? ' · ✓ checked in' : ''}
+                      </span>
+                      {!b.checkedIn && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCheckIn(b.id)}
+                          disabled={busy}
+                        >
+                          Check in
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -355,27 +422,48 @@ export default function FrontDeskConsolePage() {
           )}
         </GlassCard>
 
-        <GlassCard title="Issue Darshan Token">
-          <p className="tms-t3">
-            Issues token linked to devotee ID when lookup succeeds.
-          </p>
+        <GlassCard title="Issue Queue Token">
+          <div className="formGroup">
+            <label htmlFor="queueType">Queue</label>
+            <select
+              id="queueType"
+              value={queueType}
+              onChange={(e) => setQueueType(e.target.value as QueueType)}
+              disabled={priorityToken}
+            >
+              <option value="darshan">Darshan</option>
+              <option value="seva">Seva</option>
+            </select>
+          </div>
+          <label className={styles.checkRow}>
+            <input
+              type="checkbox"
+              checked={priorityToken}
+              onChange={(e) => setPriorityToken(e.target.checked)}
+            />
+            Priority / VIP (insert at front)
+          </label>
           <Button onClick={handleIssueToken} disabled={busy} className="mt1">
             Issue Token
           </Button>
           {tokenResult && <p className="tms-t2 mt1">{tokenResult}</p>}
           {lastToken && (
-            <Button
-              variant="outline"
-              className="mt1"
-              onClick={() => {
-                const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
-                router.push(
-                  `/frontdesk/token-print?token=${encodeURIComponent(lastToken.tokenNumber)}&position=${lastToken.position}&wait=${lastToken.estimatedWaitMinutes}&name=${guestName}`,
-                );
-              }}
-            >
-              Reprint token
-            </Button>
+            <div className={styles.tokenActions}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
+                  router.push(
+                    `/frontdesk/token-print?token=${encodeURIComponent(lastToken.tokenNumber)}&position=${lastToken.position}&wait=${lastToken.estimatedWaitMinutes}&name=${guestName}`,
+                  );
+                }}
+              >
+                Reprint token
+              </Button>
+              <Button variant="outline" onClick={handleNotifySms} disabled={busy || !devotee?.phone}>
+                Send SMS
+              </Button>
+            </div>
           )}
         </GlassCard>
 
@@ -401,19 +489,30 @@ export default function FrontDeskConsolePage() {
           </Button>
         </GlassCard>
 
-        <GlassCard title="Quick Book (counter)">
-          <PaymentProviderPicker
-            value={paymentProvider}
-            onChange={setPaymentProvider}
-            currency={services?.[0]?.currency ?? Currency.USD}
-            channel="counter"
-          />
+        <GlassCard title="Counter Booking">
+          {devotee && serviceList.length > 0 ? (
+            <CounterBookingForm
+              ep={ep}
+              devotee={devotee}
+              services={serviceList}
+              onSuccess={(msg) => {
+                setActionMsg(msg);
+                refetchPos();
+              }}
+              onError={(msg) => setActionMsg(msg)}
+            />
+          ) : (
+            <p className="tms-t3">Look up a devotee to book seva with date, slot, and sankalpa.</p>
+          )}
+        </GlassCard>
+
+        <GlassCard title="Prasadam & kiosk">
           <p className="tms-t3">
-            Books next available {services?.[0]?.name ?? 'seva'} for looked-up devotee.
+            Self-service prasadam sponsorship and donations at the kiosk terminal.
           </p>
-          <Button onClick={handleQuickBook} disabled={busy || !devotee} className="mt1">
-            Quick book seva
-          </Button>
+          <Link href="/kiosk" className="mt1" style={{ display: 'inline-block' }}>
+            <Button variant="outline">Open kiosk</Button>
+          </Link>
         </GlassCard>
       </div>
       {actionMsg && <p className="tms-t2 mt1">{actionMsg}</p>}

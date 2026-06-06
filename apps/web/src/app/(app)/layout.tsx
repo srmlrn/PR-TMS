@@ -31,7 +31,10 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const config = getRoleConfigForUser(role);
   const title = getPageTitle(pathname);
   const isKiosk = pathname.startsWith('/kiosk');
-  const isPrintPage = pathname.startsWith('/frontdesk/token-print');
+  const isFullscreenPage =
+    pathname.startsWith('/frontdesk/token-print') ||
+    pathname.startsWith('/frontdesk/receipt-print') ||
+    pathname.startsWith('/frontdesk/display');
 
   useEffect(() => {
     if (isLoading) return;
@@ -60,7 +63,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={isKiosk ? 'kioskMode' : undefined}>
-      {!isKiosk && !isPrintPage && (
+      {!isKiosk && !isFullscreenPage && (
         <>
           <DockNav items={config.nav} />
           <TopBar

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -6,9 +6,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserRole } from '@tms/types';
+import { QueueType, UserRole } from '@tms/types';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
+import { CheckInBookingDto } from './dto/check-in.dto';
 import { IssueTokenDto } from './dto/issue-token.dto';
 import { LookupQueryDto } from './dto/lookup-query.dto';
 import {
@@ -26,13 +27,68 @@ export class FrontDeskController {
   constructor(private readonly frontDeskService: FrontDeskService) {}
 
   @Get('lookup')
-  @ApiOperation({ summary: 'Look up a devotee by phone number' })
+  @ApiOperation({ summary: 'Look up devotee by phone or name' })
   @ApiOkResponse({ type: DevoteeLookupResponseDto })
   async lookup(
     @TenantId() tenantId: string,
     @Query() query: LookupQueryDto,
   ): Promise<DevoteeLookupResponseDto> {
-    return this.frontDeskService.lookupDevotee(tenantId, query.phone);
+    return this.frontDeskService.lookupDevotee(tenantId, query);
+  }
+
+  @Post('check-in')
+  @ApiOperation({ summary: 'Check in devotee for a booking today' })
+  async checkIn(@TenantId() tenantId: string, @Body() dto: CheckInBookingDto) {
+    return this.frontDeskService.checkInBooking(tenantId, dto.bookingId);
+  }
+
+  @Get('queue')
+  @ApiOperation({ summary: 'List queue tokens' })
+  async listQueue(
+    @TenantId() tenantId: string,
+    @Query('status') status?: 'waiting' | 'called' | 'served',
+    @Query('queueType') queueType?: QueueType,
+  ) {
+    return { data: await this.frontDeskService.listQueue(tenantId, { status, queueType }) };
+  }
+
+  @Get('now-serving')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.PRIEST, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'Tokens currently called for display board' })
+  async nowServing(@TenantId() tenantId: string) {
+    return { data: await this.frontDeskService.getNowServing(tenantId) };
+  }
+
+  @Post('call-next')
+  @ApiOperation({ summary: 'Call the next waiting token' })
+  async callNext(
+    @TenantId() tenantId: string,
+    @Query('queueType') queueType?: QueueType,
+  ) {
+    const token = await this.frontDeskService.callNext(tenantId, queueType);
+    return { data: token };
+  }
+
+  @Post('tokens/:id/call')
+  @ApiOperation({ summary: 'Mark a token as called' })
+  async callToken(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.frontDeskService.callToken(tenantId, id);
+  }
+
+  @Post('tokens/:id/serve')
+  @ApiOperation({ summary: 'Mark a token as served' })
+  async serveToken(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.frontDeskService.serveToken(tenantId, id);
+  }
+
+  @Post('tokens/:id/notify')
+  @ApiOperation({ summary: 'Send SMS notification for queue token (stub)' })
+  async notifyToken(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { phone: string },
+  ) {
+    return this.frontDeskService.notifyToken(tenantId, id, body.phone);
   }
 
   @Post('tokens')

@@ -21,6 +21,7 @@ import type {
   PrasadamSponsorship,
   PrasadamSponsorshipType,
   PrasadamPackageTier,
+  NowServing,
   QueueStats,
   QueueToken,
   RecognitionItem,
@@ -328,11 +329,41 @@ export function createEndpoints(client: ApiClient) {
     getDonationReceipt: (id: string) =>
       client.get<TaxReceipt>(`/donations/${id}/receipt`),
 
-    frontDeskLookup: (phone: string) =>
-      client.get<DevoteeLookupResult>('/frontdesk/lookup', { params: { phone } }),
+    frontDeskLookup: (params: { phone?: string; name?: string }) =>
+      client.get<DevoteeLookupResult>('/frontdesk/lookup', { params }),
 
-    issueToken: (body: { devoteeId?: string; devoteeName?: string }) =>
-      client.post<QueueToken>('/frontdesk/tokens', body),
+    checkInBooking: (bookingId: string) =>
+      client.post<{ checkedIn: true }>('/frontdesk/check-in', { bookingId }),
+
+    getFrontDeskQueue: (params?: {
+      status?: 'waiting' | 'called' | 'served';
+      queueType?: string;
+    }) => client.get<{ data: QueueToken[] }>('/frontdesk/queue', { params }),
+
+    getNowServing: () => client.get<{ data: NowServing[] }>('/frontdesk/now-serving'),
+
+    callNextToken: (queueType?: string) =>
+      client.post<{ data: QueueToken | null }>('/frontdesk/call-next', {}, {
+        params: queueType ? { queueType } : undefined,
+      }),
+
+    callQueueToken: (id: string) =>
+      client.post<QueueToken>(`/frontdesk/tokens/${id}/call`, {}),
+
+    serveQueueToken: (id: string) =>
+      client.post<QueueToken>(`/frontdesk/tokens/${id}/serve`, {}),
+
+    notifyQueueToken: (id: string, phone: string) =>
+      client.post<{ sent: boolean; message: string }>(`/frontdesk/tokens/${id}/notify`, {
+        phone,
+      }),
+
+    issueToken: (body: {
+      devoteeId?: string;
+      devoteeName?: string;
+      queueType?: string;
+      priority?: boolean;
+    }) => client.post<QueueToken>('/frontdesk/tokens', body),
 
     getQueueStats: () => client.get<QueueStats>('/frontdesk/queue-stats'),
 

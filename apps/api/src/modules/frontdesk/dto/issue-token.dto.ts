@@ -1,8 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { QueueType } from '@tms/types';
+
+const QUEUE_TYPES = ['darshan', 'seva', 'priority'] as const satisfies readonly QueueType[];
 
 export class IssueTokenDto {
-  @ApiPropertyOptional({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
   devoteeId?: string;
@@ -12,4 +15,14 @@ export class IssueTokenDto {
   @IsString()
   @MinLength(1)
   devoteeName?: string;
+
+  @ApiPropertyOptional({ enum: QUEUE_TYPES, default: 'darshan' })
+  @IsOptional()
+  @IsEnum(QUEUE_TYPES)
+  queueType?: QueueType;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  priority?: boolean;
 }

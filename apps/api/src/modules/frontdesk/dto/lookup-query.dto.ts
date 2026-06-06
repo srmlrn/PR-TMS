@@ -1,9 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
 export class LookupQueryDto {
-  @ApiProperty({ example: '510-555-0191', description: 'Devotee phone number' })
+  @ApiPropertyOptional({ example: '510-555-0191' })
+  @IsOptional()
   @IsString()
   @MinLength(3)
-  phone!: string;
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'Rajan' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  name?: string;
 }

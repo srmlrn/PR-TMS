@@ -40,6 +40,12 @@ const TEMPLATES: NotificationTemplate[] = [
     subject: 'Thank you for your donation',
     body: 'Dear {{name}},\n\nWe received your donation of {{amount}}. Receipt: {{receipt}}',
   },
+  {
+    id: 'queue-token',
+    channel: 'sms',
+    name: 'Queue token',
+    body: 'Your darshan token is {{tokenNumber}}. Est. wait ~{{wait}} min.',
+  },
 ];
 
 @Injectable()

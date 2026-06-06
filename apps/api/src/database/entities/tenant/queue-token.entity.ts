@@ -11,6 +11,9 @@ export class QueueTokenEntity {
   @Column({ name: 'devotee_id', type: 'uuid', nullable: true })
   devoteeId?: string;
 
+  @Column({ name: 'devotee_name', length: 128, nullable: true })
+  devoteeName?: string;
+
   @Column({ default: 0 })
   position!: number;
 
@@ -19,6 +22,12 @@ export class QueueTokenEntity {
 
   @Column({ length: 32, default: 'waiting' })
   status!: string;
+
+  @Column({ name: 'queue_type', length: 16, default: 'darshan' })
+  queueType!: string;
+
+  @Column({ default: false })
+  priority!: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
