@@ -31,6 +31,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const config = getRoleConfigForUser(role);
   const title = getPageTitle(pathname);
   const isKiosk = pathname.startsWith('/kiosk');
+  const isPrintPage = pathname.startsWith('/frontdesk/token-print');
 
   useEffect(() => {
     if (isLoading) return;
@@ -59,7 +60,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={isKiosk ? 'kioskMode' : undefined}>
-      {!isKiosk && (
+      {!isKiosk && !isPrintPage && (
         <>
           <DockNav items={config.nav} />
           <TopBar

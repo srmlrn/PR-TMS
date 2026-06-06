@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Badge,
   BentoGrid,
@@ -12,10 +12,18 @@ import {
   PageHeader,
   StatTile,
 } from '@tms/ui';
-import { PrasadamPackageTier, PrasadamSponsorshipType, type PrasadamSponsorship } from '@tms/types';
+import {
+  Currency,
+  PrasadamPackageTier,
+  PrasadamSponsorshipType,
+  type PaymentProvider,
+  type PrasadamSponsorship,
+} from '@tms/types';
 import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
+import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
+import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import styles from './prasadam.module.css';
 
 interface SponsorshipRow {
@@ -92,29 +100,23 @@ const PACKAGE_LABELS: Record<PrasadamPackageTier, string> = {
   [PrasadamPackageTier.NRI_COURIER]: 'NRI',
 };
 
-const CAL_DAYS = [
-  { key: 'e1', empty: true },
-  { key: 'e2', empty: true },
-  { key: '3', sponsored: true },
-  { key: '4', sponsored: true },
-  { key: '5', label: '4' },
-  { key: '6', label: '5', avail: true, today: true },
-  { key: '7', label: '6', auspicious: true, event: true, sub: 'Ekadashi' },
-  { key: '8', label: '7' },
-  { key: '9', sponsored: true },
-  { key: '10', label: '9' },
-  { key: '11', label: '10' },
-  { key: '12', label: '11' },
-  { key: '13', label: '12', auspicious: true, sub: 'Rohini' },
-  { key: '14', label: '13' },
-  { key: '15', label: '14' },
-  { key: '16', label: '15' },
-  { key: '17', label: '16' },
-  { key: '18', label: '17' },
-  { key: '19', auspicious: true },
-  { key: '20', label: '19' },
-  { key: '21', label: '20' },
+const PACKAGE_AMOUNTS: Record<PrasadamPackageTier, number> = {
+  [PrasadamPackageTier.BASIC]: 51,
+  [PrasadamPackageTier.SILVER]: 101,
+  [PrasadamPackageTier.GOLD]: 151,
+  [PrasadamPackageTier.PLATINUM]: 251,
+  [PrasadamPackageTier.NRI_COURIER]: 201,
+};
+
+const PACKAGE_OPTIONS: { tier: PrasadamPackageTier; label: string }[] = [
+  { tier: PrasadamPackageTier.GOLD, label: 'Gold — $151 (PA mention + certificate + kit)' },
+  { tier: PrasadamPackageTier.SILVER, label: 'Silver — $101' },
+  { tier: PrasadamPackageTier.BASIC, label: 'Basic — $51' },
+  { tier: PrasadamPackageTier.PLATINUM, label: 'Platinum — $251' },
+  { tier: PrasadamPackageTier.NRI_COURIER, label: 'NRI Courier — $201' },
 ];
+
+const DEFAULT_DEITY = 'Lord Venkateswara';
 
 function mapSponsorship(s: PrasadamSponsorship): SponsorshipRow {
   const kitchenPending = s.status === 'kitchen_pending' || s.status === 'booked';
@@ -135,6 +137,17 @@ function mapSponsorship(s: PrasadamSponsorship): SponsorshipRow {
   };
 }
 
+function monthLabel(month: string): string {
+  const [year, m] = month.split('-').map(Number);
+  return new Date(year, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function shiftMonth(month: string, delta: number): string {
+  const [year, m] = month.split('-').map(Number);
+  const d = new Date(year, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 function ApiBanner({ loading, error }: { loading: boolean; error: string | null }) {
   if (!loading && !error) return null;
   return (
@@ -147,43 +160,116 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 
 export default function AdminPrasadamPage() {
   const { api } = useTenant();
-  const [showForm, setShowForm] = useState(false);
+  const today = new Date();
+  const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const todayKey = today.toISOString().slice(0, 10);
+
+  const [calendarMonth, setCalendarMonth] = useState(defaultMonth);
+  const [prasadamType, setPrasadamType] = useState(PrasadamSponsorshipType.DAILY);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [formMsg, setFormMsg] = useState<string | null>(null);
   const [formOk, setFormOk] = useState(false);
-  const [form, setForm] = useState({
+  const [kitchenOrderId, setKitchenOrderId] = useState<string | null>(null);
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
+    defaultPaymentProvider(Currency.USD, 'counter'),
+  );
+  const [bookForm, setBookForm] = useState({
     devoteeId: 'dev-rajan-krishnamurthy',
-    deity: 'Lord Venkateswara',
-    scheduledDate: new Date().toISOString().slice(0, 10),
+    deity: DEFAULT_DEITY,
     sponsorName: 'Rajan Krishnamurthy',
     gotram: 'Bharadwaja',
+    nakshatra: 'Rohini',
+    occasion: 'birthday',
+    beneficiaryName: "Smt. Kamala Krishnamurthy (Mom's birthday)",
+    packageTier: PrasadamPackageTier.GOLD,
+    courierAddress: '',
   });
 
   const { data, loading, error, refetch } = useApi((ep) => ep.getPrasadamSponsorships({ limit: 20 }));
+  const { data: availabilityData, loading: calLoading } = useApi(
+    (ep) =>
+      ep.getPrasadamAvailability({
+        month: calendarMonth,
+        type: prasadamType,
+        deity: DEFAULT_DEITY,
+      }),
+    [calendarMonth, prasadamType],
+  );
 
-  async function handleCreate() {
+  const slots = availabilityData?.data ?? [];
+  const slotMap = useMemo(() => new Map(slots.map((s) => [s.date, s])), [slots]);
+
+  const calendarCells = useMemo(() => {
+    const [year, monthNum] = calendarMonth.split('-').map(Number);
+    const firstDay = new Date(year, monthNum - 1, 1).getDay();
+    const daysInMonth = new Date(year, monthNum, 0).getDate();
+    const cells: Array<
+      | { key: string; empty: true }
+      | { key: string; date: string; day: number; available: boolean; sponsored: boolean; today: boolean }
+    > = [];
+
+    for (let i = 0; i < firstDay; i++) {
+      cells.push({ key: `empty-${i}`, empty: true });
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const slot = slotMap.get(date);
+      cells.push({
+        key: date,
+        date,
+        day,
+        available: slot?.isAvailable ?? true,
+        sponsored: slot ? !slot.isAvailable : false,
+        today: date === todayKey,
+      });
+    }
+    return cells;
+  }, [calendarMonth, slotMap, todayKey]);
+
+  const bookingDate = selectedDate ?? slots.find((s) => s.isAvailable)?.date ?? todayKey;
+  const packageAmount = PACKAGE_AMOUNTS[bookForm.packageTier];
+
+  async function handleBookAndPay() {
     setSaving(true);
     setFormMsg(null);
+    setKitchenOrderId(null);
     try {
       const ep = createEndpoints(api);
-      await ep.createPrasadamSponsorship({
-        type: PrasadamSponsorshipType.DAILY,
-        packageTier: PrasadamPackageTier.GOLD,
-        devoteeId: form.devoteeId,
-        scheduledDate: form.scheduledDate,
-        deity: form.deity,
-        sankalpa: {
-          sponsorName: form.sponsorName,
-          gotram: form.gotram,
-        },
+      await checkoutAndPay(ep, {
+        amount: packageAmount,
+        currency: Currency.USD,
+        purpose: `Prasadam sponsorship — ${TYPE_LABELS[prasadamType]} — ${bookingDate}`,
+        devoteeId: bookForm.devoteeId,
+        provider: paymentProvider,
       });
-      setShowForm(false);
+
+      const created = await ep.createPrasadamSponsorship({
+        type: prasadamType,
+        packageTier: bookForm.packageTier,
+        devoteeId: bookForm.devoteeId,
+        scheduledDate: bookingDate,
+        deity: bookForm.deity,
+        sankalpa: {
+          sponsorName: bookForm.sponsorName,
+          gotram: bookForm.gotram || undefined,
+          nakshatra: bookForm.nakshatra || undefined,
+          occasion: bookForm.occasion,
+          beneficiaryName: bookForm.beneficiaryName || undefined,
+        },
+        courierAddress: bookForm.courierAddress || undefined,
+        currency: Currency.USD,
+      });
+
       setFormOk(true);
-      setFormMsg(`Prasadam sponsorship for ${form.sponsorName} created.`);
+      setFormMsg(`Prasadam sponsorship confirmed for ${bookForm.sponsorName}.`);
+      if (created.kitchenOrderId) {
+        setKitchenOrderId(created.kitchenOrderId);
+      }
       refetch();
     } catch (err) {
       setFormOk(false);
-      setFormMsg(err instanceof Error ? err.message : 'Create failed');
+      setFormMsg(err instanceof Error ? err.message : 'Booking failed');
     } finally {
       setSaving(false);
     }
@@ -204,9 +290,6 @@ export default function AdminPrasadamPage() {
         subtitle="Sponsor deity prasadam, annadanam, festival kits — online & NRI"
         actions={
           <div className="flexRow">
-            <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
-              {showForm ? 'Cancel' : '+ New Sponsorship'}
-            </Button>
             <Button size="sm">Kitchen Orders</Button>
           </div>
         }
@@ -217,29 +300,13 @@ export default function AdminPrasadamPage() {
       {formMsg && (
         <p className="tms-t2 mb2" style={{ color: formOk ? 'var(--gr)' : 'var(--red)' }}>
           {formMsg}
+          {kitchenOrderId && (
+            <>
+              {' '}
+              Kitchen order: <strong>{kitchenOrderId}</strong>
+            </>
+          )}
         </p>
-      )}
-
-      {showForm && (
-        <GlassCard title="Book prasadam sponsorship" className="mb2">
-          <div className="formGrid">
-            <div className="formGroup">
-              <label>Devotee ID</label>
-              <input value={form.devoteeId} onChange={(e) => setForm({ ...form, devoteeId: e.target.value })} />
-            </div>
-            <div className="formGroup">
-              <label>Scheduled date</label>
-              <input type="date" value={form.scheduledDate} onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })} />
-            </div>
-            <div className="formGroup">
-              <label>Sponsor name</label>
-              <input value={form.sponsorName} onChange={(e) => setForm({ ...form, sponsorName: e.target.value })} />
-            </div>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <Button onClick={handleCreate} disabled={saving}>{saving ? 'Booking…' : 'Create sponsorship'}</Button>
-            </div>
-          </div>
-        </GlassCard>
       )}
 
       <BentoGrid className="mb2">
@@ -267,50 +334,70 @@ export default function AdminPrasadamPage() {
       <BentoGrid className="mb2">
         <BentoItem span={5}>
           <GlassCard
-            title="📅 Availability Calendar — July 2026"
+            title={`📅 Availability Calendar — ${monthLabel(calendarMonth)}`}
             headerRight={
-              <select className={styles.select} defaultValue="daily" aria-label="Prasadam type">
-                <option value="daily">Daily Prasadam — Lord Venkateswara</option>
-                <option value="abhishekam">Abhishekam Prasadam</option>
-                <option value="festival">Festival Kit</option>
-                <option value="annadanam">Annadanam (Free Meals)</option>
-              </select>
+              <div className="flexRow">
+                <Button size="sm" onClick={() => setCalendarMonth((m) => shiftMonth(m, -1))}>‹</Button>
+                <input
+                  type="month"
+                  className={styles.select}
+                  value={calendarMonth}
+                  onChange={(e) => setCalendarMonth(e.target.value)}
+                  aria-label="Calendar month"
+                />
+                <Button size="sm" onClick={() => setCalendarMonth((m) => shiftMonth(m, 1))}>›</Button>
+                <select
+                  className={styles.select}
+                  value={prasadamType}
+                  onChange={(e) => setPrasadamType(e.target.value as PrasadamSponsorshipType)}
+                  aria-label="Prasadam type"
+                >
+                  <option value={PrasadamSponsorshipType.DAILY}>Daily Prasadam — {DEFAULT_DEITY}</option>
+                  <option value={PrasadamSponsorshipType.ABHISHEKAM}>Abhishekam Prasadam</option>
+                  <option value={PrasadamSponsorshipType.FESTIVAL}>Festival Kit</option>
+                  <option value={PrasadamSponsorshipType.ANNADANAM}>Annadanam (Free Meals)</option>
+                  <option value={PrasadamSponsorshipType.NRI}>NRI Courier Kit</option>
+                </select>
+              </div>
             }
           >
+            {calLoading && <p className="tms-t3 mb1">Loading availability…</p>}
             <div className={styles.cal}>
               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
                 <div key={d} className={styles.calHead}>
                   {d}
                 </div>
               ))}
-              {CAL_DAYS.map((day) => {
-                if (day.empty) {
+              {calendarCells.map((day) => {
+                if ('empty' in day && day.empty) {
                   return <div key={day.key} className={[styles.calDay, styles.calEmpty].join(' ')} />;
                 }
+                if ('empty' in day) return null;
                 if (day.sponsored) {
                   return (
                     <div key={day.key} className={[styles.calDay, styles.calSponsored].join(' ')}>
-                      ✓
+                      {day.day}
                       <small>Taken</small>
                     </div>
                   );
                 }
                 return (
-                  <div
+                  <button
                     key={day.key}
+                    type="button"
                     className={[
                       styles.calDay,
                       day.today ? styles.calToday : '',
-                      day.auspicious ? styles.calAuspicious : '',
-                      day.event ? styles.calEvent : '',
+                      day.available ? styles.calAuspicious : '',
+                      selectedDate === day.date ? styles.calSelected : '',
                     ]
                       .filter(Boolean)
                       .join(' ')}
+                    onClick={() => setSelectedDate(day.date)}
                   >
-                    {day.label}
-                    {day.avail && <small>AVAIL</small>}
-                    {day.sub !== undefined && <small className={styles.calSub}>{day.sub}</small>}
-                  </div>
+                    {day.day}
+                    {day.available && <small>AVAIL</small>}
+                  </button>
                 );
               })}
             </div>
@@ -319,50 +406,77 @@ export default function AdminPrasadamPage() {
                 <span className={styles.legendSponsored} /> Sponsored
               </span>
               <span className="flexRow">
-                <span className={styles.legendAuspicious} /> Auspicious
-              </span>
-              <span className="flexRow">
-                <span className={styles.legendAvailable} /> Available
+                <span className={styles.legendAuspicious} /> Available
               </span>
             </div>
-            <Button variant="primary" fullWidth className="mt2">
-              Book Jul 5 — Daily Prasadam
+            <Button
+              variant="primary"
+              fullWidth
+              className="mt2"
+              onClick={() => setSelectedDate(bookingDate)}
+            >
+              Book {formatShortDate(bookingDate)} — {TYPE_LABELS[prasadamType]}
             </Button>
           </GlassCard>
         </BentoItem>
         <BentoItem span={7}>
           <GlassCard
-            title="New Prasadam Sponsorship — Jul 5"
-            headerRight={<Chip>Daily Prasadam</Chip>}
+            title={`New Prasadam Sponsorship — ${formatShortDate(bookingDate)}`}
+            headerRight={<Chip>{TYPE_LABELS[prasadamType]}</Chip>}
           >
             <div className="formGrid">
               <div className="formGroup">
+                <label>Devotee ID</label>
+                <input
+                  value={bookForm.devoteeId}
+                  onChange={(e) => setBookForm({ ...bookForm, devoteeId: e.target.value })}
+                />
+              </div>
+              <div className="formGroup">
                 <label>Sponsor Name</label>
-                <input defaultValue="Rajan Krishnamurthy" readOnly />
+                <input
+                  value={bookForm.sponsorName}
+                  onChange={(e) => setBookForm({ ...bookForm, sponsorName: e.target.value })}
+                />
               </div>
               <div className="formGroup">
                 <label>Package</label>
-                <select defaultValue="gold">
-                  <option value="gold">Gold — $151 (PA mention + certificate + kit)</option>
-                  <option value="silver">Silver — $101</option>
-                  <option value="basic">Basic — $51</option>
-                  <option value="nri">NRI Courier — $201</option>
+                <select
+                  value={bookForm.packageTier}
+                  onChange={(e) =>
+                    setBookForm({ ...bookForm, packageTier: e.target.value as PrasadamPackageTier })
+                  }
+                >
+                  {PACKAGE_OPTIONS.map((opt) => (
+                    <option key={opt.tier} value={opt.tier}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
             <div className="formGrid">
               <div className="formGroup">
                 <label>Gotram</label>
-                <input defaultValue="Bharadwaja" readOnly />
+                <input
+                  value={bookForm.gotram}
+                  onChange={(e) => setBookForm({ ...bookForm, gotram: e.target.value })}
+                />
               </div>
               <div className="formGroup">
                 <label>Nakshatra</label>
-                <input defaultValue="Rohini" readOnly />
+                <input
+                  value={bookForm.nakshatra}
+                  onChange={(e) => setBookForm({ ...bookForm, nakshatra: e.target.value })}
+                />
               </div>
             </div>
             <div className="formGroup">
               <label>Occasion</label>
-              <select defaultValue="birthday">
+              <select
+                value={bookForm.occasion}
+                onChange={(e) => setBookForm({ ...bookForm, occasion: e.target.value })}
+              >
                 <option value="birthday">Birthday</option>
                 <option value="anniversary">Wedding Anniversary</option>
                 <option value="memorial">Memorial / Shraddha</option>
@@ -372,16 +486,32 @@ export default function AdminPrasadamPage() {
             </div>
             <div className="formGroup">
               <label>Beneficiary Name (Sankalpa)</label>
-              <input defaultValue="Smt. Kamala Krishnamurthy (Mom's birthday)" readOnly />
+              <input
+                value={bookForm.beneficiaryName}
+                onChange={(e) => setBookForm({ ...bookForm, beneficiaryName: e.target.value })}
+              />
             </div>
+            {bookForm.packageTier === PrasadamPackageTier.NRI_COURIER && (
+              <div className="formGroup">
+                <label>Courier address</label>
+                <input
+                  value={bookForm.courierAddress}
+                  onChange={(e) => setBookForm({ ...bookForm, courierAddress: e.target.value })}
+                />
+              </div>
+            )}
+            <PaymentProviderPicker
+              value={paymentProvider}
+              onChange={setPaymentProvider}
+              currency={Currency.USD}
+              channel="counter"
+            />
             <div className="calloutAmber mb2">
-              📋 <strong>Gold Package includes:</strong> Priest reads sankalpa during morning puja · PA
-              announcement · Digital notice board display · Personalised certificate (PDF) · Prasadam
-              kit with Laddu & Pulihora · 501(c)(3) tax receipt (USA) · WhatsApp + email confirmation
-              within 15 min
+              📋 <strong>{PACKAGE_LABELS[bookForm.packageTier]} Package:</strong> Priest reads sankalpa during morning puja · PA
+              announcement · Digital notice board · Personalised certificate · Prasadam kit · Tax receipt · Confirmation within 15 min
             </div>
-            <Button variant="primary" size="lg" fullWidth>
-              Pay $151 · Confirm Sponsorship
+            <Button variant="primary" size="lg" fullWidth onClick={handleBookAndPay} disabled={saving}>
+              {saving ? 'Processing…' : `Pay ${formatMoney(packageAmount)} · Confirm Sponsorship`}
             </Button>
           </GlassCard>
         </BentoItem>

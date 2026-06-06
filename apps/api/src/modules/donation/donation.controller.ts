@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -10,13 +11,14 @@ import {
 import { UserRole } from '@tms/types';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateDonationDto } from './dto/create-donation.dto';
+import { DonationQueryDto } from './dto/donation-query.dto';
 import {
   CampaignResponseDto,
   DonationResponseDto,
   PaginatedDonationsDto,
 } from './dto/donation-response.dto';
+import { formatReceiptText } from '../../common/utils/receipt-text.util';
 import { DonationService } from './donation.service';
 
 @ApiTags('Donations')
@@ -37,17 +39,18 @@ export class DonationController {
   }
 
   @Get('donations')
-  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.FRONT_DESK)
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.FRONT_DESK, UserRole.DEVOTEE)
   @ApiOperation({ summary: 'List donations for the tenant' })
   @ApiOkResponse({ type: PaginatedDonationsDto })
   async findAll(
     @TenantId() tenantId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: DonationQueryDto,
   ): Promise<PaginatedDonationsDto> {
     return this.donationService.findDonations(
       tenantId,
       query.page,
       query.limit,
+      { devoteeId: query.devoteeId },
     );
   }
 
@@ -68,6 +71,24 @@ export class DonationController {
     @Param('id') id: string,
   ) {
     return this.donationService.getReceipt(tenantId, id);
+  }
+
+  @Get('donations/:id/receipt.pdf')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.DEVOTEE, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Download tax receipt as plain-text (PDF scaffold)' })
+  @ApiOkResponse({ description: 'Plain-text receipt suitable for print/PDF conversion' })
+  async getReceiptPdf(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const receipt = await this.donationService.getReceipt(tenantId, id);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="receipt-${receipt.receiptNumber}.txt"`,
+    );
+    res.send(formatReceiptText(receipt));
   }
 
   @Get('campaigns/:id')

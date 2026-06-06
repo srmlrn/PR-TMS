@@ -10,6 +10,7 @@ export { RecognitionItemEntity } from './recognition-item.entity';
 export { PrasadamSponsorshipEntity } from './prasadam-sponsorship.entity';
 export { DonationEntity } from './donation.entity';
 export { DonationCampaignEntity } from './donation-campaign.entity';
+export { DonationSubscriptionEntity } from './donation-subscription.entity';
 export { VendorPaymentEntity } from './vendor-payment.entity';
 export { QueueTokenEntity } from './queue-token.entity';
 
@@ -25,6 +26,7 @@ import { RecognitionItemEntity } from './recognition-item.entity';
 import { PrasadamSponsorshipEntity } from './prasadam-sponsorship.entity';
 import { DonationEntity } from './donation.entity';
 import { DonationCampaignEntity } from './donation-campaign.entity';
+import { DonationSubscriptionEntity } from './donation-subscription.entity';
 import { VendorPaymentEntity } from './vendor-payment.entity';
 import { QueueTokenEntity } from './queue-token.entity';
 
@@ -41,6 +43,7 @@ export const TENANT_ENTITIES = [
   PrasadamSponsorshipEntity,
   DonationEntity,
   DonationCampaignEntity,
+  DonationSubscriptionEntity,
   VendorPaymentEntity,
   QueueTokenEntity,
 ];

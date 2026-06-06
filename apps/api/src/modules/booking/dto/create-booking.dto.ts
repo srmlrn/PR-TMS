@@ -28,6 +28,11 @@ class BookingSankalpaDto {
   @IsString()
   nakshatra?: string;
 
+  @ApiPropertyOptional({ example: 'Vrishabha' })
+  @IsOptional()
+  @IsString()
+  rashi?: string;
+
   @ApiPropertyOptional({ example: 'Birthday' })
   @IsOptional()
   @IsString()
@@ -69,4 +74,12 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   paymentSessionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Free-text priest preference (stored on sankalpa)',
+    example: 'Tamil-speaking priest',
+  })
+  @IsOptional()
+  @IsString()
+  priestPreference?: string;
 }

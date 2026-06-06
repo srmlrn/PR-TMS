@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -11,6 +12,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { BookingQueryDto, ServiceSlotsQueryDto } from './dto/booking-query.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { formatReceiptText } from '../../common/utils/receipt-text.util';
+import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { BookingService } from './booking.service';
 import { SevaCatalogService, TimeSlot } from './seva-catalog.service';
@@ -67,6 +70,36 @@ export class BookingController {
   @ApiParam({ name: 'id', description: 'Booking UUID' })
   async getReceipt(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.bookingService.getReceipt(tenantId, id);
+  }
+
+  @Get('bookings/:id/receipt.pdf')
+  @Roles(UserRole.ADMIN, UserRole.DEVOTEE, UserRole.FRONT_DESK, UserRole.PRIEST)
+  @ApiOperation({ summary: 'Download booking receipt as plain-text (PDF scaffold)' })
+  @ApiParam({ name: 'id', description: 'Booking UUID' })
+  async getReceiptPdf(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const receipt = await this.bookingService.getReceipt(tenantId, id);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="receipt-${receipt.receiptNumber}.txt"`,
+    );
+    res.send(formatReceiptText(receipt));
+  }
+
+  @Patch('bookings/:id')
+  @Roles(UserRole.ADMIN, UserRole.PRIEST)
+  @ApiOperation({ summary: 'Update booking (e.g. assign priest)' })
+  @ApiParam({ name: 'id', description: 'Booking UUID' })
+  async update(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateBookingDto,
+  ): Promise<Booking> {
+    return this.bookingService.update(tenantId, id, dto);
   }
 
   @Patch('bookings/:id/status')

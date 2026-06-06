@@ -8,6 +8,14 @@ import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { ApiBanner } from '@/components/ApiBanner';
 
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'hi', label: 'Hindi' },
+  { value: 'ta', label: 'Tamil' },
+  { value: 'te', label: 'Telugu' },
+  { value: 'kn', label: 'Kannada' },
+];
+
 const EMPTY = {
   firstName: '',
   lastName: '',
@@ -19,11 +27,13 @@ const EMPTY = {
   rashi: '',
   gender: '' as DevoteeGender | '',
   dateOfBirth: '',
+  photoUrl: '',
   familyId: '',
   taxId: '',
   isNri: false,
   communicationOptIn: true,
   preferredLanguage: 'en',
+  membershipTier: '',
   addressLine1: '',
   city: '',
   state: '',
@@ -59,8 +69,10 @@ export default function DevoteeProfilePage() {
           rashi: d.rashi ?? '',
           gender: d.gender ?? '',
           dateOfBirth: d.dateOfBirth ?? '',
+          photoUrl: d.photoUrl ?? '',
           familyId: d.familyId ?? '',
           taxId: d.taxId ?? '',
+          membershipTier: d.membershipTier ?? '',
           isNri: d.isNri ?? false,
           communicationOptIn: d.communicationOptIn ?? true,
           preferredLanguage: d.preferredLanguage ?? 'en',
@@ -93,6 +105,7 @@ export default function DevoteeProfilePage() {
         rashi: form.rashi || undefined,
         gender: form.gender || undefined,
         dateOfBirth: form.dateOfBirth || undefined,
+        photoUrl: form.photoUrl || undefined,
         familyId: form.familyId || undefined,
         taxId: form.taxId || undefined,
         isNri: form.isNri,
@@ -133,6 +146,31 @@ export default function DevoteeProfilePage() {
 
       <GlassCard title="Profile">
         <form onSubmit={handleSave} className="formGrid">
+          {form.photoUrl && (
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <img
+                src={form.photoUrl}
+                alt="Profile"
+                style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }}
+              />
+            </div>
+          )}
+          <div className="formGroup">
+            <label htmlFor="photoUrl">Photo URL</label>
+            <input
+              id="photoUrl"
+              type="url"
+              value={form.photoUrl}
+              onChange={(e) => setForm({ ...form, photoUrl: e.target.value })}
+              placeholder="https://…"
+            />
+          </div>
+          {form.membershipTier && (
+            <div className="formGroup">
+              <label>Membership tier</label>
+              <input value={form.membershipTier} readOnly disabled />
+            </div>
+          )}
           <div className="formGroup">
             <label htmlFor="firstName">First name</label>
             <input id="firstName" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
@@ -200,10 +238,27 @@ export default function DevoteeProfilePage() {
               <input type="checkbox" checked={form.communicationOptIn} onChange={(e) => setForm({ ...form, communicationOptIn: e.target.checked })} /> Email/SMS updates
             </label>
           </div>
+          <div className="formGroup">
+            <label htmlFor="preferredLanguage">Preferred language</label>
+            <select
+              id="preferredLanguage"
+              value={form.preferredLanguage}
+              onChange={(e) => setForm({ ...form, preferredLanguage: e.target.value })}
+            >
+              {LANGUAGE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
             <h3 className="tms-t1">Important dates</h3>
-            <p className="tms-t3">Birthdays, anniversaries, and star days for personalised reminders.</p>
+            <p className="tms-t3">
+              Birthdays, anniversaries, and star days for personalised reminders.
+              Add a <strong>star day</strong> entry (type: Star day) to receive nakshatra archana reminders before your star day each month.
+            </p>
           </div>
           {importantDates.map((row, index) => (
             <div key={index} className="formGrid" style={{ gridColumn: '1 / -1' }}>
@@ -246,9 +301,12 @@ export default function DevoteeProfilePage() {
                 >
                   <option value="birthday">Birthday</option>
                   <option value="anniversary">Anniversary</option>
-                  <option value="star_day">Star day</option>
+                  <option value="star_day">Star day (nakshatra reminder)</option>
                   <option value="other">Other</option>
                 </select>
+                {row.type === 'star_day' && (
+                  <p className="tms-t3 mt1">⭐ We&apos;ll remind you to book archana before this star day.</p>
+                )}
               </div>
               <div className="formGroup" style={{ alignSelf: 'end' }}>
                 <Button

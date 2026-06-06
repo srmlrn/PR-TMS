@@ -20,6 +20,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateSponsorDto } from './dto/create-sponsor.dto';
 import { SponsorQueryDto } from './dto/sponsor-query.dto';
+import { UpdatePipelineDto } from './dto/update-pipeline.dto';
 import { UpdateRecognitionDto } from './dto/update-recognition.dto';
 import { UpdateSponsorDto } from './dto/update-sponsor.dto';
 import { SponsorService } from './sponsor.service';
@@ -77,6 +78,18 @@ export class SponsorController {
     @Body() dto: UpdateSponsorDto,
   ) {
     return this.sponsorService.update(tenantId, id, dto);
+  }
+
+  @Patch(':id/pipeline')
+  @ApiOperation({ summary: 'Update sponsor CRM pipeline stage' })
+  @ApiParam({ name: 'id', description: 'Sponsor UUID' })
+  @ApiResponse({ status: 200, description: 'Pipeline stage updated' })
+  async updatePipeline(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdatePipelineDto,
+  ) {
+    return this.sponsorService.updatePipeline(tenantId, id, dto.pipelineStage);
   }
 
   @Delete(':id')

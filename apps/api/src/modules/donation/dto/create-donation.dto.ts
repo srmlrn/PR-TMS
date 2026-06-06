@@ -1,12 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
   IsPositive,
   IsString,
   IsUUID,
+  Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { Currency, DonationFrequency } from '@tms/types';
 
@@ -15,8 +18,11 @@ export class CreateDonationDto {
   @IsUUID()
   devoteeId!: string;
 
-  @ApiProperty({ example: 100 })
+  @ApiProperty({ example: 100, description: 'Cash amount; use 0 for in-kind donations' })
   @IsNumber()
+  @ValidateIf((dto: CreateDonationDto) => dto.isInKind === true)
+  @Min(0)
+  @ValidateIf((dto: CreateDonationDto) => !dto.isInKind)
   @IsPositive()
   amount!: number;
 
@@ -51,4 +57,19 @@ export class CreateDonationDto {
   @IsOptional()
   @IsUUID()
   paymentSessionId?: string;
+
+  @ApiPropertyOptional({ description: 'Hide donor identity on public listings' })
+  @IsOptional()
+  @IsBoolean()
+  isAnonymous?: boolean;
+
+  @ApiPropertyOptional({ description: 'Non-cash (in-kind) donation' })
+  @IsOptional()
+  @IsBoolean()
+  isInKind?: boolean;
+
+  @ApiPropertyOptional({ description: 'Description of in-kind items donated' })
+  @IsOptional()
+  @IsString()
+  inKindDescription?: string;
 }

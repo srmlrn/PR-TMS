@@ -193,6 +193,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/sponsors': 'Sponsor Management',
   '/admin/settings': 'Settings & Environments',
   '/frontdesk/console': 'Reception Console',
+  '/frontdesk/token-print': 'Darshan Token',
   '/priest/schedule': "Today's Schedule",
   '/accountant/finance': 'Finance Dashboard',
   '/volunteer/shifts': 'Volunteering',

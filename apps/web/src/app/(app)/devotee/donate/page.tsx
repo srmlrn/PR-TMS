@@ -29,6 +29,7 @@ export default function DonatePage() {
   const channel = (searchParams.get('channel') as 'app' | 'kiosk' | 'counter') ?? 'app';
   const [fxHint, setFxHint] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<TaxReceipt | null>(null);
+  const [lastDonationId, setLastDonationId] = useState<string | null>(null);
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
     defaultPaymentProvider(Currency.USD, channel),
   );
@@ -40,6 +41,9 @@ export default function DonatePage() {
   const [taxId, setTaxId] = useState('');
   const [campaignId, setCampaignId] = useState('');
   const [purpose, setPurpose] = useState('General Hundi');
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isInKind, setIsInKind] = useState(false);
+  const [inKindDescription, setInKindDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -66,29 +70,41 @@ export default function DonatePage() {
       setMessage('Devotee profile not linked to your account.');
       return;
     }
+    if (isInKind && !inKindDescription.trim()) {
+      setMessage('Describe the in-kind offering (e.g. groceries, flowers).');
+      return;
+    }
     setSubmitting(true);
     setMessage(null);
     try {
       const ep = createEndpoints(api);
-      const paymentSessionId = await checkoutAndPay(ep, {
-        amount,
-        currency,
-        purpose,
-        devoteeId: user.devoteeId,
-        provider: paymentProvider,
-      });
+      const paymentSessionId = isInKind
+        ? undefined
+        : await checkoutAndPay(ep, {
+            amount,
+            currency,
+            purpose,
+            devoteeId: user.devoteeId,
+            provider: paymentProvider,
+          });
 
       const donation = await ep.createDonation({
         devoteeId: user.devoteeId,
-        amount,
+        amount: isInKind ? 0 : amount,
         currency,
-        purpose,
+        purpose: isInKind && inKindDescription
+          ? `${purpose} — ${inKindDescription}`
+          : purpose,
         frequency,
         campaignId: campaignId || undefined,
         taxId: taxId || undefined,
-        paymentSessionId,
-      }) as { id: string; receiptNumber?: string };
+        paymentSessionId: isInKind ? undefined : paymentSessionId,
+        isAnonymous,
+        isInKind,
+        inKindDescription: inKindDescription || undefined,
+      });
 
+      setLastDonationId(donation.id);
       const receiptData = await ep.getDonationReceipt(donation.id);
       setReceipt(receiptData);
       setMessage(
@@ -203,15 +219,52 @@ export default function DonatePage() {
               placeholder="Required for official tax receipt in some countries"
             />
           </div>
+          <div className="formGroup mt1">
+            <label>
+              <input
+                type="checkbox"
+                checked={isAnonymous}
+                onChange={(e) => setIsAnonymous(e.target.checked)}
+              />{' '}
+              Donate anonymously (name hidden on public donor lists)
+            </label>
+          </div>
+          <div className="formGroup mt1">
+            <label>
+              <input
+                type="checkbox"
+                checked={isInKind}
+                onChange={(e) => setIsInKind(e.target.checked)}
+              />{' '}
+              In-kind offering (goods or services, not cash)
+            </label>
+          </div>
+          {isInKind && (
+            <div className="formGroup mt1">
+              <label htmlFor="inKindDescription">In-kind description *</label>
+              <input
+                id="inKindDescription"
+                value={inKindDescription}
+                onChange={(e) => setInKindDescription(e.target.value)}
+                placeholder="e.g. 50 lbs rice, flower garlands, volunteer hours"
+              />
+            </div>
+          )}
           {fxHint && <p className="tms-t3 mt1">{fxHint}</p>}
+          {!isInKind && (
           <PaymentProviderPicker
             value={paymentProvider}
             onChange={setPaymentProvider}
             currency={currency}
             channel={channel}
           />
+          )}
           <Button onClick={handleDonate} disabled={submitting} fullWidth className="mt1">
-            {submitting ? 'Processing…' : `Donate ${formatMoney(amount, currency)}`}
+            {submitting
+              ? 'Processing…'
+              : isInKind
+                ? 'Record in-kind offering'
+                : `Donate ${formatMoney(amount, currency)}`}
           </Button>
           {message && <p className="tms-t2 mt1">{message}</p>}
           {receipt && (
@@ -250,23 +303,34 @@ export default function DonatePage() {
                   </div>
                 )}
               </dl>
-              <Button
-                variant="outline"
-                className="mt1"
-                onClick={() => {
-                  const blob = new Blob([JSON.stringify(receipt, null, 2)], {
-                    type: 'application/json',
-                  });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `receipt-${receipt.receiptNumber}.json`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              >
-                Download receipt (JSON)
-              </Button>
+              <div className="flexRow mt1">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const blob = new Blob([JSON.stringify(receipt, null, 2)], {
+                      type: 'application/json',
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `receipt-${receipt.receiptNumber}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Download receipt (JSON)
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    if (lastDonationId) {
+                      window.open(`/devotee/receipt/donation/${lastDonationId}`, '_blank');
+                    }
+                  }}
+                >
+                  Print receipt
+                </Button>
+              </div>
             </GlassCard>
           )}
         </GlassCard>

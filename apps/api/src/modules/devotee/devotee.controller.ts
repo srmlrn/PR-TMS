@@ -22,13 +22,17 @@ import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateDevoteeDto } from './dto/create-devotee.dto';
 import { DevoteeQueryDto } from './dto/devotee-query.dto';
 import { UpdateDevoteeDto } from './dto/update-devotee.dto';
+import { DevoteeReminderService } from './devotee-reminder.service';
 import { DevoteeService } from './devotee.service';
 
 @ApiTags('devotees')
 @ApiBearerAuth()
 @Controller('devotees')
 export class DevoteeController {
-  constructor(private readonly devoteeService: DevoteeService) {}
+  constructor(
+    private readonly devoteeService: DevoteeService,
+    private readonly reminderService: DevoteeReminderService,
+  ) {}
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT)
@@ -60,6 +64,19 @@ export class DevoteeController {
     @Query('email') email?: string,
   ) {
     return this.devoteeService.checkDuplicates(tenantId, phone, email);
+  }
+
+  @Get('reminders-due')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'List devotees with important dates on a given day' })
+  @ApiQuery({ name: 'date', required: true, example: '2026-06-07' })
+  @ApiResponse({ status: 200, description: 'Devotees with matching important dates' })
+  async getRemindersDue(
+    @TenantId() tenantId: string,
+    @Query('date') date: string,
+  ) {
+    const data = await this.reminderService.findRemindersDue(tenantId, date);
+    return { date: date.slice(0, 10), data };
   }
 
   @Get(':id')

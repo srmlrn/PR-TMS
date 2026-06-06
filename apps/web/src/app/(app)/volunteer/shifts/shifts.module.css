@@ -1,7 +1,20 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.shiftActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .shifts {
@@ -39,7 +52,8 @@
 }
 
 @media (max-width: 960px) {
-  .grid {
+  .grid,
+  .formGrid {
     grid-template-columns: 1fr;
   }
 }

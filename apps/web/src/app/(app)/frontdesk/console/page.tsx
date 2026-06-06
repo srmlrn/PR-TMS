@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
-import { Currency, type DevoteeLookupResult, type PaymentProvider } from '@tms/types';
+import { Currency, type DevoteeLookupResult, type PaymentProvider, type QueueToken } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
@@ -18,13 +19,26 @@ const EMPTY_WALK_IN = {
   nakshatra: '',
 };
 
+function isToday(value: string | Date): boolean {
+  const d = typeof value === 'string' ? new Date(value) : value;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
 export default function FrontDeskConsolePage() {
+  const router = useRouter();
   const { api } = useTenant();
+  const today = new Date().toISOString().slice(0, 10);
   const [phone, setPhone] = useState('');
   const [lookup, setLookup] = useState<DevoteeLookupResult | null>(null);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
   const [walkIn, setWalkIn] = useState(EMPTY_WALK_IN);
   const [registering, setRegistering] = useState(false);
+  const [lastToken, setLastToken] = useState<QueueToken | null>(null);
   const [tokenResult, setTokenResult] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [donateAmount, setDonateAmount] = useState(51);
@@ -35,12 +49,35 @@ export default function FrontDeskConsolePage() {
 
   const { data: stats, loading, error, refetch } = useApi((ep) => ep.getQueueStats());
   const { data: services } = useApi((ep) => ep.getServices());
+  const {
+    data: posData,
+    loading: posLoading,
+    error: posError,
+    refetch: refetchPos,
+  } = useApi(
+    (ep) =>
+      Promise.all([
+        ep.getBookings({ date: today, limit: 100 }),
+        ep.getDonations({ limit: 100 }),
+      ]).then(([bookings, donations]) => ({ bookings, donations })),
+    [today],
+  );
+
+  const counterBookings = (posData?.bookings?.data ?? []).filter((b) => b.channel === 'counter');
+  const counterDonations = (posData?.donations?.data ?? []).filter(
+    (d) => isToday(d.createdAt) && d.purpose.toLowerCase().includes('counter'),
+  );
+  const posBookingTotal = counterBookings.reduce((sum, b) => sum + b.amount, 0);
+  const posDonationTotal = counterDonations.reduce((sum, d) => sum + d.amount, 0);
+  const posTotal = posBookingTotal + posDonationTotal;
+  const posCurrency = counterBookings[0]?.currency ?? counterDonations[0]?.currency ?? Currency.USD;
 
   async function handleLookup() {
     setBusy(true);
     setLookup(null);
     setLookupMessage(null);
     setTokenResult(null);
+    setLastToken(null);
     setActionMsg(null);
     setWalkIn(EMPTY_WALK_IN);
     try {
@@ -103,10 +140,15 @@ export default function FrontDeskConsolePage() {
         devoteeId: lookup?.devotee?.id,
         devoteeName: lookup?.devotee?.name ?? 'Walk-in guest',
       });
+      setLastToken(token);
       setTokenResult(
         `Token ${token.tokenNumber} · Position ${token.position} · ~${token.estimatedWaitMinutes} min wait`,
       );
       refetch();
+      const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
+      router.push(
+        `/frontdesk/token-print?token=${encodeURIComponent(token.tokenNumber)}&position=${token.position}&wait=${token.estimatedWaitMinutes}&name=${guestName}`,
+      );
     } catch (err) {
       setTokenResult(err instanceof Error ? err.message : 'Token issue failed');
     } finally {
@@ -141,6 +183,7 @@ export default function FrontDeskConsolePage() {
       setActionMsg(
         `Donation recorded (${paymentProvider}) · ${donation.receiptNumber ?? 'receipt issued'}`,
       );
+      refetchPos();
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Donation failed');
     } finally {
@@ -184,6 +227,7 @@ export default function FrontDeskConsolePage() {
       setActionMsg(
         `Booked ${service.name} (${paymentProvider}) · ${booking.receiptNumber ?? booking.id.slice(0, 8)}`,
       );
+      refetchPos();
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Booking failed');
     } finally {
@@ -204,6 +248,28 @@ export default function FrontDeskConsolePage() {
         <StatTile label="Avg Wait" value={`${stats?.averageWaitMinutes ?? 18} min`} icon="⏱️" />
         <StatTile label="Served Today" value={String(stats?.servedToday ?? 84)} icon="✅" />
       </div>
+
+      <GlassCard title="Today's Counter Sales (POS)" className={styles.posPanel}>
+        <ApiBanner loading={posLoading} error={posError} />
+        <div className={styles.posGrid}>
+          <div>
+            <p className={styles.posLabel}>Seva bookings</p>
+            <p className={styles.posValue}>
+              {counterBookings.length} · {formatMoney(posBookingTotal, posCurrency)}
+            </p>
+          </div>
+          <div>
+            <p className={styles.posLabel}>Donations</p>
+            <p className={styles.posValue}>
+              {counterDonations.length} · {formatMoney(posDonationTotal, posCurrency)}
+            </p>
+          </div>
+          <div>
+            <p className={styles.posLabel}>Total</p>
+            <p className={styles.posTotal}>{formatMoney(posTotal, posCurrency)}</p>
+          </div>
+        </div>
+      </GlassCard>
 
       <div className={styles.grid}>
         <GlassCard title="Devotee Lookup">
@@ -292,6 +358,20 @@ export default function FrontDeskConsolePage() {
             Issue Token
           </Button>
           {tokenResult && <p className="tms-t2 mt1">{tokenResult}</p>}
+          {lastToken && (
+            <Button
+              variant="outline"
+              className="mt1"
+              onClick={() => {
+                const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
+                router.push(
+                  `/frontdesk/token-print?token=${encodeURIComponent(lastToken.tokenNumber)}&position=${lastToken.position}&wait=${lastToken.estimatedWaitMinutes}&name=${guestName}`,
+                );
+              }}
+            >
+              Reprint token
+            </Button>
+          )}
         </GlassCard>
 
         <GlassCard title="Quick Donate (counter)">

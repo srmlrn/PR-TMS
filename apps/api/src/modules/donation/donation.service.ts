@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import {
   CreateDonationInput,
@@ -12,6 +17,7 @@ import {
 } from '@tms/types';
 import { PaymentService } from '../payment/payment.service';
 import { validateTaxId } from '../payment/tax-validation.util';
+import { DonationBillingService } from './donation-billing.service';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { DonationCampaignEntity } from '../../database/entities/tenant/donation-campaign.entity';
@@ -37,6 +43,7 @@ export class DonationService
   constructor(
     private readonly tenantData: TenantDataService,
     private readonly paymentService: PaymentService,
+    private readonly billingService: DonationBillingService,
   ) {
     super();
   }
@@ -167,11 +174,15 @@ export class DonationService
   }
 
   async createDonation(tenantId: string, input: CreateDonationInput): Promise<DonationRecord> {
+    if (!input.isInKind && input.amount <= 0) {
+      throw new BadRequestException('amount must be positive for cash donations');
+    }
+
     validateTaxId(input.currency, input.taxId);
     const tax = this.resolveTaxDoc(input.currency);
 
     let paymentStatus = PaymentStatus.PAID;
-    if (input.paymentSessionId) {
+    if (input.paymentSessionId && !input.isInKind) {
       const session = this.paymentService.assertPaidSession(
         tenantId,
         input.paymentSessionId,
@@ -202,8 +213,13 @@ export class DonationService
         taxId: input.taxId,
         paymentStatus,
         campaignId: input.campaignId,
+        isAnonymous: input.isAnonymous ?? false,
+        isInKind: input.isInKind ?? false,
+        inKindDescription: input.inKindDescription,
       });
       const saved = await repo.save(entity);
+      const donation = this.toDonation(saved);
+      await this.billingService.createFromDonation(tenantId, donation, input);
 
       if (input.campaignId) {
         const campaignRepo = await this.tenantData.campaigns();
@@ -214,7 +230,7 @@ export class DonationService
         await campaignRepo.save(campaign);
       }
 
-      return this.toDonation(saved);
+      return donation;
     }
 
     this.ensureCampaignsSeeded(tenantId);
@@ -238,7 +254,12 @@ export class DonationService
       taxId: input.taxId,
       paymentStatus,
       campaignId: input.campaignId,
+      isAnonymous: input.isAnonymous,
+      isInKind: input.isInKind,
+      inKindDescription: input.inKindDescription,
     });
+
+    await this.billingService.createFromDonation(tenantId, donation, input);
 
     if (input.campaignId) {
       const campaign = this.findCampaignScoped(tenantId, input.campaignId);
@@ -256,23 +277,34 @@ export class DonationService
     tenantId: string,
     page = 1,
     limit = 20,
+    filters?: { devoteeId?: string },
   ): Promise<PaginatedResponse<DonationRecord>> {
     if (this.usePostgres) {
       const repo = await this.tenantData.donations();
-      const [rows, total] = await repo.findAndCount({
-        order: { createdAt: 'DESC' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      const qb = repo.createQueryBuilder('d');
+
+      if (filters?.devoteeId) {
+        qb.andWhere('d.devoteeId = :devoteeId', { devoteeId: filters.devoteeId });
+      }
+
+      qb.orderBy('d.createdAt', 'DESC');
+      const total = await qb.getCount();
+      const rows = await qb
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getMany();
+
       return {
         data: rows.map((r) => this.toDonation(r)),
         meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
       };
     }
 
-    const items = this.scoped(tenantId).sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-    );
+    let items = this.scoped(tenantId);
+    if (filters?.devoteeId) {
+      items = items.filter((d) => d.devoteeId === filters.devoteeId);
+    }
+    items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return this.paginate(items, page, limit);
   }
 
@@ -356,6 +388,9 @@ export class DonationService
       taxId: row.taxId,
       paymentStatus: row.paymentStatus as PaymentStatus,
       campaignId: row.campaignId,
+      isAnonymous: row.isAnonymous,
+      isInKind: row.isInKind,
+      inKindDescription: row.inKindDescription,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

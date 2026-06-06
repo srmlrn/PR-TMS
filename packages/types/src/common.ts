@@ -33,8 +33,10 @@ export interface Sankalpa {
   sponsorName: string;
   gotram?: string;
   nakshatra?: string;
+  rashi?: string;
   occasion?: string;
   beneficiaryName?: string;
+  priestPreference?: string;
 }
 
 export interface Address {

@@ -188,6 +188,14 @@ export class SponsorService
     return this.updateEntity(tenantId, id, patch);
   }
 
+  async updatePipeline(
+    tenantId: string,
+    id: string,
+    pipelineStage: SponsorPipelineStage,
+  ): Promise<SponsorRecord> {
+    return this.update(tenantId, id, { pipelineStage });
+  }
+
   async remove(tenantId: string, id: string): Promise<void> {
     await this.findOne(tenantId, id);
 

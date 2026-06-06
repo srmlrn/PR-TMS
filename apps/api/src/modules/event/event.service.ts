@@ -270,6 +270,54 @@ export class EventService
     );
   }
 
+  async toggleChecklistItem(
+    tenantId: string,
+    eventId: string,
+    itemId: string,
+    isDone: boolean,
+  ): Promise<EventChecklistItem> {
+    await this.findOne(tenantId, eventId);
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.eventChecklist();
+      const row = await repo.findOne({ where: { id: itemId, eventId } });
+      if (!row) {
+        throw new NotFoundException(`Checklist item ${itemId} not found`);
+      }
+      row.isDone = isDone;
+      const saved = await repo.save(row);
+      await this.syncChecklistProgress(tenantId, eventId);
+      return this.toChecklistItem(saved);
+    }
+
+    const item = this.checklistStore.get(itemId);
+    if (!item || item.tenantId !== tenantId || item.eventId !== eventId) {
+      throw new NotFoundException(`Checklist item ${itemId} not found`);
+    }
+    item.isDone = isDone;
+    this.checklistStore.set(itemId, item);
+    await this.syncChecklistProgress(tenantId, eventId);
+    return item;
+  }
+
+  private async syncChecklistProgress(tenantId: string, eventId: string): Promise<void> {
+    const items = await this.getChecklist(tenantId, eventId);
+    const done = items.filter((i) => i.isDone).length;
+    const progress = { done, total: items.length };
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.events();
+      await repo.update(eventId, { checklistProgress: progress });
+      return;
+    }
+
+    const event = this.findOneScoped(tenantId, eventId);
+    if (event) {
+      event.checklistProgress = progress;
+      this.store.set(eventId, event);
+    }
+  }
+
   async getBudget(tenantId: string, eventId: string): Promise<EventBudgetSnapshot> {
     const event = await this.findOne(tenantId, eventId);
     const plannedBudget = event.budgetPlanned ?? 0;

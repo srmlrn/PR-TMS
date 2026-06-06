@@ -126,6 +126,8 @@ export class BookingService
       paymentStatus = session.status;
     }
 
+    const sankalpa = this.buildSankalpa(input);
+
     if (this.usePostgres) {
       const repo = await this.tenantData.bookings();
       const entity = repo.create({
@@ -135,7 +137,7 @@ export class BookingService
         status: BookingStatus.CONFIRMED,
         amount: service.price,
         currency: service.currency,
-        sankalpa: input.sankalpa as Record<string, string> | undefined,
+        sankalpa: sankalpa as Record<string, string> | undefined,
         receiptNumber: await this.generateReceiptNumber(tenantId),
         channel: input.channel ?? 'app',
         paymentStatus,
@@ -151,11 +153,41 @@ export class BookingService
       status: BookingStatus.CONFIRMED,
       amount: service.price,
       currency: service.currency,
-      sankalpa: input.sankalpa,
+      sankalpa,
       receiptNumber: this.generateReceiptNumberSync(tenantId),
       channel: input.channel ?? 'app',
       paymentStatus,
     });
+  }
+
+  async update(
+    tenantId: string,
+    id: string,
+    patch: { priestId?: string },
+  ): Promise<BookingRecord> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.bookings();
+      const row = await repo.findOne({ where: { id } });
+      if (!row) {
+        throw new NotFoundException(`Booking ${id} not found`);
+      }
+      if (patch.priestId !== undefined) {
+        row.priestId = patch.priestId;
+      }
+      const saved = await repo.save(row);
+      return this.toBooking(saved);
+    }
+
+    const existing = this.findOneScoped(tenantId, id);
+    if (!existing) {
+      throw new NotFoundException(`Booking ${id} not found`);
+    }
+
+    const updates: Partial<BookingRecord> = {};
+    if (patch.priestId !== undefined) {
+      updates.priestId = patch.priestId;
+    }
+    return this.updateEntity(tenantId, id, updates);
   }
 
   async updateStatus(
@@ -340,6 +372,18 @@ export class BookingService
           booking.scheduledAt.getTime() + service.durationMinutes * 60_000,
         ),
       }));
+  }
+
+  private buildSankalpa(input: CreateBookingInput): Booking['sankalpa'] | undefined {
+    const { sankalpa, priestPreference } = input;
+    if (!sankalpa && !priestPreference) {
+      return undefined;
+    }
+    return {
+      ...sankalpa,
+      sponsorName: sankalpa?.sponsorName ?? '',
+      ...(priestPreference ? { priestPreference } : {}),
+    };
   }
 
   private toBooking(row: BookingEntity): BookingRecord {

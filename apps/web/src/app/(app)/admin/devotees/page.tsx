@@ -47,8 +47,10 @@ type DevoteeFormState = {
   city: string;
   state: string;
   postalCode: string;
+  photoUrl: string;
   status: 'active' | 'inactive' | 'renewal_due';
   membershipTier: string;
+  membershipExpiresAt: string;
 };
 
 const EMPTY_FORM: DevoteeFormState = {
@@ -71,8 +73,10 @@ const EMPTY_FORM: DevoteeFormState = {
   city: '',
   state: '',
   postalCode: '',
+  photoUrl: '',
   status: 'active',
   membershipTier: 'Member',
+  membershipExpiresAt: '',
 };
 
 export default function DevoteesPage() {
@@ -152,8 +156,12 @@ export default function DevoteesPage() {
         city: d.address?.city ?? '',
         state: d.address?.state ?? '',
         postalCode: d.address?.postalCode ?? '',
+        photoUrl: d.photoUrl ?? '',
         status: d.status,
         membershipTier: d.membershipTier ?? 'Member',
+        membershipExpiresAt: d.membershipExpiresAt
+          ? new Date(d.membershipExpiresAt).toISOString().slice(0, 10)
+          : '',
       });
     } catch (err) {
       setEditMsg(err instanceof Error ? err.message : 'Failed to load devotee');
@@ -185,8 +193,10 @@ export default function DevoteesPage() {
         isNri: editForm.isNri,
         communicationOptIn: editForm.communicationOptIn,
         preferredLanguage: editForm.preferredLanguage,
+        photoUrl: editForm.photoUrl || undefined,
         status: editForm.status,
         membershipTier: editForm.membershipTier,
+        membershipExpiresAt: editForm.membershipExpiresAt || undefined,
         address: editForm.addressLine1
           ? {
               line1: editForm.addressLine1,
@@ -337,7 +347,35 @@ export default function DevoteesPage() {
               </div>
               <div className="formGroup">
                 <label htmlFor="edit-tier">Membership tier</label>
-                <input id="edit-tier" value={editForm.membershipTier} onChange={(e) => setEditForm({ ...editForm, membershipTier: e.target.value })} />
+                <select
+                  id="edit-tier"
+                  value={editForm.membershipTier}
+                  onChange={(e) => setEditForm({ ...editForm, membershipTier: e.target.value })}
+                >
+                  <option value="Member">Member</option>
+                  <option value="Silver">Silver</option>
+                  <option value="Gold">Gold</option>
+                  <option value="Patron">Patron</option>
+                </select>
+              </div>
+              <div className="formGroup">
+                <label htmlFor="edit-membership-expiry">Membership expires</label>
+                <input
+                  id="edit-membership-expiry"
+                  type="date"
+                  value={editForm.membershipExpiresAt}
+                  onChange={(e) => setEditForm({ ...editForm, membershipExpiresAt: e.target.value })}
+                />
+              </div>
+              <div className="formGroup">
+                <label htmlFor="edit-photoUrl">Photo URL</label>
+                <input
+                  id="edit-photoUrl"
+                  type="url"
+                  value={editForm.photoUrl}
+                  onChange={(e) => setEditForm({ ...editForm, photoUrl: e.target.value })}
+                  placeholder="https://…"
+                />
               </div>
               <div className="formGroup">
                 <label htmlFor="edit-address">Address</label>

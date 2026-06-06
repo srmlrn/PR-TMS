@@ -35,6 +35,15 @@ export class DonationEntity {
   @Column({ name: 'campaign_id', type: 'uuid', nullable: true })
   campaignId?: string;
 
+  @Column({ name: 'is_anonymous', default: false })
+  isAnonymous!: boolean;
+
+  @Column({ name: 'is_in_kind', default: false })
+  isInKind!: boolean;
+
+  @Column({ name: 'in_kind_description', length: 512, nullable: true })
+  inKindDescription?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

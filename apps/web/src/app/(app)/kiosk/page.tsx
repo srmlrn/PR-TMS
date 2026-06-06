@@ -1,21 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@tms/ui';
+import {
+  KIOSK_LANGUAGES,
+  kioskStrings,
+  persistKioskLang,
+  readKioskLang,
+  type KioskLang,
+} from '@/lib/kiosk-i18n';
 import styles from './kiosk.module.css';
-
-const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'te', label: 'తెలుగు' },
-  { code: 'hi', label: 'हिन्दी' },
-] as const;
-
-type LangCode = (typeof LANGUAGES)[number]['code'];
 
 export default function KioskPage() {
   const router = useRouter();
-  const [lang, setLang] = useState<LangCode>('en');
+  const [lang, setLang] = useState<KioskLang>('en');
+
+  useEffect(() => {
+    setLang(readKioskLang());
+  }, []);
+
+  useEffect(() => {
+    persistKioskLang(lang);
+  }, [lang]);
+
+  const t = kioskStrings(lang);
 
   function nav(path: string) {
     const sep = path.includes('?') ? '&' : '?';
@@ -24,11 +33,11 @@ export default function KioskPage() {
 
   return (
     <div className={styles.wrap}>
-      <h1 className={styles.title}>🛕 Welcome</h1>
-      <p className={styles.sub}>Sri Venkateswara Temple · Self-Service</p>
+      <h1 className={styles.title}>🛕 {t.welcome}</h1>
+      <p className={styles.sub}>{t.subtitle}</p>
 
-      <div className={styles.langRow} role="group" aria-label="Language">
-        {LANGUAGES.map((l) => (
+      <div className={styles.langRow} role="group" aria-label={t.language}>
+        {KIOSK_LANGUAGES.map((l) => (
           <button
             key={l.code}
             type="button"
@@ -43,24 +52,24 @@ export default function KioskPage() {
       <div className={styles.grid}>
         <button type="button" className={styles.tile} onClick={() => nav('/devotee/book')}>
           <span aria-hidden>🙏</span>
-          Book Seva
+          {t.bookSeva}
         </button>
         <button type="button" className={styles.tile} onClick={() => nav('/devotee/donate')}>
           <span aria-hidden>💝</span>
-          Donate
+          {t.donate}
         </button>
         <button type="button" className={styles.tile} onClick={() => router.push('/frontdesk/console')}>
           <span aria-hidden>🎫</span>
-          Darshan Token
+          {t.darshanToken}
         </button>
         <button type="button" className={styles.tile} onClick={() => nav('/devotee/home')}>
           <span aria-hidden>📄</span>
-          My Account
+          {t.myAccount}
         </button>
       </div>
 
       <Button variant="outline" className={styles.exit} onClick={() => router.push('/login')}>
-        Staff sign in
+        {t.staffSignIn}
       </Button>
     </div>
   );

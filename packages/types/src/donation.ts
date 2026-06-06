@@ -14,6 +14,21 @@ export interface Donation extends TenantScoped, Timestamps {
   taxId?: string;
   paymentStatus?: PaymentStatus;
   campaignId?: string;
+  isAnonymous?: boolean;
+  isInKind?: boolean;
+  inKindDescription?: string;
+}
+
+export interface DonationSubscription extends TenantScoped, Timestamps {
+  id: string;
+  devoteeId: string;
+  donationId: string;
+  amount: number;
+  currency: Currency;
+  purpose: string;
+  frequency: DonationFrequency;
+  status: 'active' | 'paused' | 'cancelled';
+  nextBillingAt: Date;
 }
 
 export interface DonationCampaign extends TenantScoped, Timestamps {
@@ -34,4 +49,7 @@ export interface CreateDonationInput {
   campaignId?: string;
   taxId?: string;
   paymentSessionId?: string;
+  isAnonymous?: boolean;
+  isInKind?: boolean;
+  inKindDescription?: string;
 }

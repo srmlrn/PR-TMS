@@ -67,3 +67,10 @@ export interface DevoteeDuplicateCheck {
 export type CreateDevoteeResponse = Devotee & {
   duplicateWarning?: DevoteeDuplicateCheck;
 };
+
+export interface DevoteeReminderDue {
+  devoteeId: string;
+  devoteeName: string;
+  phone: string;
+  importantDate: ImportantDate;
+}

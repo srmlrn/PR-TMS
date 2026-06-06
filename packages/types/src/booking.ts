@@ -33,6 +33,8 @@ export interface CreateBookingInput {
   serviceId: string;
   scheduledAt: string;
   sankalpa?: Sankalpa;
+  /** Free-text priest preference — persisted on sankalpa. */
+  priestPreference?: string;
   channel?: Booking['channel'];
   paymentSessionId?: string;
 }

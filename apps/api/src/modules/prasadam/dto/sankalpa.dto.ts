@@ -16,6 +16,11 @@ export class SankalpaDto {
   @IsString()
   nakshatra?: string;
 
+  @ApiPropertyOptional({ example: 'Vrishabha' })
+  @IsOptional()
+  @IsString()
+  rashi?: string;
+
   @ApiPropertyOptional({ example: 'Birthday' })
   @IsOptional()
   @IsString()

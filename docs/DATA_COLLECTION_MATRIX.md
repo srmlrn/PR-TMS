@@ -32,7 +32,7 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Date of birth | Common | Required | ✅ | ✅ Profile + admin create | OK |
 | Photo | Common | Required | 🟡 `photoUrl` field | ❌ | Partial — no upload UI |
 | Family / household link | **Very common** | Required | ✅ | ✅ Profile (`familyId`) | OK |
-| Star-day / anniversary reminders | Common | Required | ✅ `importantDates` JSONB | ❌ | Partial — API only |
+| Star-day / anniversary reminders | Common | Required | ✅ `importantDates` + `GET /devotees/reminders-due` | ❌ | Partial — API only |
 | Membership tier / expiry | Common | Required | 🟡 Entity | 👁 | Partial |
 | Donation YTD | Common | Required | 🟡 | 👁 Home only | Partial |
 | PAN / tax ID (India) | Required for 80G | Required | ✅ | ✅ Profile + donate | OK |
@@ -58,12 +58,12 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Sankalpa — nakshatra | **Required** | Required | ✅ | ✅ | OK |
 | Sankalpa — occasion / purpose | Common | Required | ✅ | ✅ | OK |
 | Sankalpa — beneficiary name | Common | Required | ✅ | ✅ | OK |
-| Rashi | Common | Optional | ❌ | ❌ | **Gap** |
+| Rashi | Common | Optional | ✅ | ❌ | Partial — API only |
 | Multiple beneficiaries | Some temples | Optional | ❌ | ❌ | **Gap** |
 | Priest preference | Some | Optional | ❌ | ❌ | **Gap** |
 | Channel (app/counter/kiosk) | Required | Required | ✅ | ✅ `app` / `counter` / `kiosk` | OK |
 | Payment / dakshina | **Required** | Required | ✅ | ✅ Payment session + confirm | OK |
-| Receipt / QR confirmation | **Standard** | Required | ✅ JSON receipt download | 🟡 | Partial — no QR/print |
+| Receipt / QR confirmation | **Standard** | Required | ✅ JSON + text receipt.pdf | 🟡 | Partial — no QR/print UI |
 | Remote participation flag | Common post-COVID | Optional | ❌ | ❌ | **Gap** |
 | Recurring / annual archana | Common | Required | ❌ | ❌ | **Gap** |
 
@@ -79,11 +79,11 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Frequency (one-time/recurring) | **Common** | Required | ✅ | ✅ | OK |
 | Devotee ID | Required | Required | ✅ | ✅ | OK |
 | Tax ID (PAN/SSN/SIN) | **Required for compliance** | AC3 | ✅ | ✅ Donate + profile | OK |
-| Anonymous flag | Common | Optional | ❌ | ❌ | **Gap** |
+| Anonymous flag | Common | Optional | ✅ | ❌ | Partial — API only |
 | Payment gateway | **Required** | Required | ✅ sessions + `GET /payments/providers` | ✅ Stripe/Razorpay/demo/cash | OK |
 | Receipt number | Standard | Required | ✅ | 🟡 JSON download | Partial — no print UI |
 | 80G / IRS / CRA doc type | India/USA/Canada | Required | ✅ server by currency | 🟡 JSON receipt | Partial |
-| In-kind donation | Some | Optional | ❌ | ❌ | **Gap** |
+| In-kind donation | Some | Optional | ✅ | ❌ | Partial — API only |
 
 ---
 
@@ -112,7 +112,7 @@ Cross-check of **what data we collect per screen** against major temple manageme
 | Gotra / nakshatra for sankalpa | **Required for ritual** | Required | ✅ | OK |
 | Sankalpa text / purpose | **Required** | Required | ✅ | OK |
 | Mark seva complete | Common | Required | ✅ | OK |
-| Priest assignment | Standard | Required | 🟡 `priestId` on booking | ❌ | **Gap** |
+| Priest assignment | Standard | Required | ✅ `PATCH /bookings/:id` | ❌ | Partial — API only |
 | Honorarium / dakshina tracking | Common | Required | ✅ | ✅ Daily total on schedule | OK |
 
 ---
@@ -121,9 +121,9 @@ Cross-check of **what data we collect per screen** against major temple manageme
 
 | Screen | Collected today | Industry expects | Priority gap |
 |--------|-----------------|------------------|--------------|
-| Admin sponsors | List only | Full CRM + pipeline + recognition | P1 |
-| Admin prasadam | List only | Calendar, sankalpa form, payment, kitchen | P1 |
-| Admin events | Pipeline view | Create event, checklist, deposits | P1 |
+| Admin sponsors | List + `PATCH /sponsors/:id/pipeline` | Full CRM + pipeline + recognition | P1 — pipeline API done |
+| Admin prasadam | List + `GET /prasadam/availability` | Calendar, sankalpa form, payment, kitchen | P1 — availability API done |
+| Admin events | Pipeline + `PATCH /events/:id/checklist/:itemId` | Create event, checklist, deposits | P1 — checklist toggle done |
 | Kiosk | Book + donate (`channel=kiosk`) | Touch booking, donate, token, language | P2 — partial |
 | Volunteer | Static demo | Sign-up, check-in, hours | P2 |
 | Accountant | Read finance | Tax export triggers, vendor pay workflow | P2 |
@@ -145,12 +145,12 @@ Cross-check of **what data we collect per screen** against major temple manageme
 - [x] Family/household linking (`familyId`)
 - [x] Duplicate warning on phone/email
 - [x] Profile edit (devotee self-service + admin create)
-- [x] Important dates on devotee profile (`importantDates` JSONB); reminder jobs TBD
+- [x] Important dates on devotee profile (`importantDates` JSONB); reminder job stub + `GET /devotees/reminders-due`
 
 ### Sprint C — Revenue & compliance
 - [x] Payment sessions (Stripe/Razorpay/demo/cash) on book + donate
-- [x] Tax ID validation + receipt download (JSON)
-- [x] Recurring donations (frequency stored; billing engine TBD)
+- [x] Tax ID validation + receipt download (JSON + text/plain `.pdf` routes)
+- [x] Recurring donations (frequency stored; billing scaffold logs charge intent)
 - [x] Multi-currency with FX display
 
 ### Sprint D — Operations

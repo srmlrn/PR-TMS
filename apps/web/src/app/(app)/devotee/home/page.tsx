@@ -7,12 +7,15 @@ import {
   BentoItem,
   Button,
   Chip,
+  DataTable,
   GlassCard,
   PageHeader,
   StatTile,
 } from '@tms/ui';
+import type { Booking, Devotee, Donation } from '@tms/types';
 import { BookingStatus } from '@tms/types';
 import { formatMoney, formatShortDate, formatTime } from '@/lib/api/endpoints';
+import { useAuth } from '@/lib/auth-context';
 import { useApi } from '@/lib/api/use-api';
 import styles from './home.module.css';
 
@@ -33,17 +36,49 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 }
 
 export default function DevoteeHomePage() {
+  const { user } = useAuth();
   const [view, setView] = useState<'desktop' | 'mobile'>('desktop');
 
-  const { data, loading, error } = useApi((ep) =>
-    Promise.all([ep.getDevotees({ limit: 1 }), ep.getBookings({ limit: 5 })]).then(
-      ([devotees, bookings]) => ({ devotee: devotees.data[0] ?? null, bookings }),
-    ),
+  type HomeData = {
+    devotee: Devotee | null;
+    bookings: { data: Booking[] };
+    recentDonations: Donation[];
+    donationsUnavailable: boolean;
+  };
+
+  const emptyHome: HomeData = {
+    devotee: null,
+    bookings: { data: [] },
+    recentDonations: [],
+    donationsUnavailable: false,
+  };
+
+  const { data, loading, error } = useApi<HomeData>(
+    async (ep) => {
+      if (!user?.devoteeId) {
+        return emptyHome;
+      }
+      const [devotee, bookings, donations] = await Promise.all([
+        ep.getDevotee(user.devoteeId),
+        ep.getBookings({ devoteeId: user.devoteeId, limit: 5 }),
+        ep.getDonations({ devoteeId: user.devoteeId, limit: 5 }).catch(
+          () => ({ data: [] as Donation[], meta: { total: 0, page: 1, limit: 5, totalPages: 0 } }),
+        ),
+      ]);
+      return {
+        devotee,
+        bookings,
+        recentDonations: donations.data,
+        donationsUnavailable: donations.data.length === 0,
+      };
+    },
+    [user?.devoteeId],
   );
 
   const devotee = data?.devotee;
-  const nextBooking = data?.bookings?.data.find(
-    (b) => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING,
+  const recentBookings = data?.bookings?.data ?? [];
+  const nextBooking = recentBookings.find(
+    (b: Booking) => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING,
   );
 
   const welcomeName = devotee ? `${devotee.firstName}` : 'Rajan';
@@ -137,6 +172,80 @@ export default function DevoteeHomePage() {
                 changeTone="up"
                 accent="red"
               />
+            </BentoItem>
+          </BentoGrid>
+
+          <BentoGrid className="mb2">
+            <BentoItem span={6}>
+              <GlassCard title="Recent Bookings" noBodyPadding>
+                {recentBookings.length > 0 ? (
+                  <DataTable
+                    getRowKey={(row) => row.id}
+                    columns={[
+                      {
+                        key: 'service',
+                        header: 'Seva',
+                        render: (row) =>
+                          SERVICE_LABELS[row.serviceId] ?? row.serviceId.replace('svc-', ''),
+                      },
+                      {
+                        key: 'when',
+                        header: 'When',
+                        render: (row) =>
+                          `${formatShortDate(row.scheduledAt)} · ${formatTime(row.scheduledAt)}`,
+                      },
+                      {
+                        key: 'status',
+                        header: 'Status',
+                        render: (row) => row.status,
+                      },
+                      {
+                        key: 'receipt',
+                        header: '',
+                        align: 'right',
+                        render: (row) => (
+                          <Link href={`/devotee/receipt/booking/${row.id}`} target="_blank">
+                            Receipt
+                          </Link>
+                        ),
+                      },
+                    ]}
+                    data={recentBookings as Booking[]}
+                  />
+                ) : (
+                  <p className="tms-t2" style={{ padding: '1rem' }}>
+                    No bookings yet. <Link href="/devotee/book">Book seva</Link>
+                  </p>
+                )}
+              </GlassCard>
+            </BentoItem>
+            <BentoItem span={6}>
+              <GlassCard title="Recent Donations">
+                {(data?.recentDonations?.length ?? 0) > 0 ? (
+                  <ul className={styles.recentList}>
+                    {data!.recentDonations!.map((d) => (
+                      <li key={d.id} className={styles.recentItem}>
+                        <span>
+                          {formatMoney(d.amount, d.currency)} — {d.purpose}
+                        </span>
+                        <Link href={`/devotee/receipt/donation/${d.id}`} target="_blank">
+                          Receipt
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="tms-t2">
+                    {devotee?.ytdDonations
+                      ? `YTD: ${formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}`
+                      : 'No recent donations.'}{' '}
+                    <Link href="/devotee/donate">Donate</Link>
+                    {data?.donationsUnavailable && (
+                      <span className="tms-t3"> (full history requires devotee donations API)</span>
+                    )}
+                  </p>
+                )}
+              </GlassCard>
             </BentoItem>
           </BentoGrid>
 

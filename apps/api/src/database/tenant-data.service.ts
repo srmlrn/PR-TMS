@@ -16,6 +16,7 @@ import {
   PrasadamSponsorshipEntity,
   DonationEntity,
   DonationCampaignEntity,
+  DonationSubscriptionEntity,
   VendorPaymentEntity,
   QueueTokenEntity,
 } from './entities/tenant';
@@ -113,6 +114,12 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(DonationCampaignEntity);
+  }
+
+  async donationSubscriptions() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(DonationSubscriptionEntity);
   }
 
   async vendorPayments() {

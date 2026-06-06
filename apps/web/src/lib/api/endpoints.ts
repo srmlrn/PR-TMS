@@ -1,10 +1,14 @@
 import type {
   Booking,
+  CreateBookingInput,
+  CreateDonationInput,
+  Donation,
   Devotee,
   DevoteeDuplicateCheck,
   DevoteeGender,
   DevoteeLookupResult,
   DonationCampaign,
+  EventChecklistItem,
   EventLifecycleStage,
   FinanceSummary,
   FxRates,
@@ -12,11 +16,13 @@ import type {
   PaginatedResponse,
   PaymentProvider,
   PaymentSession,
+  PrasadamSlotAvailability,
   PrasadamSponsorship,
   PrasadamSponsorshipType,
   PrasadamPackageTier,
   QueueStats,
   QueueToken,
+  RecognitionItem,
   RentalAsset,
   RentalOrder,
   SevaService,
@@ -33,6 +39,25 @@ import type {
 import type { ApiClient } from './client';
 
 export type EventPipeline = Record<EventLifecycleStage, TempleEvent[]>;
+
+export interface EventBudgetSnapshot {
+  eventId: string;
+  plannedBudget: number;
+  revenueTarget: number;
+  income: {
+    donations: number;
+    bookings: number;
+    sponsorships: number;
+    total: number;
+  };
+  expenses: {
+    catering: number;
+    avEquipment: number;
+    decoration: number;
+    total: number;
+  };
+  netSurplus: number;
+}
 
 export interface ListParams extends Record<string, string | number | boolean | undefined> {
   page?: number;
@@ -74,6 +99,8 @@ export interface DevoteeFormBody {
   communicationOptIn?: boolean;
   preferredLanguage?: string;
   importantDates?: ImportantDate[];
+  membershipTier?: string;
+  membershipExpiresAt?: string;
   address?: {
     line1?: string;
     line2?: string;
@@ -110,6 +137,9 @@ export function createEndpoints(client: ApiClient) {
     getBookings: (params?: ListParams) =>
       client.get<PaginatedResponse<Booking>>('/bookings', { params }),
 
+    updateBooking: (id: string, body: { priestId?: string }) =>
+      client.patch<Booking>(`/bookings/${id}`, body),
+
     updateBookingStatus: (id: string, status: string) =>
       client.patch<Booking>(`/bookings/${id}/status`, { status }),
 
@@ -122,20 +152,7 @@ export function createEndpoints(client: ApiClient) {
         { params: date ? { date } : undefined },
       ),
 
-    createBooking: (body: {
-      devoteeId: string;
-      serviceId: string;
-      scheduledAt: string;
-      channel?: string;
-      paymentSessionId?: string;
-      sankalpa?: {
-        sponsorName: string;
-        gotram?: string;
-        nakshatra?: string;
-        occasion?: string;
-        beneficiaryName?: string;
-      };
-    }) => client.post<Booking>('/bookings', body),
+    createBooking: (body: CreateBookingInput) => client.post<Booking>('/bookings', body),
 
     getServices: () => client.get<SevaService[]>('/services'),
 
@@ -154,7 +171,7 @@ export function createEndpoints(client: ApiClient) {
 
     createDevotee: (body: DevoteeFormBody) => client.post<Devotee>('/devotees', body),
 
-    updateDevotee: (id: string, body: Partial<DevoteeFormBody & { status?: string; membershipTier?: string }>) =>
+    updateDevotee: (id: string, body: Partial<DevoteeFormBody & { status?: Devotee['status'] }>) =>
       client.patch<Devotee>(`/devotees/${id}`, body),
 
     getEventPipeline: () => client.get<EventPipeline>('/events/pipeline'),
@@ -175,14 +192,69 @@ export function createEndpoints(client: ApiClient) {
       clientContact?: string;
     }) => client.post<TempleEvent>('/events', body),
 
+    getEvent: (id: string) => client.get<TempleEvent>(`/events/${id}`),
+
+    updateEvent: (id: string, body: Partial<{
+      name: string;
+      type: TempleEvent['type'];
+      startDate: string;
+      endDate: string;
+      venues: string[];
+      expectedFootfall?: number;
+      budgetPlanned?: number;
+      revenueTarget?: number;
+      clientName?: string;
+      clientContact?: string;
+    }>) => client.patch<TempleEvent>(`/events/${id}`, body),
+
+    updateEventStage: (id: string, stage: EventLifecycleStage) =>
+      client.patch<TempleEvent>(`/events/${id}/stage`, { stage }),
+
+    getEventChecklist: (id: string) =>
+      client.get<EventChecklistItem[]>(`/events/${id}/checklist`),
+
+    getEventBudget: (id: string) =>
+      client.get<EventBudgetSnapshot>(`/events/${id}/budget`),
+
     getRentalOrders: (params?: Pick<ListParams, 'page' | 'limit'>) =>
       client.get<PaginatedResponse<RentalOrder>>('/rental-orders', { params }),
 
     getRentalAssets: (params?: Pick<ListParams, 'page' | 'limit'>) =>
       client.get<PaginatedResponse<RentalAsset>>('/rental-assets', { params }),
 
-    getSponsors: (params?: Pick<ListParams, 'page' | 'limit'>) =>
+    getSponsors: (params?: Pick<ListParams, 'page' | 'limit'> & {
+      tier?: SponsorTier;
+      pipelineStage?: SponsorPipelineStage;
+    }) =>
       client.get<PaginatedResponse<Sponsor>>('/sponsors', { params }),
+
+    getSponsor: (id: string) => client.get<Sponsor>(`/sponsors/${id}`),
+
+    getSponsorsRenewalsDue: () =>
+      client.get<{ data: Sponsor[] }>('/sponsors/renewals-due'),
+
+    getSponsorRecognition: (id: string) =>
+      client.get<{ data: RecognitionItem[] }>(`/sponsors/${id}/recognition`),
+
+    updateSponsor: (id: string, body: Partial<{
+      name: string;
+      type: Sponsor['type'];
+      tier: SponsorTier;
+      pipelineStage: SponsorPipelineStage;
+      primaryContact: string;
+      email?: string;
+      phone?: string;
+      committedAmount: number;
+      paidAmount?: number;
+      currency: string;
+      renewsAt?: string;
+      relationshipManager?: string;
+    }>) => client.patch<Sponsor>(`/sponsors/${id}`, body),
+
+    updateSponsorRecognition: (id: string, itemId: string, isFulfilled: boolean) =>
+      client.patch<RecognitionItem>(`/sponsors/${id}/recognition/${itemId}`, {
+        isFulfilled,
+      }),
 
     createSponsor: (body: {
       name: string;
@@ -199,7 +271,21 @@ export function createEndpoints(client: ApiClient) {
       relationshipManager?: string;
     }) => client.post<Sponsor>('/sponsors', body),
 
-    getPrasadamSponsorships: (params?: Pick<ListParams, 'page' | 'limit'>) =>
+    getPrasadamAvailability: (params: {
+      month: string;
+      type?: PrasadamSponsorshipType;
+      deity?: string;
+      date?: string;
+    }) =>
+      client.get<{ data: PrasadamSlotAvailability[] }>('/prasadam/availability', {
+        params,
+      }),
+
+    getPrasadamSponsorships: (params?: Pick<ListParams, 'page' | 'limit'> & {
+      type?: PrasadamSponsorshipType;
+      scheduledDate?: string;
+      deity?: string;
+    }) =>
       client.get<PaginatedResponse<PrasadamSponsorship>>('/prasadam/sponsorships', {
         params,
       }),
@@ -224,16 +310,10 @@ export function createEndpoints(client: ApiClient) {
 
     getCampaigns: () => client.get<DonationCampaign[]>('/campaigns'),
 
-    createDonation: (body: {
-      devoteeId: string;
-      amount: number;
-      currency: string;
-      purpose: string;
-      frequency?: string;
-      campaignId?: string;
-      taxId?: string;
-      paymentSessionId?: string;
-    }) => client.post('/donations', body),
+    getDonations: (params?: Pick<ListParams, 'page' | 'limit' | 'devoteeId'>) =>
+      client.get<PaginatedResponse<Donation>>('/donations', { params }),
+
+    createDonation: (body: CreateDonationInput) => client.post<Donation>('/donations', body),
 
     getDonationReceipt: (id: string) =>
       client.get<TaxReceipt>(`/donations/${id}/receipt`),

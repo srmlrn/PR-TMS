@@ -16,6 +16,18 @@ const SERVICE_LABELS: Record<string, string> = {
   'svc-homam': 'Homam',
 };
 
+/** Demo priest roster — replace with GET /staff?role=priest when available */
+const PRIEST_OPTIONS = [
+  { id: 'user-priest-001', name: 'Sri Raman' },
+  { id: 'user-priest-002', name: 'Swami Venkat' },
+  { id: 'user-priest-003', name: 'Swami Ramanujan' },
+] as const;
+
+function priestLabel(priestId?: string): string {
+  if (!priestId) return 'Unassigned';
+  return PRIEST_OPTIONS.find((p) => p.id === priestId)?.name ?? priestId.slice(0, 8);
+}
+
 interface ScheduleRow {
   id: string;
   time: string;
@@ -25,6 +37,7 @@ interface ScheduleRow {
   status: string;
   amount: string;
   channel: string;
+  priestId?: string;
 }
 
 function buildSankalpaLabel(booking: Booking): string {
@@ -36,6 +49,7 @@ function buildSankalpaLabel(booking: Booking): string {
     s.nakshatra ? `Nakshatra: ${s.nakshatra}` : null,
     s.occasion ? `Occasion: ${s.occasion}` : null,
     s.beneficiaryName ? `For: ${s.beneficiaryName}` : null,
+    s.priestPreference ? `Priest pref: ${s.priestPreference}` : null,
   ].filter(Boolean);
   return parts.join(' · ');
 }
@@ -48,7 +62,9 @@ function devoteeName(devotees: Devotee[] | undefined, devoteeId: string): string
 export default function PriestSchedulePage() {
   const { api } = useTenant();
   const [completing, setCompleting] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState<string | null>(null);
   const [completeError, setCompleteError] = useState<string | null>(null);
+  const [assignError, setAssignError] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
 
   const { data, loading, error, refetch } = useApi((ep) =>
@@ -83,6 +99,22 @@ export default function PriestSchedulePage() {
     }
   }
 
+  async function assignPriest(bookingId: string, priestId: string) {
+    setAssigning(bookingId);
+    setAssignError(null);
+    try {
+      const ep = createEndpoints(api);
+      await ep.updateBooking(bookingId, {
+        priestId: priestId || undefined,
+      });
+      await refetch();
+    } catch (err) {
+      setAssignError(err instanceof Error ? err.message : 'Could not assign priest');
+    } finally {
+      setAssigning(null);
+    }
+  }
+
   const rows: ScheduleRow[] = bookings.map((b) => ({
     id: b.id,
     time: formatTime(b.scheduledAt),
@@ -92,6 +124,7 @@ export default function PriestSchedulePage() {
     status: b.status,
     amount: formatMoney(b.amount, b.currency),
     channel: b.channel,
+    priestId: b.priestId,
   }));
 
   return (
@@ -113,9 +146,9 @@ export default function PriestSchedulePage() {
         />
       </div>
 
-      {completeError && (
+      {(completeError || assignError) && (
         <p className="tms-t2 mb1" style={{ color: 'var(--red)' }}>
-          {completeError}
+          {completeError ?? assignError}
         </p>
       )}
 
@@ -128,6 +161,30 @@ export default function PriestSchedulePage() {
             { key: 'devotee', header: 'Devotee', render: (r) => r.devotee },
             { key: 'sankalpa', header: 'Sankalpa', render: (r) => r.sankalpa },
             { key: 'channel', header: 'Channel', render: (r) => r.channel },
+            {
+              key: 'priest',
+              header: 'Priest',
+              render: (r) => (
+                <select
+                  className={styles.priestSelect}
+                  value={r.priestId ?? ''}
+                  disabled={assigning === r.id || r.status === BookingStatus.COMPLETED}
+                  onChange={(e) => assignPriest(r.id, e.target.value)}
+                  aria-label={`Assign priest for ${r.service} at ${r.time}`}
+                >
+                  <option value="">Unassigned</option>
+                  {PRIEST_OPTIONS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                  {r.priestId &&
+                    !PRIEST_OPTIONS.some((p) => p.id === r.priestId) && (
+                      <option value={r.priestId}>{priestLabel(r.priestId)}</option>
+                    )}
+                </select>
+              ),
+            },
             {
               key: 'status',
               header: 'Status',

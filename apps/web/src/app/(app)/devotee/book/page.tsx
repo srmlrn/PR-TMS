@@ -25,13 +25,16 @@ export default function BookSevaPage() {
   const [sponsorName, setSponsorName] = useState(user?.name ?? '');
   const [gotram, setGotram] = useState('');
   const [nakshatra, setNakshatra] = useState('');
+  const [rashi, setRashi] = useState('');
   const [occasion, setOccasion] = useState('');
   const [beneficiaryName, setBeneficiaryName] = useState('');
+  const [priestPreference, setPriestPreference] = useState('');
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
     defaultPaymentProvider(Currency.USD, channel),
   );
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [lastBookingId, setLastBookingId] = useState<string | null>(null);
 
   const { data: services, loading, error } = useApi((ep) => ep.getServices());
 
@@ -81,16 +84,19 @@ export default function BookSevaPage() {
         scheduledAt,
         channel,
         paymentSessionId,
+        priestPreference: priestPreference || undefined,
         sankalpa: sponsorName
           ? {
               sponsorName,
               gotram: gotram || undefined,
               nakshatra: nakshatra || undefined,
+              rashi: rashi || undefined,
               occasion: occasion || undefined,
               beneficiaryName: beneficiaryName || undefined,
             }
           : undefined,
       });
+      setLastBookingId(booking.id);
       setMessage(`Booking confirmed! Receipt ${booking.receiptNumber ?? booking.id.slice(0, 8)}.`);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Booking failed');
@@ -173,6 +179,15 @@ export default function BookSevaPage() {
               />
             </div>
             <div className="formGroup">
+              <label htmlFor="rashi">Rashi</label>
+              <input
+                id="rashi"
+                value={rashi}
+                onChange={(e) => setRashi(e.target.value)}
+                placeholder="Vrishabha — optional"
+              />
+            </div>
+            <div className="formGroup">
               <label htmlFor="occasion">Occasion / purpose</label>
               <input
                 id="occasion"
@@ -188,6 +203,15 @@ export default function BookSevaPage() {
                 value={beneficiaryName}
                 onChange={(e) => setBeneficiaryName(e.target.value)}
                 placeholder="If offering for someone else"
+              />
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <label htmlFor="priestPreference">Priest preference</label>
+              <input
+                id="priestPreference"
+                value={priestPreference}
+                onChange={(e) => setPriestPreference(e.target.value)}
+                placeholder="Preferred priest name or language, if any"
               />
             </div>
           </div>
@@ -208,6 +232,16 @@ export default function BookSevaPage() {
             {submitting ? 'Booking…' : 'Confirm Booking'}
           </Button>
           {message && <p className="tms-t2 mt1">{message}</p>}
+          {lastBookingId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt1"
+              onClick={() => window.open(`/devotee/receipt/booking/${lastBookingId}`, '_blank')}
+            >
+              Print receipt
+            </Button>
+          )}
         </GlassCard>
       </div>
     </>

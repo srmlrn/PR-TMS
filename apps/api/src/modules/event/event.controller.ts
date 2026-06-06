@@ -21,6 +21,7 @@ import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventQueryDto } from './dto/event-query.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto';
 import { UpdateEventStageDto } from './dto/update-event-stage.dto';
 import { EventService } from './event.service';
 
@@ -109,6 +110,21 @@ export class EventController {
   @ApiResponse({ status: 200, description: 'Checklist items' })
   async getChecklist(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.eventService.getChecklist(tenantId, id);
+  }
+
+  @Patch(':id/checklist/:itemId')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Toggle event checklist item completion' })
+  @ApiParam({ name: 'id', description: 'Event UUID' })
+  @ApiParam({ name: 'itemId', description: 'Checklist item UUID' })
+  @ApiResponse({ status: 200, description: 'Checklist item updated' })
+  async toggleChecklistItem(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateChecklistItemDto,
+  ) {
+    return this.eventService.toggleChecklistItem(tenantId, id, itemId, dto.isDone);
   }
 
   @Get(':id/budget')

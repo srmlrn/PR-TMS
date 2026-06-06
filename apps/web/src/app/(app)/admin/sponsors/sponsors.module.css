@@ -57,3 +57,60 @@
   color: var(--amber);
   font-size: 0.85rem;
 }
+
+.select {
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.33rem 0.65rem;
+  color: var(--txt);
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.renewalList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.renewalItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  background: var(--glass2);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--txt);
+  text-align: left;
+  transition: 0.15s;
+}
+
+.renewalItem:hover {
+  border-color: rgba(245, 166, 35, 0.35);
+}
+
+.recognitionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.35rem;
+  background: none;
+  border: none;
+  padding: 0.15rem 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.recognitionRow:hover {
+  opacity: 0.85;
+}
