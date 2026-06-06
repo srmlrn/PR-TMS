@@ -1,0 +1,59 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+}
+
+.modal {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: var(--glass, rgba(20, 18, 14, 0.95));
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+.header {
+  margin-bottom: 1.25rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--txt2, #b8b0a0);
+  font-size: 0.9rem;
+}
+
+.stripeForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.razorpayHint {
+  padding: 0.5rem 0;
+}
+
+.error {
+  margin: 0.75rem 0 0;
+  color: var(--crimson, #e85d6a);
+  font-size: 0.88rem;
+}
+
+.footer {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+}

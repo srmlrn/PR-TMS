@@ -141,6 +141,9 @@ export function createEndpoints(client: ApiClient) {
     confirmPaymentSession: (id: string) =>
       client.post<PaymentSession>(`/payments/sessions/${id}/confirm`, {}),
 
+    getPaymentSession: (id: string) =>
+      client.get<PaymentSession>(`/payments/sessions/${id}`),
+
     getBookings: (params?: ListParams) =>
       client.get<PaginatedResponse<Booking>>('/bookings', { params }),
 

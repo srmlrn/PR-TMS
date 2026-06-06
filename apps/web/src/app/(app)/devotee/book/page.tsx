@@ -12,7 +12,13 @@ import { formatMoney } from '@/lib/api/endpoints';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PaymentModeBadge } from '@/components/PaymentModeBadge';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
-import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
+import {
+  checkoutAndPay,
+  createLivePaymentGate,
+  defaultPaymentProvider,
+} from '@/lib/payment-flow';
+import { LivePaymentModal } from '@/components/LivePaymentModal';
+import type { PaymentSession } from '@tms/types';
 import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
 import styles from './book.module.css';
 
@@ -39,6 +45,22 @@ export default function BookSevaPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [lastBookingId, setLastBookingId] = useState<string | null>(null);
+  const [livePayment, setLivePayment] = useState<{
+    session: PaymentSession;
+    resolve: () => void;
+    reject: (err: Error) => void;
+  } | null>(null);
+
+  const livePaymentGate = useMemo(
+    () =>
+      createLivePaymentGate(
+        (session) =>
+          new Promise<void>((resolve, reject) => {
+            setLivePayment({ session, resolve, reject });
+          }),
+      ),
+    [],
+  );
 
   const { data: services, loading, error } = useApi((ep) => ep.getServices());
 
@@ -74,13 +96,17 @@ export default function BookSevaPage() {
       const svc = selectedService;
       if (!svc) return;
 
-      const paymentSessionId = await checkoutAndPay(ep, {
-        amount: svc.price,
-        currency: svc.currency,
-        purpose: `Seva: ${svc.name}`,
-        devoteeId: user.devoteeId,
-        provider: paymentProvider,
-      });
+      const paymentSessionId = await checkoutAndPay(
+        ep,
+        {
+          amount: svc.price,
+          currency: svc.currency,
+          purpose: `Seva: ${svc.name}`,
+          devoteeId: user.devoteeId,
+          provider: paymentProvider,
+        },
+        livePaymentGate,
+      );
 
       const booking = await ep.createBooking({
         devoteeId: user.devoteeId,
@@ -252,6 +278,21 @@ export default function BookSevaPage() {
           )}
         </GlassCard>
       </div>
+
+      {livePayment && (
+        <LivePaymentModal
+          session={livePayment.session}
+          payerName={sponsorName || user?.name}
+          onSuccess={() => {
+            livePayment.resolve();
+            setLivePayment(null);
+          }}
+          onCancel={() => {
+            livePayment.reject(new Error('Payment cancelled'));
+            setLivePayment(null);
+          }}
+        />
+      )}
     </>
   );
 }

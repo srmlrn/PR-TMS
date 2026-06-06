@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, ProgressBar } from '@tms/ui';
 import { Currency, DonationFrequency, type PaymentProvider, type TaxReceipt } from '@tms/types';
@@ -11,7 +11,13 @@ import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PaymentModeBadge } from '@/components/PaymentModeBadge';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
-import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
+import {
+  checkoutAndPay,
+  createLivePaymentGate,
+  defaultPaymentProvider,
+} from '@/lib/payment-flow';
+import { LivePaymentModal } from '@/components/LivePaymentModal';
+import type { PaymentSession } from '@tms/types';
 import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
 import styles from './donate.module.css';
 
@@ -50,6 +56,22 @@ export default function DonatePage() {
   const [inKindDescription, setInKindDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [livePayment, setLivePayment] = useState<{
+    session: PaymentSession;
+    resolve: () => void;
+    reject: (err: Error) => void;
+  } | null>(null);
+
+  const livePaymentGate = useMemo(
+    () =>
+      createLivePaymentGate(
+        (session) =>
+          new Promise<void>((resolve, reject) => {
+            setLivePayment({ session, resolve, reject });
+          }),
+      ),
+    [],
+  );
 
   const { data: campaigns, loading, error } = useApi((ep) => ep.getCampaigns());
 
@@ -84,13 +106,17 @@ export default function DonatePage() {
       const ep = createEndpoints(api);
       const paymentSessionId = isInKind
         ? undefined
-        : await checkoutAndPay(ep, {
-            amount,
-            currency,
-            purpose,
-            devoteeId: user.devoteeId,
-            provider: paymentProvider,
-          });
+        : await checkoutAndPay(
+            ep,
+            {
+              amount,
+              currency,
+              purpose,
+              devoteeId: user.devoteeId,
+              provider: paymentProvider,
+            },
+            livePaymentGate,
+          );
 
       const donation = await ep.createDonation({
         devoteeId: user.devoteeId,
@@ -343,6 +369,21 @@ export default function DonatePage() {
           )}
         </GlassCard>
       </div>
+
+      {livePayment && (
+        <LivePaymentModal
+          session={livePayment.session}
+          payerName={user?.name}
+          onSuccess={() => {
+            livePayment.resolve();
+            setLivePayment(null);
+          }}
+          onCancel={() => {
+            livePayment.reject(new Error('Payment cancelled'));
+            setLivePayment(null);
+          }}
+        />
+      )}
     </>
   );
 }
