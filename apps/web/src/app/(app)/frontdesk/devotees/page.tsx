@@ -10,6 +10,7 @@ import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { DevoteeProfilePanel } from '@/components/DevoteeProfilePanel';
+import { CountryStateSelect } from '@/components/CountryStateSelect';
 import { RitualSelect } from '@/components/RitualSelect';
 import styles from './devotees.module.css';
 
@@ -167,7 +168,7 @@ function FrontDeskDevoteesPageInner() {
     setBusy(true);
     setMessage(null);
     try {
-      const body = {
+      const base = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         phone: form.phone.trim(),
@@ -178,26 +179,28 @@ function FrontDeskDevoteesPageInner() {
         gender: form.gender || undefined,
         dateOfBirth: form.dateOfBirth || undefined,
         familyId: form.familyId || undefined,
-        status: form.status,
-        membershipTier: form.membershipTier,
         address: form.addressLine1
           ? {
               line1: form.addressLine1,
               city: form.city,
-              state: form.state,
-              postalCode: form.postalCode,
+              state: form.state || undefined,
+              postalCode: form.postalCode || undefined,
               country: form.country,
             }
           : undefined,
       };
 
       if (mode === 'create') {
-        const created = await ep.createDevotee(body);
+        const created = await ep.createDevotee(base);
         await refetch();
         selectDevotee(created.id);
         setMessage('Devotee created.');
       } else if (mode === 'edit' && selectedId) {
-        await ep.updateDevotee(selectedId, body);
+        await ep.updateDevotee(selectedId, {
+          ...base,
+          status: form.status,
+          membershipTier: form.membershipTier,
+        });
         await refetch();
         setMode('view');
         setProfileRefresh((n) => n + 1);
@@ -484,14 +487,14 @@ function FrontDeskDevoteesPageInner() {
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
                 />
               </div>
-              <div className="formGroup">
-                <label htmlFor="fd-state">State</label>
-                <input
-                  id="fd-state"
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                />
-              </div>
+              <CountryStateSelect
+                countryId="fd-country"
+                stateId="fd-state"
+                country={form.country}
+                state={form.state}
+                onCountryChange={(country) => setForm({ ...form, country })}
+                onStateChange={(state) => setForm({ ...form, state })}
+              />
               <div className="formGroup">
                 <label htmlFor="fd-postal">Postal</label>
                 <input
