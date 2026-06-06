@@ -9,6 +9,7 @@
     "./tokens.css": "./src/tokens.css"
   },
   "scripts": {
+    "build": "npm run typecheck",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {

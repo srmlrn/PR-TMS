@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, GlassCard } from '@tms/ui';
@@ -114,7 +114,18 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <AuthProvider>
-      <LoginForm />
+      <Suspense
+        fallback={
+          <div className="authLoading">
+            <span className="landingIcon" aria-hidden>
+              🛕
+            </span>
+            <p className="tms-t2">Loading…</p>
+          </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
     </AuthProvider>
   );
 }
