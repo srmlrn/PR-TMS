@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
 import {
@@ -32,7 +32,7 @@ function isToday(value: string | Date): boolean {
   );
 }
 
-export default function FrontDeskConsolePage() {
+function FrontDeskConsolePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { api } = useTenant();
@@ -550,5 +550,13 @@ export default function FrontDeskConsolePage() {
       {actionMsg && <p className={[styles.statusMsg, styles.statusMsgOk].join(' ')}>{actionMsg}</p>}
       {livePaymentModal}
     </div>
+  );
+}
+
+export default function FrontDeskConsolePage() {
+  return (
+    <Suspense fallback={<p className="tms-t2">Loading…</p>}>
+      <FrontDeskConsolePageInner />
+    </Suspense>
   );
 }

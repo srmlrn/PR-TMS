@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Badge, Button, GlassCard, PageHeader } from '@tms/ui';
 import type { Devotee, DevoteeGender } from '@tms/types';
@@ -94,6 +93,7 @@ function FrontDeskDevoteesPageInner() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [profileRefresh, setProfileRefresh] = useState(0);
+  const [menuId, setMenuId] = useState<string | null>(null);
 
   const { data, loading, error, refetch } = useApi(
     (endpoints) =>
@@ -145,6 +145,15 @@ function FrontDeskDevoteesPageInner() {
     });
   }, [data, letter, activeOnly, familyById]);
 
+  useEffect(() => {
+    if (!menuId) return;
+    function closeMenu() {
+      setMenuId(null);
+    }
+    document.addEventListener('click', closeMenu);
+    return () => document.removeEventListener('click', closeMenu);
+  }, [menuId]);
+
   const selectDevotee = useCallback(
     async (id: string) => {
       setSelectedId(id);
@@ -155,6 +164,26 @@ function FrontDeskDevoteesPageInner() {
     [router],
   );
 
+  const loadEditForm = useCallback(
+    async (id: string) => {
+      setBusy(true);
+      setMessage(null);
+      try {
+        const d = await ep.getDevotee(id);
+        setForm(devoteeToForm(d));
+        setMode('edit');
+        router.replace(`/frontdesk/devotees?id=${id}`, { scroll: false });
+      } catch (err) {
+        setMode('view');
+        router.replace(`/frontdesk/devotees?id=${id}`, { scroll: false });
+        setMessage(err instanceof Error ? err.message : 'Failed to load devotee');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [ep, router],
+  );
+
   useEffect(() => {
     if (params.get('new') === '1') {
       setMode('create');
@@ -163,26 +192,23 @@ function FrontDeskDevoteesPageInner() {
       return;
     }
     const id = params.get('id');
-    if (id) {
-      setSelectedId(id);
-      setMode('view');
+    if (!id) {
+      setSelectedId(null);
+      return;
     }
-  }, [params]);
+    setSelectedId(id);
+    if (params.get('edit') === '1') {
+      void loadEditForm(id);
+      return;
+    }
+    setMode((current) =>
+      current === 'edit' || current === 'family' ? current : 'view',
+    );
+  }, [params, loadEditForm]);
 
   async function openEditFor(id: string) {
-    setBusy(true);
-    setMessage(null);
-    try {
-      setSelectedId(id);
-      router.replace(`/frontdesk/devotees?id=${id}`, { scroll: false });
-      const d = await ep.getDevotee(id);
-      setForm(devoteeToForm(d));
-      setMode('edit');
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to load devotee');
-    } finally {
-      setBusy(false);
-    }
+    setSelectedId(id);
+    router.replace(`/frontdesk/devotees?id=${id}&edit=1`, { scroll: false });
   }
 
   async function openEdit() {
@@ -230,6 +256,7 @@ function FrontDeskDevoteesPageInner() {
         });
         await refetch();
         setMode('view');
+        router.replace(`/frontdesk/devotees?id=${selectedId}`, { scroll: false });
         setProfileRefresh((n) => n + 1);
         setMessage('Devotee updated.');
       }
@@ -310,7 +337,10 @@ function FrontDeskDevoteesPageInner() {
         await selectDevotee(result.matches[0].id);
       } else {
         setMessage('No devotee found — create a new record.');
+        setSelectedId(null);
+        setForm(EMPTY_FORM);
         setMode('create');
+        router.replace('/frontdesk/devotees?new=1', { scroll: false });
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Lookup failed');
@@ -326,11 +356,13 @@ function FrontDeskDevoteesPageInner() {
         subtitle="Search · add · edit · family · seva & donation history"
         actions={
           <div className={styles.detailActions}>
-            <Link href="/frontdesk/console">
-              <Button variant="outline" size="sm">
-                Reception Console
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/frontdesk/console')}
+            >
+              Reception Console
+            </Button>
             <Button
               size="sm"
               onClick={() => {
@@ -400,71 +432,136 @@ function FrontDeskDevoteesPageInner() {
           {rows.length === 0 ? (
             <p className={styles.emptyDetail}>No devotees match your filters.</p>
           ) : (
-            rows.map((row) => (
-              <div
-                key={row.id}
-                className={`${styles.rowItem} ${selectedId === row.id ? styles.rowItemActive : ''}`}
-              >
-                <button
-                  type="button"
-                  className={styles.rowMain}
-                  onClick={() => selectDevotee(row.id)}
+            rows.map((row) => {
+              const initials = row.name
+                .split(' ')
+                .map((part) => part[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+
+              return (
+                <div
+                  key={row.id}
+                  className={`${styles.rowItem} ${selectedId === row.id ? styles.rowItemActive : ''}`}
                 >
-                  <div className={styles.rowTop}>
-                    <strong>{row.name}</strong>
-                    <span className={styles.rowPhone}>{row.phone}</span>
-                  </div>
-                  <div className={styles.rowSub}>
-                    <span>
-                      {row.gotram}
-                      {row.familyNames.length > 0 && ` · ${row.familyNames.join(', ')}`}
-                      {row.status !== 'active' && (
-                        <>
-                          {' '}
-                          <Badge variant="pending">{row.status}</Badge>
-                        </>
-                      )}
+                  <button
+                    type="button"
+                    className={styles.rowMain}
+                    onClick={() => {
+                      setMenuId(null);
+                      selectDevotee(row.id);
+                    }}
+                  >
+                    <span className={styles.rowAvatar} aria-hidden>
+                      {initials}
                     </span>
+                    <span className={styles.rowInfo}>
+                      <span className={styles.rowNameLine}>
+                        <strong>{row.name}</strong>
+                        {row.status !== 'active' && <Badge variant="pending">{row.status}</Badge>}
+                      </span>
+                      <span className={styles.rowSub}>
+                        {row.gotram}
+                        {row.familyNames.length > 0 && ` · ${row.familyNames.join(', ')}`}
+                      </span>
+                    </span>
+                    <span className={styles.rowPhone}>{row.phone}</span>
+                  </button>
+                  <div className={styles.rowQuick}>
+                    <button
+                      type="button"
+                      className={`${styles.iconBtn} ${styles.iconBtnPrimary}`}
+                      title="Book seva at counter"
+                      disabled={busy}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuId(null);
+                        router.push(`/frontdesk/console?devoteeId=${row.id}`);
+                      }}
+                    >
+                      🙏
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
+                      title="Edit profile"
+                      disabled={busy}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuId(null);
+                        void openEditFor(row.id);
+                      }}
+                    >
+                      ✎
+                    </button>
+                    <div className={styles.menuWrap}>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        title="More actions"
+                        disabled={busy}
+                        aria-expanded={menuId === row.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuId((current) => (current === row.id ? null : row.id));
+                        }}
+                      >
+                        ⋯
+                      </button>
+                      {menuId === row.id && (
+                        <div className={styles.menuPanel} role="menu">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className={styles.menuItem}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuId(null);
+                              void selectDevotee(row.id);
+                            }}
+                          >
+                            View profile
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className={styles.menuItem}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuId(null);
+                              router.push(`/frontdesk/console?devoteeId=${row.id}`);
+                            }}
+                          >
+                            Book seva
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuId(null);
+                              void deleteDevoteeFor(row.id, row.name);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </button>
-                <div className={styles.rowActions}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => openEditFor(row.id)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => deleteDevoteeFor(row.id, row.name)}
-                  >
-                    Delete
-                  </Button>
-                  <Link href={`/frontdesk/console?devoteeId=${row.id}`}>
-                    <Button size="sm" variant="outline">
-                      Book seva
-                    </Button>
-                  </Link>
-                  <Button
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => selectDevotee(row.id)}
-                  >
-                    Services
-                  </Button>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </GlassCard>
 
         <GlassCard
           compact
-          title={mode === 'create' ? 'New devotee' : 'Devotee record'}
+          title={
+            mode === 'create' ? 'New devotee' : mode === 'edit' ? 'Edit devotee' : 'Devotee record'
+          }
           bodyClassName={styles.formCardBody}
         >
           {mode === 'create' || mode === 'edit' ? (
@@ -605,9 +702,18 @@ function FrontDeskDevoteesPageInner() {
                     type="button"
                     size="sm"
                     variant="outline"
+                    disabled={busy}
                     onClick={() => {
-                      setMode(selectedId ? 'view' : 'view');
-                      if (!selectedId) router.replace('/frontdesk/devotees', { scroll: false });
+                      if (mode === 'create') {
+                        setSelectedId(null);
+                        setForm(EMPTY_FORM);
+                        router.replace('/frontdesk/devotees', { scroll: false });
+                        return;
+                      }
+                      setMode('view');
+                      if (selectedId) {
+                        router.replace(`/frontdesk/devotees?id=${selectedId}`, { scroll: false });
+                      }
                     }}
                   >
                     Cancel
@@ -627,9 +733,13 @@ function FrontDeskDevoteesPageInner() {
                 <Button size="sm" variant="outline" onClick={handleDelete} disabled={busy}>
                   Delete
                 </Button>
-                <Link href={`/frontdesk/console`}>
-                  <Button size="sm">Use at counter →</Button>
-                </Link>
+                <Button
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => router.push(`/frontdesk/console?devoteeId=${selectedId}`)}
+                >
+                  Use at counter →
+                </Button>
               </div>
               <DevoteeProfilePanel
                 ep={ep}
