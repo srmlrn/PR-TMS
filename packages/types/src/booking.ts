@@ -37,4 +37,8 @@ export interface CreateBookingInput {
   priestPreference?: string;
   channel?: Booking['channel'];
   paymentSessionId?: string;
+  /** Line quantity — amount = catalog price × quantity (default 1). */
+  quantity?: number;
+  /** Counter POS ritual location. */
+  location?: 'on_site' | 'off_site';
 }

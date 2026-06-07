@@ -3,8 +3,10 @@ import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -82,4 +84,15 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   priestPreference?: string;
+
+  @ApiPropertyOptional({ example: 1, default: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  quantity?: number;
+
+  @ApiPropertyOptional({ enum: ['on_site', 'off_site'] })
+  @IsOptional()
+  @IsEnum(['on_site', 'off_site'])
+  location?: 'on_site' | 'off_site';
 }

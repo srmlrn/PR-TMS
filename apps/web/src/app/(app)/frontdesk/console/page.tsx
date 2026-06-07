@@ -1,14 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
 import {
   Currency,
   type DevoteeLookupMatch,
   type DevoteeLookupResult,
-  type PaymentProvider,
   type QueueToken,
   type QueueType,
 } from '@tms/types';
@@ -16,10 +15,7 @@ import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
-import { CounterBookingForm } from '@/components/CounterBookingForm';
-import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
-import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
-import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
+import { CounterPosForm } from '@/components/CounterPosForm';
 import styles from './console.module.css';
 
 function isToday(value: string | Date): boolean {
@@ -48,19 +44,7 @@ function FrontDeskConsolePageInner() {
   const [priorityToken, setPriorityToken] = useState(false);
   const [queueType, setQueueType] = useState<QueueType>('darshan');
   const [busy, setBusy] = useState(false);
-  const [donateAmount, setDonateAmount] = useState(51);
-  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
-    defaultPaymentProvider(Currency.USD, 'counter'),
-  );
   const [actionMsg, setActionMsg] = useState<string | null>(null);
-  const getPayer = useCallback(
-    () => ({
-      name: lookup?.devotee?.name,
-      phone: lookup?.devotee?.phone,
-    }),
-    [lookup],
-  );
-  const { gate, livePaymentModal } = useLivePaymentGate(getPayer);
 
   const { data: stats, loading, error, refetch } = useApi((ep) => ep.getQueueStats());
   const { data: services } = useApi((ep) => ep.getServices());
@@ -244,50 +228,6 @@ function FrontDeskConsolePageInner() {
     }
   }
 
-  async function handleQuickDonate() {
-    const devoteeId = lookup?.devotee?.id;
-    if (!devoteeId) {
-      setActionMsg('Look up or register a devotee first.');
-      return;
-    }
-    setBusy(true);
-    setActionMsg(null);
-    try {
-      const ep = createEndpoints(api);
-      const paymentSessionId = await checkoutAndPay(
-        ep,
-        {
-          amount: donateAmount,
-          currency: Currency.USD,
-          purpose: 'Counter donation',
-          devoteeId,
-          provider: paymentProvider,
-        },
-        gate,
-      );
-      const donation = await ep.createDonation({
-        devoteeId,
-        amount: donateAmount,
-        currency: Currency.USD,
-        purpose: 'Counter — General Hundi',
-        paymentSessionId,
-      });
-      const receiptNumber = donation.receiptNumber ?? donation.id.slice(0, 8);
-      setActionMsg(`Donation recorded (${paymentProvider}) · ${receiptNumber}`);
-      refetchPos();
-      const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Counter guest');
-      router.push(
-        `/frontdesk/receipt-print?amount=${donateAmount}&currency=${Currency.USD}` +
-          `&receipt=${encodeURIComponent(receiptNumber)}` +
-          `&name=${guestName}&purpose=${encodeURIComponent('Counter — General Hundi')}`,
-      );
-    } catch (err) {
-      setActionMsg(err instanceof Error ? err.message : 'Donation failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const devotee = lookup?.devotee;
   const activeDevoteeId = selectedDevoteeId ?? devotee?.id ?? null;
   const ep = createEndpoints(api);
@@ -297,7 +237,7 @@ function FrontDeskConsolePageInner() {
     <div className={styles.console}>
       <PageHeader
         title="Reception Console"
-        subtitle="Lookup · tokens · check-in · book · donate"
+        subtitle="Lookup · tokens · check-in · counter POS"
         actions={
           <div className={styles.actionBar}>
             <Link href="/frontdesk/queue">
@@ -501,31 +441,9 @@ function FrontDeskConsolePageInner() {
           )}
         </GlassCard>
 
-        <GlassCard compact title="Quick donate">
-          <PaymentProviderPicker
-            value={paymentProvider}
-            onChange={setPaymentProvider}
-            currency={Currency.USD}
-            channel="counter"
-          />
-          <div className="formGroup">
-            <label htmlFor="donateAmt">Amount (USD)</label>
-            <input
-              id="donateAmt"
-              type="number"
-              min={1}
-              value={donateAmount}
-              onChange={(e) => setDonateAmount(Number(e.target.value))}
-            />
-          </div>
-          <Button size="sm" onClick={handleQuickDonate} disabled={busy || !devotee}>
-            Record {formatMoney(donateAmount)}
-          </Button>
-        </GlassCard>
-
-        <GlassCard compact title="Counter booking" className={styles.span2}>
+        <GlassCard compact title="Counter POS" className={styles.span3}>
           {devotee && serviceList.length > 0 ? (
-            <CounterBookingForm
+            <CounterPosForm
               ep={ep}
               devotee={devotee}
               services={serviceList}
@@ -536,7 +454,9 @@ function FrontDeskConsolePageInner() {
               onError={(msg) => setActionMsg(msg)}
             />
           ) : (
-            <p className={styles.hint}>Look up a devotee to book seva with date, slot, and sankalpa.</p>
+            <p className={styles.hint}>
+              Look up a devotee to open the counter POS — services, sales, donations, and checkout.
+            </p>
           )}
         </GlassCard>
 
@@ -548,7 +468,6 @@ function FrontDeskConsolePageInner() {
         </GlassCard>
       </div>
       {actionMsg && <p className={[styles.statusMsg, styles.statusMsgOk].join(' ')}>{actionMsg}</p>}
-      {livePaymentModal}
     </div>
   );
 }

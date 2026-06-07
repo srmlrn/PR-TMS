@@ -110,6 +110,8 @@ export class BookingService
 
     const service = await this.sevaCatalogService.findOne(tenantId, input.serviceId);
     const scheduledAt = new Date(input.scheduledAt);
+    const quantity = input.quantity ?? 1;
+    const lineAmount = service.price * quantity;
 
     if (Number.isNaN(scheduledAt.getTime())) {
       throw new BadRequestException('scheduledAt must be a valid ISO date-time');
@@ -121,14 +123,14 @@ export class BookingService
     const paidSession = await this.paymentService.enforcePaidCheckout(
       tenantId,
       input.paymentSessionId,
-      service.price,
+      lineAmount,
       service.currency,
     );
     if (paidSession) {
       paymentStatus = paidSession.status;
     }
 
-    const sankalpa = this.buildSankalpa(input);
+    const sankalpa = this.buildSankalpa(input, quantity);
 
     if (this.usePostgres) {
       const repo = await this.tenantData.bookings();
@@ -137,9 +139,9 @@ export class BookingService
         serviceId: input.serviceId,
         scheduledAt,
         status: BookingStatus.CONFIRMED,
-        amount: service.price,
+        amount: lineAmount,
         currency: service.currency,
-        sankalpa: sankalpa as Record<string, string> | undefined,
+        sankalpa: sankalpa as Record<string, string | number> | undefined,
         receiptNumber: await this.generateReceiptNumber(tenantId),
         channel: input.channel ?? 'app',
         paymentStatus,
@@ -153,12 +155,65 @@ export class BookingService
       serviceId: input.serviceId,
       scheduledAt,
       status: BookingStatus.CONFIRMED,
-      amount: service.price,
+      amount: lineAmount,
       currency: service.currency,
       sankalpa,
       receiptNumber: this.generateReceiptNumberSync(tenantId),
       channel: input.channel ?? 'app',
       paymentStatus,
+    });
+  }
+
+  /** POS checkout — payment verified once at session level; skip per-line amount check. */
+  async createFromPosCheckout(
+    tenantId: string,
+    input: CreateBookingInput & { lineAmount: number },
+  ): Promise<BookingRecord> {
+    if (!(await this.devoteeService.exists(tenantId, input.devoteeId))) {
+      throw new NotFoundException(`Devotee ${input.devoteeId} not found`);
+    }
+
+    const service = await this.sevaCatalogService.findOne(tenantId, input.serviceId);
+    const scheduledAt = new Date(input.scheduledAt);
+    const quantity = input.quantity ?? 1;
+
+    if (Number.isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date-time');
+    }
+
+    await this.assertNoConflict(tenantId, input.serviceId, scheduledAt, service.durationMinutes);
+
+    const sankalpa = this.buildSankalpa(input, quantity);
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.bookings();
+      const entity = repo.create({
+        devoteeId: input.devoteeId,
+        serviceId: input.serviceId,
+        scheduledAt,
+        status: BookingStatus.CONFIRMED,
+        amount: input.lineAmount,
+        currency: service.currency,
+        sankalpa: sankalpa as Record<string, string | number> | undefined,
+        receiptNumber: await this.generateReceiptNumber(tenantId),
+        channel: input.channel ?? 'counter',
+        paymentStatus: PaymentStatus.PAID,
+      });
+      const saved = await repo.save(entity);
+      return this.toBooking(saved);
+    }
+
+    return this.createEntity(tenantId, {
+      devoteeId: input.devoteeId,
+      serviceId: input.serviceId,
+      scheduledAt,
+      status: BookingStatus.CONFIRMED,
+      amount: input.lineAmount,
+      currency: service.currency,
+      sankalpa,
+      receiptNumber: this.generateReceiptNumberSync(tenantId),
+      channel: input.channel ?? 'counter',
+      paymentStatus: PaymentStatus.PAID,
     });
   }
 
@@ -376,15 +431,20 @@ export class BookingService
       }));
   }
 
-  private buildSankalpa(input: CreateBookingInput): Booking['sankalpa'] | undefined {
-    const { sankalpa, priestPreference } = input;
-    if (!sankalpa && !priestPreference) {
+  private buildSankalpa(
+    input: CreateBookingInput,
+    quantity = 1,
+  ): Booking['sankalpa'] | undefined {
+    const { sankalpa, priestPreference, location } = input;
+    if (!sankalpa && !priestPreference && !location && quantity <= 1) {
       return undefined;
     }
     return {
       ...sankalpa,
       sponsorName: sankalpa?.sponsorName ?? '',
       ...(priestPreference ? { priestPreference } : {}),
+      ...(location ? { location } : {}),
+      ...(quantity > 1 ? { quantity } : {}),
     };
   }
 

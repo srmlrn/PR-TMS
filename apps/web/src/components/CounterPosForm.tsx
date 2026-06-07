@@ -1,0 +1,673 @@
+'use client';
+
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@tms/ui';
+import {
+  Currency,
+  DONATION_FUND_OPTIONS,
+  POS_SALES_CATALOG,
+  type CounterPaymentMethod,
+  type DevoteeLookupResult,
+  type PaymentProvider,
+  type SevaService,
+  type ServiceLocation,
+} from '@tms/types';
+import type { Endpoints } from '@/lib/api/endpoints';
+import { formatMoney } from '@/lib/api/endpoints';
+import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
+import { checkoutAndPay } from '@/lib/payment-flow';
+import styles from './CounterPosForm.module.css';
+
+type PosTab = 'services' | 'sales' | 'donations';
+
+interface ServiceLine {
+  key: string;
+  serviceId: string;
+  date: string;
+  location: ServiceLocation;
+  quantity: number;
+  unitCost: number;
+}
+
+interface DonationLine {
+  key: string;
+  purpose: string;
+  amount: number;
+}
+
+interface SalesLine {
+  key: string;
+  itemId: string;
+  quantity: number;
+}
+
+interface Props {
+  ep: Endpoints;
+  devotee: NonNullable<DevoteeLookupResult['devotee']>;
+  services: SevaService[];
+  onSuccess: (message: string) => void;
+  onError: (message: string) => void;
+}
+
+let lineKey = 0;
+function nextKey(): string {
+  lineKey += 1;
+  return `line-${lineKey}`;
+}
+
+function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
+  if (method === 'card') return 'stripe';
+  return 'cash';
+}
+
+export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Props) {
+  const router = useRouter();
+  const today = new Date().toISOString().slice(0, 10);
+  const currency = (services[0]?.currency as Currency) ?? Currency.USD;
+
+  const [tab, setTab] = useState<PosTab>('services');
+  const [serviceLines, setServiceLines] = useState<ServiceLine[]>(() =>
+    services[0]
+      ? [
+          {
+            key: nextKey(),
+            serviceId: services[0].id,
+            date: today,
+            location: 'on_site',
+            quantity: 1,
+            unitCost: services[0].price,
+          },
+        ]
+      : [],
+  );
+  const [donationLines, setDonationLines] = useState<DonationLine[]>([]);
+  const [salesLines, setSalesLines] = useState<SalesLine[]>([]);
+  const [gotram, setGotram] = useState(devotee.gotram ?? '');
+  const [nakshatra, setNakshatra] = useState(devotee.nakshatra ?? '');
+  const [occasion, setOccasion] = useState('');
+  const [comment, setComment] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<CounterPaymentMethod>('cash');
+  const [checkNumber, setCheckNumber] = useState('');
+  const [totalPaid, setTotalPaid] = useState<number | ''>('');
+  const [busy, setBusy] = useState(false);
+
+  const getPayer = useCallback(
+    () => ({ name: devotee.name, phone: devotee.phone }),
+    [devotee],
+  );
+  const { gate, livePaymentModal } = useLivePaymentGate(getPayer);
+
+  const serviceTotal = useMemo(
+    () => serviceLines.reduce((sum, l) => sum + l.unitCost * l.quantity, 0),
+    [serviceLines],
+  );
+  const donationTotal = useMemo(
+    () => donationLines.reduce((sum, l) => sum + l.amount, 0),
+    [donationLines],
+  );
+  const salesTotal = useMemo(
+    () =>
+      salesLines.reduce((sum, l) => {
+        const item = POS_SALES_CATALOG.find((s) => s.id === l.itemId);
+        return sum + (item?.price ?? 0) * l.quantity;
+      }, 0),
+    [salesLines],
+  );
+  const grandTotal = Math.round((serviceTotal + donationTotal + salesTotal) * 100) / 100;
+
+  const effectiveTotalPaid = totalPaid === '' ? grandTotal : totalPaid;
+
+  function addServiceLine(prefill?: Partial<ServiceLine>) {
+    const svc = services.find((s) => s.id === prefill?.serviceId) ?? services[0];
+    if (!svc) return;
+    setServiceLines((rows) => [
+      ...rows,
+      {
+        key: nextKey(),
+        serviceId: svc.id,
+        date: prefill?.date ?? today,
+        location: prefill?.location ?? 'on_site',
+        quantity: prefill?.quantity ?? 1,
+        unitCost: prefill?.unitCost ?? svc.price,
+      },
+    ]);
+    setTab('services');
+  }
+
+  function updateServiceLine(key: string, patch: Partial<ServiceLine>) {
+    setServiceLines((rows) =>
+      rows.map((r) => {
+        if (r.key !== key) return r;
+        const next = { ...r, ...patch };
+        if (patch.serviceId) {
+          const svc = services.find((s) => s.id === patch.serviceId);
+          if (svc) next.unitCost = svc.price;
+        }
+        return next;
+      }),
+    );
+  }
+
+  function removeServiceLine(key: string) {
+    setServiceLines((rows) => rows.filter((r) => r.key !== key));
+  }
+
+  function addDonationLine() {
+    setDonationLines((rows) => [
+      ...rows,
+      { key: nextKey(), purpose: DONATION_FUND_OPTIONS[0], amount: 51 },
+    ]);
+    setTab('donations');
+  }
+
+  function updateDonationLine(key: string, patch: Partial<DonationLine>) {
+    setDonationLines((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  }
+
+  function removeDonationLine(key: string) {
+    setDonationLines((rows) => rows.filter((r) => r.key !== key));
+  }
+
+  function addSalesLine(itemId?: string) {
+    const id = itemId ?? POS_SALES_CATALOG[0]?.id ?? '';
+    setSalesLines((rows) => [...rows, { key: nextKey(), itemId: id, quantity: 1 }]);
+    setTab('sales');
+  }
+
+  function updateSalesLine(key: string, patch: Partial<SalesLine>) {
+    setSalesLines((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  }
+
+  function removeSalesLine(key: string) {
+    setSalesLines((rows) => rows.filter((r) => r.key !== key));
+  }
+
+  function handleCancel() {
+    setServiceLines(
+      services[0]
+        ? [
+            {
+              key: nextKey(),
+              serviceId: services[0].id,
+              date: today,
+              location: 'on_site',
+              quantity: 1,
+              unitCost: services[0].price,
+            },
+          ]
+        : [],
+    );
+    setDonationLines([]);
+    setSalesLines([]);
+    setComment('');
+    setCheckNumber('');
+    setTotalPaid('');
+    setPaymentMethod('cash');
+  }
+
+  async function handleSubmit() {
+    if (serviceLines.length === 0 && donationLines.length === 0 && salesLines.length === 0) {
+      onError('Add at least one service, donation, or sale line.');
+      return;
+    }
+    if (Math.abs(effectiveTotalPaid - grandTotal) > 0.01) {
+      onError(`Total paid must match cart total (${formatMoney(grandTotal, currency)}).`);
+      return;
+    }
+    if (paymentMethod === 'check' && !checkNumber.trim()) {
+      onError('Enter check number for check payments.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const provider = mapPaymentMethod(paymentMethod);
+      const paymentSessionId = await checkoutAndPay(
+        ep,
+        {
+          amount: grandTotal,
+          currency,
+          purpose: `Counter POS — ${devotee.name}`,
+          devoteeId: devotee.id,
+          provider,
+        },
+        gate,
+      );
+
+      const result = await ep.posCheckout({
+        devoteeId: devotee.id,
+        currency,
+        services: serviceLines.map((l) => ({
+          serviceId: l.serviceId,
+          date: l.date,
+          location: l.location,
+          quantity: l.quantity,
+          unitCost: l.unitCost,
+        })),
+        donations: donationLines.map((l) => ({
+          purpose: l.purpose,
+          amount: l.amount,
+        })),
+        sales: salesLines.map((l) => ({
+          itemId: l.itemId,
+          quantity: l.quantity,
+        })),
+        comment: comment.trim() || undefined,
+        paymentSessionId,
+        totalPaid: effectiveTotalPaid,
+        checkNumber: paymentMethod === 'check' ? checkNumber.trim() : undefined,
+        paymentMethod,
+        sankalpa: {
+          gotram: gotram || undefined,
+          nakshatra: nakshatra || undefined,
+          occasion: occasion || undefined,
+        },
+      });
+
+      const summary = [
+        result.bookings.length ? `${result.bookings.length} seva(s)` : '',
+        result.donations.length ? `${result.donations.length} donation/sale(s)` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+
+      onSuccess(
+        `POS checkout complete · ${summary} · Receipt ${result.receiptNumber} · ${formatMoney(result.grandTotal, result.currency)}`,
+      );
+
+      const guestName = encodeURIComponent(devotee.name);
+      router.push(
+        `/frontdesk/receipt-print?amount=${result.grandTotal}&currency=${result.currency}` +
+          `&receipt=${encodeURIComponent(result.receiptNumber)}` +
+          `&name=${guestName}&purpose=${encodeURIComponent('Counter POS checkout')}`,
+      );
+
+      handleCancel();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'POS checkout failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const quickLinks = services.slice(0, 6);
+
+  return (
+    <>
+      <div className={styles.pos}>
+        <div className={styles.main}>
+          <div className={styles.sankalpaRow}>
+            <div className="formGroup">
+              <label htmlFor="posGotram">Gotram</label>
+              <input id="posGotram" value={gotram} onChange={(e) => setGotram(e.target.value)} />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="posNakshatra">Nakshatra</label>
+              <input
+                id="posNakshatra"
+                value={nakshatra}
+                onChange={(e) => setNakshatra(e.target.value)}
+              />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="posOccasion">Occasion</label>
+              <input
+                id="posOccasion"
+                value={occasion}
+                onChange={(e) => setOccasion(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className={styles.tabs}>
+            {(['services', 'sales', 'donations'] as PosTab[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
+                onClick={() => setTab(t)}
+              >
+                {t === 'services' ? 'Services' : t === 'sales' ? 'Sales' : 'Donations'}
+                {t === 'services' && serviceLines.length > 0 ? ` (${serviceLines.length})` : ''}
+                {t === 'sales' && salesLines.length > 0 ? ` (${salesLines.length})` : ''}
+                {t === 'donations' && donationLines.length > 0 ? ` (${donationLines.length})` : ''}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'services' && (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th>Deity</th>
+                    <th>Location</th>
+                    <th>Date</th>
+                    <th>Cost</th>
+                    <th>Qty</th>
+                    <th>Total</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {serviceLines.map((line) => {
+                    const svc = services.find((s) => s.id === line.serviceId);
+                    const lineTotal = line.unitCost * line.quantity;
+                    return (
+                      <tr key={line.key}>
+                        <td>
+                          <select
+                            value={line.serviceId}
+                            onChange={(e) =>
+                              updateServiceLine(line.key, { serviceId: e.target.value })
+                            }
+                          >
+                            {services.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>{svc?.deity ?? '—'}</td>
+                        <td>
+                          <select
+                            value={line.location}
+                            onChange={(e) =>
+                              updateServiceLine(line.key, {
+                                location: e.target.value as ServiceLocation,
+                              })
+                            }
+                          >
+                            <option value="on_site">On Site</option>
+                            <option value="off_site">Off Site</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="date"
+                            value={line.date}
+                            onChange={(e) => updateServiceLine(line.key, { date: e.target.value })}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            className={styles.numInput}
+                            value={line.unitCost}
+                            onChange={(e) =>
+                              updateServiceLine(line.key, { unitCost: Number(e.target.value) })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min={1}
+                            className={styles.numInput}
+                            value={line.quantity}
+                            onChange={(e) =>
+                              updateServiceLine(line.key, { quantity: Number(e.target.value) })
+                            }
+                          />
+                        </td>
+                        <td className={styles.lineTotal}>{formatMoney(lineTotal, currency)}</td>
+                        <td>
+                          <div className={styles.rowActions}>
+                            <button
+                              type="button"
+                              className={styles.rowBtn}
+                              onClick={() => removeServiceLine(line.key)}
+                              aria-label="Remove row"
+                            >
+                              −
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className={styles.addRow}>
+                <Button size="sm" variant="outline" onClick={() => addServiceLine()}>
+                  + Add service
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {tab === 'sales' && (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Sales item</th>
+                    <th>Cost</th>
+                    <th>Qty</th>
+                    <th>Total</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesLines.map((line) => {
+                    const item = POS_SALES_CATALOG.find((s) => s.id === line.itemId);
+                    const lineTotal = (item?.price ?? 0) * line.quantity;
+                    return (
+                      <tr key={line.key}>
+                        <td>
+                          <select
+                            value={line.itemId}
+                            onChange={(e) =>
+                              updateSalesLine(line.key, { itemId: e.target.value })
+                            }
+                          >
+                            {POS_SALES_CATALOG.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>{item ? formatMoney(item.price, currency) : '—'}</td>
+                        <td>
+                          <input
+                            type="number"
+                            min={1}
+                            className={styles.numInput}
+                            value={line.quantity}
+                            onChange={(e) =>
+                              updateSalesLine(line.key, { quantity: Number(e.target.value) })
+                            }
+                          />
+                        </td>
+                        <td className={styles.lineTotal}>{formatMoney(lineTotal, currency)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className={styles.rowBtn}
+                            onClick={() => removeSalesLine(line.key)}
+                          >
+                            −
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className={styles.addRow}>
+                <Button size="sm" variant="outline" onClick={() => addSalesLine()}>
+                  + Add sale
+                </Button>
+              </div>
+              {salesLines.length === 0 && (
+                <p className={styles.hint}>Articles recorded as counter donations (Article sale).</p>
+              )}
+            </div>
+          )}
+
+          {tab === 'donations' && (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Donation fund</th>
+                    <th>Amount</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {donationLines.map((line) => (
+                    <tr key={line.key}>
+                      <td>
+                        <select
+                          value={line.purpose}
+                          onChange={(e) =>
+                            updateDonationLine(line.key, { purpose: e.target.value })
+                          }
+                        >
+                          {DONATION_FUND_OPTIONS.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min={1}
+                          className={styles.numInput}
+                          value={line.amount}
+                          onChange={(e) =>
+                            updateDonationLine(line.key, { amount: Number(e.target.value) })
+                          }
+                        />
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.rowBtn}
+                          onClick={() => removeDonationLine(line.key)}
+                        >
+                          −
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className={styles.addRow}>
+                <Button size="sm" variant="outline" onClick={addDonationLine}>
+                  + Add donation
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className={styles.footer}>
+            <div className={styles.footerLeft}>
+              <div className="formGroup">
+                <label htmlFor="posComment">Comment / notes</label>
+                <input
+                  id="posComment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Optional notes for receipt"
+                />
+              </div>
+              <div className="formGroup">
+                <label htmlFor="posPayment">Payment type</label>
+                <select
+                  id="posPayment"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value as CounterPaymentMethod)}
+                >
+                  <option value="cash">Cash</option>
+                  <option value="check">Check</option>
+                  <option value="card">Card</option>
+                </select>
+              </div>
+              {paymentMethod === 'check' && (
+                <div className="formGroup">
+                  <label htmlFor="posCheck">Check number</label>
+                  <input
+                    id="posCheck"
+                    value={checkNumber}
+                    onChange={(e) => setCheckNumber(e.target.value)}
+                    placeholder="Check #"
+                  />
+                </div>
+              )}
+              <div className="formGroup">
+                <label htmlFor="posPaid">Total paid</label>
+                <input
+                  id="posPaid"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={totalPaid === '' ? grandTotal : totalPaid}
+                  onChange={(e) =>
+                    setTotalPaid(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                />
+              </div>
+            </div>
+            <div className={styles.footerRight}>
+              <div className={styles.grandTotal}>
+                Total: {formatMoney(grandTotal, currency)}
+              </div>
+              <div className={styles.footerActions}>
+                <Button size="sm" variant="outline" onClick={handleCancel} disabled={busy}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSubmit} disabled={busy || grandTotal <= 0}>
+                  {busy ? 'Processing…' : 'Submit'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside className={styles.sidebar}>
+          <p className={styles.sidebarTitle}>Quick links</p>
+          {quickLinks.map((svc) => (
+            <button
+              key={svc.id}
+              type="button"
+              className={styles.quickLink}
+              onClick={() =>
+                addServiceLine({
+                  serviceId: svc.id,
+                  unitCost: svc.price,
+                })
+              }
+            >
+              <strong>{svc.name}</strong>
+              <span>
+                {svc.deity} · {formatMoney(svc.price, svc.currency)}
+              </span>
+            </button>
+          ))}
+          {POS_SALES_CATALOG.slice(0, 3).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={styles.quickLink}
+              onClick={() => addSalesLine(item.id)}
+            >
+              <strong>{item.name}</strong>
+              <span>{formatMoney(item.price, item.currency)}</span>
+            </button>
+          ))}
+        </aside>
+      </div>
+      {livePaymentModal}
+    </>
+  );
+}

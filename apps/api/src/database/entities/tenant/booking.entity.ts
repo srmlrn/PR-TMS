@@ -27,7 +27,7 @@ export class BookingEntity {
   currency!: string;
 
   @Column({ type: 'jsonb', nullable: true })
-  sankalpa?: Record<string, string>;
+  sankalpa?: Record<string, string | number>;
 
   @Column({ name: 'receipt_number', length: 64, nullable: true })
   receiptNumber?: string;

@@ -8,6 +8,9 @@ import {
   DisplayBoardLane,
   IssueTokenInput,
   NowServing,
+  POS_SALES_CATALOG,
+  PosCheckoutInput,
+  PosCheckoutResult,
   QueueStats,
   QueueToken,
   QueueType,
@@ -21,7 +24,9 @@ import { BookingService } from '../booking/booking.service';
 import { DevoteeService } from '../devotee/devotee.service';
 import { DonationService } from '../donation/donation.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentService } from '../payment/payment.service';
 import { PlatformService } from '../platform/platform.service';
+import { SevaCatalogService } from '../booking/seva-catalog.service';
 
 type QueueTokenRecord = QueueToken & TenantEntity;
 
@@ -62,6 +67,8 @@ export class FrontDeskService
     private readonly donationService: DonationService,
     private readonly notificationsService: NotificationsService,
     private readonly platformService: PlatformService,
+    private readonly paymentService: PaymentService,
+    private readonly sevaCatalogService: SevaCatalogService,
   ) {
     super();
   }
@@ -680,5 +687,155 @@ export class FrontDeskService
       createdAt: now,
       updatedAt: now,
     };
+  }
+
+  async posCheckout(tenantId: string, input: PosCheckoutInput): Promise<PosCheckoutResult> {
+    const services = input.services ?? [];
+    const donations = input.donations ?? [];
+    const sales = input.sales ?? [];
+
+    if (services.length === 0 && donations.length === 0 && sales.length === 0) {
+      throw new BadRequestException('Add at least one service, donation, or sale line');
+    }
+
+    if (!(await this.devoteeService.exists(tenantId, input.devoteeId))) {
+      throw new NotFoundException(`Devotee ${input.devoteeId} not found`);
+    }
+
+    const devotee = await this.devoteeService.findOne(tenantId, input.devoteeId);
+    const sponsorName = `${devotee.firstName} ${devotee.lastName}`.trim();
+
+    let grandTotal = 0;
+
+    for (const line of services) {
+      const service = await this.sevaCatalogService.findOne(tenantId, line.serviceId);
+      const unitCost = line.unitCost ?? service.price;
+      grandTotal += unitCost * line.quantity;
+    }
+
+    for (const line of donations) {
+      grandTotal += line.amount;
+    }
+
+    for (const line of sales) {
+      const item = POS_SALES_CATALOG.find((s) => s.id === line.itemId);
+      if (!item) {
+        throw new BadRequestException(`Unknown sales item ${line.itemId}`);
+      }
+      grandTotal += item.price * line.quantity;
+    }
+
+    grandTotal = Math.round(grandTotal * 100) / 100;
+
+    if (Math.abs(input.totalPaid - grandTotal) > 0.01) {
+      throw new BadRequestException(
+        `Total paid (${input.totalPaid}) does not match cart total (${grandTotal})`,
+      );
+    }
+
+    await this.paymentService.assertPaidSession(
+      tenantId,
+      input.paymentSessionId,
+      grandTotal,
+      input.currency,
+    );
+
+    const notesParts: string[] = [];
+    if (input.comment?.trim()) {
+      notesParts.push(input.comment.trim());
+    }
+    if (input.paymentMethod === 'check' && input.checkNumber?.trim()) {
+      notesParts.push(`Check #${input.checkNumber.trim()}`);
+    } else if (input.paymentMethod) {
+      notesParts.push(`Payment: ${input.paymentMethod}`);
+    }
+    const posNotes = notesParts.length > 0 ? notesParts.join(' · ') : undefined;
+
+    const createdBookings = [];
+    for (const line of services) {
+      const service = await this.sevaCatalogService.findOne(tenantId, line.serviceId);
+      const unitCost = line.unitCost ?? service.price;
+      const lineAmount = Math.round(unitCost * line.quantity * 100) / 100;
+      const scheduledAt = await this.resolveCounterScheduledAt(
+        tenantId,
+        line.serviceId,
+        line.date,
+      );
+
+      const booking = await this.bookingService.createFromPosCheckout(tenantId, {
+        devoteeId: input.devoteeId,
+        serviceId: line.serviceId,
+        scheduledAt: scheduledAt.toISOString(),
+        channel: 'counter',
+        quantity: line.quantity,
+        location: line.location,
+        lineAmount,
+        sankalpa: {
+          sponsorName,
+          gotram: input.sankalpa?.gotram,
+          nakshatra: input.sankalpa?.nakshatra,
+          occasion: input.sankalpa?.occasion,
+          location: line.location,
+          quantity: line.quantity > 1 ? line.quantity : undefined,
+          notes: posNotes,
+        },
+      });
+      createdBookings.push(booking);
+    }
+
+    const createdDonations = [];
+    for (const line of donations) {
+      const purpose = line.purpose.startsWith('Counter')
+        ? line.purpose
+        : `Counter — ${line.purpose}`;
+      const donation = await this.donationService.createFromPosCheckout(tenantId, {
+        devoteeId: input.devoteeId,
+        amount: line.amount,
+        currency: input.currency,
+        purpose: posNotes ? `${purpose} (${posNotes})` : purpose,
+        paymentSessionId: input.paymentSessionId,
+      });
+      createdDonations.push(donation);
+    }
+
+    for (const line of sales) {
+      const item = POS_SALES_CATALOG.find((s) => s.id === line.itemId)!;
+      const lineAmount = Math.round(item.price * line.quantity * 100) / 100;
+      const purpose = `Counter — Article sale — ${item.name}${line.quantity > 1 ? ` ×${line.quantity}` : ''}`;
+      const donation = await this.donationService.createFromPosCheckout(tenantId, {
+        devoteeId: input.devoteeId,
+        amount: lineAmount,
+        currency: input.currency,
+        purpose: posNotes ? `${purpose} (${posNotes})` : purpose,
+        paymentSessionId: input.paymentSessionId,
+      });
+      createdDonations.push(donation);
+    }
+
+    const receiptNumber =
+      createdBookings[0]?.receiptNumber ??
+      createdDonations[0]?.receiptNumber ??
+      `POS-${Date.now()}`;
+
+    return {
+      receiptNumber,
+      bookings: createdBookings,
+      donations: createdDonations,
+      grandTotal,
+      currency: input.currency,
+    };
+  }
+
+  private async resolveCounterScheduledAt(
+    tenantId: string,
+    serviceId: string,
+    date: string,
+  ): Promise<Date> {
+    const { slots } = await this.bookingService.getServiceSlots(tenantId, serviceId, date);
+    const available = slots.find((s) => s.available);
+    if (available) {
+      return new Date(available.startTime);
+    }
+    return new Date(`${date.slice(0, 10)}T12:00:00.000Z`);
   }
 }

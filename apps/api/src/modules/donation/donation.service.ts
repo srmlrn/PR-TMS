@@ -276,6 +276,61 @@ export class DonationService
     return donation;
   }
 
+  /** POS checkout — payment verified once at session level; skip per-line amount check. */
+  async createFromPosCheckout(
+    tenantId: string,
+    input: CreateDonationInput,
+  ): Promise<DonationRecord> {
+    if (input.amount <= 0) {
+      throw new BadRequestException('amount must be positive');
+    }
+
+    validateTaxId(input.currency, input.taxId);
+    const tax = this.resolveTaxDoc(input.currency);
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.donations();
+      const entity = repo.create({
+        devoteeId: input.devoteeId,
+        amount: input.amount,
+        currency: input.currency,
+        purpose: input.purpose,
+        frequency: input.frequency ?? DonationFrequency.ONE_TIME,
+        receiptNumber: await this.generateReceiptNumber(tenantId),
+        taxCompliant: tax.taxCompliant,
+        taxId: input.taxId,
+        paymentStatus: PaymentStatus.PAID,
+        campaignId: input.campaignId,
+        isAnonymous: input.isAnonymous ?? false,
+        isInKind: false,
+      });
+      const saved = await repo.save(entity);
+      const donation = this.toDonation(saved);
+      await this.billingService.createFromDonation(tenantId, donation, input);
+      return donation;
+    }
+
+    this.ensureCampaignsSeeded(tenantId);
+
+    const donation = this.createEntity(tenantId, {
+      devoteeId: input.devoteeId,
+      amount: input.amount,
+      currency: input.currency,
+      purpose: input.purpose,
+      frequency: input.frequency ?? DonationFrequency.ONE_TIME,
+      receiptNumber: this.generateReceiptNumberSync(tenantId),
+      taxCompliant: tax.taxCompliant,
+      taxDocType: tax.taxDocType,
+      taxId: input.taxId,
+      paymentStatus: PaymentStatus.PAID,
+      campaignId: input.campaignId,
+      isAnonymous: input.isAnonymous,
+    });
+
+    await this.billingService.createFromDonation(tenantId, donation, input);
+    return donation;
+  }
+
   async findDonations(
     tenantId: string,
     page = 1,

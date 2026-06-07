@@ -18,6 +18,8 @@ import type {
   PaginatedResponse,
   PaymentProvider,
   PaymentSession,
+  PosCheckoutInput,
+  PosCheckoutResult,
   PrasadamSlotAvailability,
   PrasadamSponsorship,
   PrasadamSponsorshipType,
@@ -382,6 +384,9 @@ export function createEndpoints(client: ApiClient) {
     }) => client.post<QueueToken>('/frontdesk/tokens', body),
 
     getQueueStats: () => client.get<QueueStats>('/frontdesk/queue-stats'),
+
+    posCheckout: (body: PosCheckoutInput) =>
+      client.post<PosCheckoutResult>('/frontdesk/pos-checkout', body),
 
     listTenants: () => client.get<Tenant[]>('/platform/tenants'),
 

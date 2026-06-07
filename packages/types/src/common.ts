@@ -37,6 +37,10 @@ export interface Sankalpa {
   occasion?: string;
   beneficiaryName?: string;
   priestPreference?: string;
+  /** Counter POS: on-site temple vs off-site (home) ritual */
+  location?: 'on_site' | 'off_site';
+  quantity?: number;
+  notes?: string;
 }
 
 export interface Address {

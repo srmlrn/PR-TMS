@@ -13,6 +13,7 @@ import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CheckInBookingDto } from './dto/check-in.dto';
 import { IssueTokenDto } from './dto/issue-token.dto';
 import { LookupQueryDto } from './dto/lookup-query.dto';
+import { PosCheckoutDto } from './dto/pos-checkout.dto';
 import {
   DevoteeLookupResponseDto,
   QueueStatsResponseDto,
@@ -120,5 +121,11 @@ export class FrontDeskController {
   @ApiOkResponse({ type: QueueStatsResponseDto })
   async getQueueStats(@TenantId() tenantId: string): Promise<QueueStatsResponseDto> {
     return this.frontDeskService.getQueueStats(tenantId);
+  }
+
+  @Post('pos-checkout')
+  @ApiOperation({ summary: 'Unified counter POS checkout — mixed bookings, donations, and sales' })
+  async posCheckout(@TenantId() tenantId: string, @Body() dto: PosCheckoutDto) {
+    return this.frontDeskService.posCheckout(tenantId, dto);
   }
 }
