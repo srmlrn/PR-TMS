@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import { Button, GlassCard, PageHeader } from '@tms/ui';
 import {
   Currency,
   type DevoteeLookupMatch,
@@ -66,9 +66,9 @@ function FrontDeskConsolePageInner() {
   const counterDonations = (posData?.donations?.data ?? []).filter(
     (d) => isToday(d.createdAt) && d.purpose.toLowerCase().includes('counter'),
   );
-  const posBookingTotal = counterBookings.reduce((sum, b) => sum + b.amount, 0);
-  const posDonationTotal = counterDonations.reduce((sum, d) => sum + d.amount, 0);
-  const posTotal = posBookingTotal + posDonationTotal;
+  const posTotal =
+    counterBookings.reduce((sum, b) => sum + b.amount, 0) +
+    counterDonations.reduce((sum, d) => sum + d.amount, 0);
   const posCurrency = counterBookings[0]?.currency ?? counterDonations[0]?.currency ?? Currency.USD;
 
   async function refreshLookup() {
@@ -86,6 +86,17 @@ function FrontDeskConsolePageInner() {
       matches: result?.matches ?? matches,
       devotee: result?.devotee?.id === match.id ? result.devotee : { ...match },
     });
+  }
+
+  function clearGuest() {
+    setLookup(null);
+    setMatches([]);
+    setSelectedDevoteeId(null);
+    setPhone('');
+    setName('');
+    setLookupMessage(null);
+    setTokenResult(null);
+    setLastToken(null);
   }
 
   useEffect(() => {
@@ -141,7 +152,7 @@ function FrontDeskConsolePageInner() {
 
   async function handleLookup() {
     if (!phone.trim() && !name.trim()) {
-      setLookupMessage('Enter phone or name to look up.');
+      setLookupMessage('Enter phone or name.');
       return;
     }
     setBusy(true);
@@ -159,7 +170,7 @@ function FrontDeskConsolePageInner() {
       if (result.found && result.devotee) {
         setSelectedDevoteeId(result.devotee.id);
       } else {
-        setLookupMessage('No devotee found — open Devotees to register.');
+        setLookupMessage('No match — add in Devotees.');
       }
     } catch (err) {
       setLookupMessage(err instanceof Error ? err.message : 'Lookup failed');
@@ -176,7 +187,7 @@ function FrontDeskConsolePageInner() {
       await ep.checkInBooking(bookingId);
       const result = await refreshLookup();
       setLookup(result);
-      setActionMsg('Checked in for today\'s seva.');
+      setActionMsg('Checked in.');
     } catch (err) {
       setActionMsg(err instanceof Error ? err.message : 'Check-in failed');
     } finally {
@@ -196,33 +207,14 @@ function FrontDeskConsolePageInner() {
         priority: priorityToken,
       });
       setLastToken(token);
-      setTokenResult(
-        `Token ${token.tokenNumber} · Position ${token.position} · ~${token.estimatedWaitMinutes} min wait`,
-      );
+      setTokenResult(`#${token.tokenNumber} · ~${token.estimatedWaitMinutes}m`);
       refetch();
       const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
       router.push(
         `/frontdesk/token-print?token=${encodeURIComponent(token.tokenNumber)}&position=${token.position}&wait=${token.estimatedWaitMinutes}&name=${guestName}`,
       );
     } catch (err) {
-      setTokenResult(err instanceof Error ? err.message : 'Token issue failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleNotifySms() {
-    if (!lastToken || !lookup?.devotee?.phone) {
-      setTokenResult('Issue a token and look up devotee with phone first.');
-      return;
-    }
-    setBusy(true);
-    try {
-      const ep = createEndpoints(api);
-      const res = await ep.notifyQueueToken(lastToken.id, lookup.devotee.phone);
-      setTokenResult(res.message);
-    } catch (err) {
-      setTokenResult(err instanceof Error ? err.message : 'SMS failed');
+      setTokenResult(err instanceof Error ? err.message : 'Token failed');
     } finally {
       setBusy(false);
     }
@@ -237,166 +229,70 @@ function FrontDeskConsolePageInner() {
     <div className={styles.console}>
       <PageHeader
         title="Reception Console"
-        subtitle="Lookup · tokens · check-in · counter POS"
+        subtitle="Look up a guest, then book or checkout"
         actions={
           <div className={styles.actionBar}>
-            <Link href="/frontdesk/queue">
-              <Button variant="outline" size="sm">Queue</Button>
-            </Link>
-            <Link href="/frontdesk/display">
-              <Button variant="outline" size="sm">Display</Button>
-            </Link>
+            <Button size="sm" variant="outline" onClick={() => router.push('/frontdesk/devotees')}>
+              Devotees
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => router.push('/frontdesk/queue')}>
+              Queue
+            </Button>
           </div>
         }
       />
-      <ApiBanner loading={loading} error={error} />
 
-      <div className={styles.metrics}>
-        <StatTile compact accent="amber" label="In queue" value={String(stats?.inQueue ?? 0)} icon="🎫" />
-        <StatTile compact accent="blue" label="Avg wait" value={`${stats?.averageWaitMinutes ?? 0}m`} icon="⏱️" />
-        <StatTile compact accent="green" label="Served" value={String(stats?.servedToday ?? 0)} icon="✅" />
-        <StatTile
-          compact
-          accent="amber"
-          label="Bookings"
-          value={formatMoney(posBookingTotal, posCurrency)}
-          icon="🙏"
-          change={`${counterBookings.length} today`}
-        />
-        <StatTile
-          compact
-          accent="green"
-          label="Donations"
-          value={formatMoney(posDonationTotal, posCurrency)}
-          icon="💝"
-          change={`${counterDonations.length} today`}
-        />
-        <StatTile
-          compact
-          accent="amber"
-          label="POS total"
-          value={formatMoney(posTotal, posCurrency)}
-          icon="🧾"
-        />
+      <ApiBanner loading={loading || posLoading} error={error ?? posError} />
+
+      <div className={styles.statsStrip}>
+        <span className={styles.statItem}>
+          🎫 <strong>{stats?.inQueue ?? 0}</strong> waiting
+        </span>
+        <span className={styles.statDivider}>·</span>
+        <span className={styles.statItem}>
+          ⏱ <strong>{stats?.averageWaitMinutes ?? 0}m</strong> avg
+        </span>
+        <span className={styles.statDivider}>·</span>
+        <span className={styles.statItem}>
+          ✅ <strong>{stats?.servedToday ?? 0}</strong> served
+        </span>
+        <span className={styles.statDivider}>·</span>
+        <span className={styles.statItem}>
+          🧾 <strong>{formatMoney(posTotal, posCurrency)}</strong> POS today
+        </span>
+        <span className={styles.statDivider}>·</span>
+        <Link href="/frontdesk/display" className={styles.hint}>
+          Display board →
+        </Link>
       </div>
-      <ApiBanner loading={posLoading} error={posError} />
 
-      <div className={styles.grid}>
-        <GlassCard
-          compact
-          title="Devotee lookup"
-          className={styles.span2}
-          headerRight={
-            <Link href="/frontdesk/devotees">
-              <Button size="sm" variant="outline">
-                Manage devotees →
-              </Button>
-            </Link>
-          }
-        >
-          <div className={styles.lookupRow}>
-            <div className="formGroup">
-              <label htmlFor="phone">Phone</label>
-              <input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 615-555-0211"
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="name">Name</label>
-              <input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Raj Natarajan"
-                onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
-              />
-            </div>
-            <Button size="sm" onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
-              Look up
-            </Button>
+      <section className={styles.topPanel}>
+        <div className={styles.lookupStrip}>
+          <div className="formGroup">
+            <label htmlFor="phone">Phone</label>
+            <input
+              id="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 615-555-0211"
+            />
           </div>
-          {lookupMessage && (
-            <p className={[styles.statusMsg, devotee ? styles.statusMsgOk : ''].filter(Boolean).join(' ')}>
-              {lookupMessage}
-            </p>
-          )}
-          {matches.length > 1 && (
-            <div className={styles.matchList}>
-              <p className={styles.hint}>{matches.length} matches — select devotee</p>
-              {matches.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={`${styles.matchItem} ${activeDevoteeId === m.id ? styles.matchItemActive : ''}`}
-                  onClick={() => selectMatch(m, lookup ?? undefined)}
-                >
-                  <strong>{m.name}</strong>
-                  <span>
-                    {m.phone}
-                    {m.gotram ? ` · ${m.gotram}` : ''}
-                    {m.membershipTier ? ` · ${m.membershipTier}` : ''}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-          {activeDevoteeId && devotee && (
-            <div className={styles.devoteeChip}>
-              <strong>{devotee.name}</strong>
-              <div className={styles.devoteeMeta}>
-                {devotee.phone}
-                {devotee.gotram ? ` · ${devotee.gotram}` : ''}
-                {devotee.nakshatra ? ` · ${devotee.nakshatra}` : ''}
-                {devotee.membershipTier ? ` · ${devotee.membershipTier}` : ''}
-                {devotee.ytdDonations
-                  ? ` · YTD ${formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}`
-                  : ''}
-              </div>
-              {devotee.todayBookings && devotee.todayBookings.length > 0 && (
-                <div className={styles.todayList}>
-                  {devotee.todayBookings.map((b) => (
-                    <div key={b.id} className={styles.todayRow}>
-                      <span>
-                        {new Date(b.scheduledAt).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
-                        {' · '}
-                        {b.status}
-                        {b.checkedIn ? ' · ✓' : ''}
-                      </span>
-                      {!b.checkedIn && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCheckIn(b.id)}
-                          disabled={busy}
-                        >
-                          Check in
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className={styles.tokenActions} style={{ marginTop: '0.5rem' }}>
-                <Link href={`/frontdesk/devotees?id=${activeDevoteeId}`}>
-                  <Button size="sm" variant="outline">
-                    Full profile →
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-        </GlassCard>
-
-        <GlassCard compact title="Queue token">
-          <div className={styles.tokenRow}>
+          <div className="formGroup">
+            <label htmlFor="name">Name</label>
+            <input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Raj Natarajan"
+              onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+            />
+          </div>
+          <Button size="sm" onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
+            Look up
+          </Button>
+          <div className={styles.tokenInline}>
             <div className="formGroup">
-              <label htmlFor="queueType">Queue</label>
+              <label htmlFor="queueType">Token</label>
               <select
                 id="queueType"
                 value={queueType}
@@ -407,66 +303,110 @@ function FrontDeskConsolePageInner() {
                 <option value="seva">Seva</option>
               </select>
             </div>
-            <Button size="sm" onClick={handleIssueToken} disabled={busy}>
+            <Button size="sm" variant="outline" onClick={handleIssueToken} disabled={busy}>
               Issue
             </Button>
+            <label className={styles.vipCheck}>
+              <input
+                type="checkbox"
+                checked={priorityToken}
+                onChange={(e) => setPriorityToken(e.target.checked)}
+              />
+              VIP
+            </label>
           </div>
-          <label className={styles.checkRow}>
-            <input
-              type="checkbox"
-              checked={priorityToken}
-              onChange={(e) => setPriorityToken(e.target.checked)}
-            />
-            VIP · front of queue
-          </label>
-          {tokenResult && <p className={styles.statusMsg}>{tokenResult}</p>}
-          {lastToken && (
-            <div className={styles.tokenActions}>
+        </div>
+
+        {lookupMessage && (
+          <p className={[styles.statusMsg, devotee ? styles.statusMsgOk : ''].filter(Boolean).join(' ')}>
+            {lookupMessage}
+          </p>
+        )}
+        {tokenResult && <p className={styles.statusMsg}>{tokenResult}</p>}
+
+        {matches.length > 1 && (
+          <div className={styles.matchList}>
+            {matches.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`${styles.matchItem} ${activeDevoteeId === m.id ? styles.matchItemActive : ''}`}
+                onClick={() => selectMatch(m, lookup ?? undefined)}
+              >
+                {m.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {activeDevoteeId && devotee && (
+          <div className={styles.guestBar}>
+            <div>
+              <strong>{devotee.name}</strong>
+              <div className={styles.guestMeta}>
+                {devotee.phone}
+                {devotee.gotram ? ` · ${devotee.gotram}` : ''}
+                {devotee.nakshatra ? ` · ${devotee.nakshatra}` : ''}
+              </div>
+            </div>
+            {devotee.todayBookings && devotee.todayBookings.length > 0 && (
+              <div className={styles.todayInline}>
+                {devotee.todayBookings.map((b) => (
+                  <span key={b.id} className={styles.todayPill}>
+                    {new Date(b.scheduledAt).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                    {b.checkedIn ? ' ✓' : ''}
+                    {!b.checkedIn && (
+                      <button
+                        type="button"
+                        className={styles.matchItem}
+                        onClick={() => handleCheckIn(b.id)}
+                        disabled={busy}
+                      >
+                        Check in
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className={styles.guestActions}>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
-                  router.push(
-                    `/frontdesk/token-print?token=${encodeURIComponent(lastToken.tokenNumber)}&position=${lastToken.position}&wait=${lastToken.estimatedWaitMinutes}&name=${guestName}`,
-                  );
-                }}
+                onClick={() => router.push(`/frontdesk/devotees?id=${activeDevoteeId}`)}
               >
-                Reprint
+                Profile
               </Button>
-              <Button size="sm" variant="outline" onClick={handleNotifySms} disabled={busy || !devotee?.phone}>
-                SMS
+              <Button size="sm" variant="outline" onClick={clearGuest}>
+                Clear
               </Button>
             </div>
-          )}
-        </GlassCard>
+          </div>
+        )}
+      </section>
 
-        <GlassCard compact title="Counter POS" className={styles.span3}>
-          {devotee && serviceList.length > 0 ? (
-            <CounterPosForm
-              ep={ep}
-              devotee={devotee}
-              services={serviceList}
-              onSuccess={(msg) => {
-                setActionMsg(msg);
-                refetchPos();
-              }}
-              onError={(msg) => setActionMsg(msg)}
-            />
-          ) : (
-            <p className={styles.hint}>
-              Look up a devotee to open the counter POS — services, sales, donations, and checkout.
-            </p>
-          )}
+      {devotee && serviceList.length > 0 ? (
+        <GlassCard compact title="Counter POS" className={styles.posPanel}>
+          <CounterPosForm
+            ep={ep}
+            devotee={devotee}
+            services={serviceList}
+            onSuccess={(msg) => {
+              setActionMsg(msg);
+              refetchPos();
+            }}
+            onError={(msg) => setActionMsg(msg)}
+          />
         </GlassCard>
+      ) : (
+        <div className={styles.emptyState}>
+          Look up a devotee to open booking, sales, and donations.
+        </div>
+      )}
 
-        <GlassCard compact title="Kiosk">
-          <p className={styles.hint}>Self-service prasadam & donations.</p>
-          <Link href="/kiosk">
-            <Button size="sm" variant="outline">Open kiosk</Button>
-          </Link>
-        </GlassCard>
-      </div>
       {actionMsg && <p className={[styles.statusMsg, styles.statusMsgOk].join(' ')}>{actionMsg}</p>}
     </div>
   );
