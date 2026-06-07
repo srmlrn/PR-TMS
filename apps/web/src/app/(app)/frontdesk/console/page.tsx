@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, GlassCard, PageHeader, StatTile } from '@tms/ui';
 import {
   Currency,
@@ -34,6 +34,7 @@ function isToday(value: string | Date): boolean {
 
 export default function FrontDeskConsolePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { api } = useTenant();
   const today = new Date().toISOString().slice(0, 10);
   const [phone, setPhone] = useState('');
@@ -102,6 +103,57 @@ export default function FrontDeskConsolePage() {
       devotee: result?.devotee?.id === match.id ? result.devotee : { ...match },
     });
   }
+
+  useEffect(() => {
+    const devoteeId = searchParams.get('devoteeId');
+    if (!devoteeId) return;
+
+    let cancelled = false;
+    (async () => {
+      setBusy(true);
+      setLookupMessage(null);
+      try {
+        const ep = createEndpoints(api);
+        const profile = await ep.getDevoteeProfile(devoteeId);
+        if (cancelled) return;
+
+        const fullName = `${profile.firstName} ${profile.lastName}`;
+        const match: DevoteeLookupMatch = {
+          id: profile.id,
+          name: fullName,
+          phone: profile.phone,
+          gotram: profile.gotram,
+          nakshatra: profile.nakshatra,
+          membershipTier: profile.membershipTier,
+        };
+        const lookupResult: DevoteeLookupResult = {
+          found: true,
+          matches: [match],
+          devotee: {
+            ...match,
+            todayBookings: profile.todayBookings,
+            ytdDonations: profile.ytdDonations,
+          },
+        };
+
+        setPhone(profile.phone);
+        setName(fullName);
+        setMatches([match]);
+        setSelectedDevoteeId(profile.id);
+        setLookup(lookupResult);
+      } catch (err) {
+        if (!cancelled) {
+          setLookupMessage(err instanceof Error ? err.message : 'Could not load devotee');
+        }
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [api, searchParams]);
 
   async function handleLookup() {
     if (!phone.trim() && !name.trim()) {

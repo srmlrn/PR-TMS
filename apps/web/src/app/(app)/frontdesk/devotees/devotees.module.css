@@ -26,15 +26,18 @@
 
 .alphaRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-bottom: 0.65rem;
+  flex-wrap: nowrap;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .alphaBtn {
-  min-width: 1.65rem;
-  height: 1.65rem;
-  padding: 0 0.35rem;
+  flex-shrink: 0;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.3rem;
   border: 1px solid var(--b2);
   border-radius: 6px;
   background: var(--ink3);
@@ -44,37 +47,72 @@
   cursor: pointer;
 }
 
+.alphaBtn:first-child {
+  min-width: 2.1rem;
+}
+
 .alphaBtnActive {
   border-color: var(--gr);
   color: var(--txt);
   background: color-mix(in srgb, var(--gr) 12%, var(--ink3));
 }
 
-.rowBtn {
+.rowItem {
+  border-bottom: 1px solid var(--b2);
+  padding: 0.45rem 0.65rem 0.5rem;
+}
+
+.rowItem:hover {
+  background: var(--ink3);
+}
+
+.rowItemActive {
+  background: color-mix(in srgb, var(--gr) 10%, var(--ink3));
+}
+
+.rowMain {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 0.5rem 0.65rem;
+  padding: 0;
+  margin: 0 0 0.35rem;
   border: none;
-  border-bottom: 1px solid var(--b2);
   background: transparent;
   cursor: pointer;
   font-size: 0.78rem;
   color: var(--txt2);
 }
 
-.rowBtn:hover {
-  background: var(--ink3);
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
-.rowBtnActive {
-  background: color-mix(in srgb, var(--gr) 10%, var(--ink3));
-}
-
-.rowBtn strong {
-  display: block;
+.rowMain strong {
   color: var(--txt);
   font-size: 0.84rem;
+}
+
+.rowPhone {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--gr);
+  white-space: nowrap;
+}
+
+.rowSub {
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  color: var(--txt3);
+  line-height: 1.35;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
 }
 
 .detailActions {
@@ -82,6 +120,47 @@
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-bottom: 0.65rem;
+}
+
+.formCardBody {
+  padding: 0.5rem 0.65rem !important;
+}
+
+.devoteeForm:global(.formGrid) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.devoteeForm :global(.formGroup) {
+  margin-bottom: 0.2rem;
+}
+
+.devoteeForm :global(.formGroup) label {
+  font-size: 0.62rem;
+  margin-bottom: 0.12rem;
+  letter-spacing: 0.05em;
+}
+
+.devoteeForm :global(.formGroup) input,
+.devoteeForm :global(.formGroup) select {
+  padding: 0.36rem 0.5rem;
+  font-size: 0.76rem;
+  border-radius: 6px;
+}
+
+.spanFull {
+  grid-column: 1 / -1;
+}
+
+.devoteeForm .detailActions {
+  margin-bottom: 0;
+  gap: 0.3rem;
+}
+
+@media (max-width: 1100px) {
+  .devoteeForm:global(.formGrid) {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .familyForm {

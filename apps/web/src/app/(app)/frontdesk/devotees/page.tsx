@@ -107,6 +107,17 @@ function FrontDeskDevoteesPageInner() {
 
   const { data: services } = useApi((endpoints) => endpoints.getServices());
 
+  const familyById = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }[]>();
+    for (const d of data?.data ?? []) {
+      if (!d.familyId) continue;
+      const members = map.get(d.familyId) ?? [];
+      members.push({ id: d.id, name: `${d.firstName} ${d.lastName}` });
+      map.set(d.familyId, members);
+    }
+    return map;
+  }, [data]);
+
   const rows = useMemo(() => {
     let list = data?.data ?? [];
     if (letter) {
@@ -115,15 +126,24 @@ function FrontDeskDevoteesPageInner() {
     if (activeOnly) {
       list = list.filter((d) => d.status === 'active');
     }
-    return list.map((d) => ({
-      id: d.id,
-      name: `${d.firstName} ${d.lastName}`,
-      phone: d.phone,
-      gotram: d.gotram ?? '—',
-      status: d.status,
-      familyId: d.familyId,
-    }));
-  }, [data, letter, activeOnly]);
+    return list.map((d) => {
+      const familyNames =
+        d.familyId && familyById.has(d.familyId)
+          ? (familyById.get(d.familyId) ?? [])
+              .filter((m) => m.id !== d.id)
+              .map((m) => m.name)
+          : [];
+
+      return {
+        id: d.id,
+        name: `${d.firstName} ${d.lastName}`,
+        phone: d.phone,
+        gotram: d.gotram ?? '—',
+        status: d.status,
+        familyNames,
+      };
+    });
+  }, [data, letter, activeOnly, familyById]);
 
   const selectDevotee = useCallback(
     async (id: string) => {
@@ -149,11 +169,13 @@ function FrontDeskDevoteesPageInner() {
     }
   }, [params]);
 
-  async function openEdit() {
-    if (!selectedId) return;
+  async function openEditFor(id: string) {
     setBusy(true);
+    setMessage(null);
     try {
-      const d = await ep.getDevotee(selectedId);
+      setSelectedId(id);
+      router.replace(`/frontdesk/devotees?id=${id}`, { scroll: false });
+      const d = await ep.getDevotee(id);
       setForm(devoteeToForm(d));
       setMode('edit');
     } catch (err) {
@@ -161,6 +183,11 @@ function FrontDeskDevoteesPageInner() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function openEdit() {
+    if (!selectedId) return;
+    await openEditFor(selectedId);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -213,16 +240,17 @@ function FrontDeskDevoteesPageInner() {
     }
   }
 
-  async function handleDelete() {
-    if (!selectedId) return;
-    if (!window.confirm('Delete this devotee record? This cannot be undone.')) return;
+  async function deleteDevoteeFor(id: string, name: string) {
+    if (!window.confirm(`Delete ${name}? This cannot be undone.`)) return;
     setBusy(true);
     setMessage(null);
     try {
-      await ep.deleteDevotee(selectedId);
-      setSelectedId(null);
-      setMode('view');
-      router.replace('/frontdesk/devotees', { scroll: false });
+      await ep.deleteDevotee(id);
+      if (selectedId === id) {
+        setSelectedId(null);
+        setMode('view');
+        router.replace('/frontdesk/devotees', { scroll: false });
+      }
       await refetch();
       setMessage('Devotee deleted.');
     } catch (err) {
@@ -230,6 +258,12 @@ function FrontDeskDevoteesPageInner() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleDelete() {
+    if (!selectedId) return;
+    const row = rows.find((r) => r.id === selectedId);
+    await deleteDevoteeFor(selectedId, row?.name ?? 'this devotee');
   }
 
   async function handleAddFamilyMember(e: React.FormEvent) {
@@ -341,55 +375,100 @@ function FrontDeskDevoteesPageInner() {
 
       {message && <p className="tms-t2 mb1">{message}</p>}
 
+      <div className={styles.alphaRow}>
+        <button
+          type="button"
+          className={`${styles.alphaBtn} ${letter === '' ? styles.alphaBtnActive : ''}`}
+          onClick={() => setLetter('')}
+        >
+          All
+        </button>
+        {ALPHA.map((ch) => (
+          <button
+            key={ch}
+            type="button"
+            className={`${styles.alphaBtn} ${letter === ch ? styles.alphaBtnActive : ''}`}
+            onClick={() => setLetter(ch)}
+          >
+            {ch}
+          </button>
+        ))}
+      </div>
+
       <div className={styles.layout}>
         <GlassCard compact title="Directory" noBodyPadding>
-          <div style={{ padding: '0.5rem 0.65rem 0' }}>
-            <div className={styles.alphaRow}>
-              <button
-                type="button"
-                className={`${styles.alphaBtn} ${letter === '' ? styles.alphaBtnActive : ''}`}
-                onClick={() => setLetter('')}
-              >
-                All
-              </button>
-              {ALPHA.map((ch) => (
-                <button
-                  key={ch}
-                  type="button"
-                  className={`${styles.alphaBtn} ${letter === ch ? styles.alphaBtnActive : ''}`}
-                  onClick={() => setLetter(ch)}
-                >
-                  {ch}
-                </button>
-              ))}
-            </div>
-          </div>
           {rows.length === 0 ? (
             <p className={styles.emptyDetail}>No devotees match your filters.</p>
           ) : (
             rows.map((row) => (
-              <button
+              <div
                 key={row.id}
-                type="button"
-                className={`${styles.rowBtn} ${selectedId === row.id ? styles.rowBtnActive : ''}`}
-                onClick={() => selectDevotee(row.id)}
+                className={`${styles.rowItem} ${selectedId === row.id ? styles.rowItemActive : ''}`}
               >
-                <strong>{row.name}</strong>
-                {row.phone} · {row.gotram}
-                {row.status !== 'active' && (
-                  <>
-                    {' '}
-                    <Badge variant="pending">{row.status}</Badge>
-                  </>
-                )}
-              </button>
+                <button
+                  type="button"
+                  className={styles.rowMain}
+                  onClick={() => selectDevotee(row.id)}
+                >
+                  <div className={styles.rowTop}>
+                    <strong>{row.name}</strong>
+                    <span className={styles.rowPhone}>{row.phone}</span>
+                  </div>
+                  <div className={styles.rowSub}>
+                    <span>
+                      {row.gotram}
+                      {row.familyNames.length > 0 && ` · ${row.familyNames.join(', ')}`}
+                      {row.status !== 'active' && (
+                        <>
+                          {' '}
+                          <Badge variant="pending">{row.status}</Badge>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </button>
+                <div className={styles.rowActions}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => openEditFor(row.id)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => deleteDevoteeFor(row.id, row.name)}
+                  >
+                    Delete
+                  </Button>
+                  <Link href={`/frontdesk/console?devoteeId=${row.id}`}>
+                    <Button size="sm" variant="outline">
+                      Book seva
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => selectDevotee(row.id)}
+                  >
+                    Services
+                  </Button>
+                </div>
+              </div>
             ))
           )}
         </GlassCard>
 
-        <GlassCard compact title={mode === 'create' ? 'New devotee' : 'Devotee record'}>
+        <GlassCard
+          compact
+          title={mode === 'create' ? 'New devotee' : 'Devotee record'}
+          bodyClassName={styles.formCardBody}
+        >
           {mode === 'create' || mode === 'edit' ? (
-            <form onSubmit={handleSave} className="formGrid">
+            <form onSubmit={handleSave} className={`formGrid ${styles.devoteeForm}`}>
               <div className="formGroup">
                 <label htmlFor="fd-first">First name *</label>
                 <input
@@ -471,7 +550,7 @@ function FrontDeskDevoteesPageInner() {
                   placeholder="Link family members"
                 />
               </div>
-              <div className="formGroup">
+              <div className={`formGroup ${styles.spanFull}`}>
                 <label htmlFor="fd-address">Address</label>
                 <input
                   id="fd-address"
@@ -517,7 +596,7 @@ function FrontDeskDevoteesPageInner() {
                   </select>
                 </div>
               )}
-              <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <div className={`formGroup ${styles.spanFull}`}>
                 <div className={styles.detailActions}>
                   <Button type="submit" size="sm" disabled={busy}>
                     {busy ? 'Saving…' : mode === 'create' ? 'Create devotee' : 'Save changes'}
