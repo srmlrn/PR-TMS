@@ -74,7 +74,10 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     envLabel: 'PROD',
     envVariant: 'prod',
     defaultHref: '/priest/schedule',
-    nav: [{ id: 'priest', emoji: '📿', label: "Today's Schedule", href: '/priest/schedule' }],
+    nav: [
+      { id: 'priest', emoji: '📿', label: "Today's Schedule", href: '/priest/schedule' },
+      { id: 'priest-leave', emoji: '🗓️', label: 'My Leave', href: '/priest/leave' },
+    ],
   },
   [UserRole.ACCOUNTANT]: {
     key: UserRole.ACCOUNTANT,
@@ -243,6 +246,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/frontdesk/token-print': 'Darshan Token',
   '/frontdesk/receipt-print': 'Payment Receipt',
   '/priest/schedule': "Today's Schedule",
+  '/priest/leave': 'My Leave',
   '/accountant/finance': 'Finance Dashboard',
   '/volunteer/shifts': 'Volunteering',
   '/committee/dashboard': 'Committee Dashboard',

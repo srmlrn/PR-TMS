@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Badge, Button, DataTable, GlassCard, StatTile } from '@tms/ui';
 import { PageIntro } from '@/components/AppPage';
@@ -133,9 +134,16 @@ export default function PriestSchedulePage() {
   }));
 
   return (
-    <>
+    <div className="pageShell">
       <PageIntro
         subtitle={`Pooja list with devotee name and sankalpa — ${new Date().toLocaleDateString()}`}
+        actions={
+          <Link href="/priest/leave">
+            <Button size="sm" variant="outline">
+              My Leave
+            </Button>
+          </Link>
+        }
         showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
@@ -219,6 +227,6 @@ export default function PriestSchedulePage() {
           data={rows}
         />
       </GlassCard>
-    </>
+    </div>
   );
 }

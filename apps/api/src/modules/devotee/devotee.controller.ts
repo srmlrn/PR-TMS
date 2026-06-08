@@ -35,7 +35,7 @@ export class DevoteeController {
   ) {}
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT)
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT, UserRole.PRIEST)
   @ApiOperation({ summary: 'List devotees with optional search filters' })
   @ApiResponse({ status: 200, description: 'Paginated devotee list' })
   async findAll(
