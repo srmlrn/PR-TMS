@@ -3,16 +3,11 @@
 import { useState } from 'react';
 import { Badge, Button, GlassCard } from '@tms/ui';
 import { AppPage } from '@/components/AppPage';
-import type {
-  Committee,
-  CommitteeRequestType,
-  CreateCommitteeRequestInput,
-} from '@tms/types';
+import type { CommitteeRequestType, CreateCommitteeRequestInput } from '@tms/types';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
-import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
-import { useTenantSite } from '@/lib/tenant-site';
+import { useCommitteeScope } from '@/lib/use-committee-scope';
 
 const REQUEST_TYPES: CommitteeRequestType[] = [
   'calendar_block',
@@ -24,8 +19,17 @@ const REQUEST_TYPES: CommitteeRequestType[] = [
 ];
 
 export default function CommitteeRequestsPage() {
-  const site = useTenantSite();
   const { api } = useTenant();
+  const {
+    committees,
+    scopeParams,
+    scopeSubtitle,
+    committeeName,
+    activeCommitteeId,
+    isAllCommittees,
+  } = useCommitteeScope();
+  const defaultCommitteeId =
+    !isAllCommittees && activeCommitteeId ? activeCommitteeId : (committees[0]?.id ?? '');
   const [committeeId, setCommitteeId] = useState('');
   const [form, setForm] = useState<CreateCommitteeRequestInput>({
     type: 'general',
@@ -35,14 +39,14 @@ export default function CommitteeRequestsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const { data: committeesData } = useApi((ep) => ep.getCommittees({ mine: true }));
-  const { data, loading, error, refetch } = useApi((ep) => ep.getMyCommitteeRequests());
-  const committees = committeesData?.data ?? [];
-  const requests =
-    data?.data ?? (error ? demoCommitteeDashboard(site.name).pendingApprovals : []);
+  const { data, loading, error, refetch } = useApi(
+    (ep) => ep.getMyCommitteeRequests(scopeParams),
+    [scopeParams.committeeId],
+  );
+  const requests = data?.data ?? [];
 
   async function handleSubmit() {
-    const cid = committeeId || committees[0]?.id;
+    const cid = committeeId || defaultCommitteeId;
     if (!cid || !form.title.trim()) {
       setMsg('Select a committee and enter a title');
       return;
@@ -67,22 +71,17 @@ export default function CommitteeRequestsPage() {
   }
 
   return (
-    <AppPage
-      subtitle="Submit and track committee requests"
-      loading={loading}
-      error={error}
-      showTenantContext={false}
-    >
+    <AppPage subtitle={scopeSubtitle} loading={loading} error={error} showTenantContext={false}>
       <div className="grid2 mb2">
         <GlassCard title="Submit request" compact>
           <div className="formStack">
             <label>
               Committee
               <select
-                value={committeeId || committees[0]?.id || ''}
+                value={committeeId || defaultCommitteeId}
                 onChange={(e) => setCommitteeId(e.target.value)}
               >
-                {committees.map((c: Committee) => (
+                {committees.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -162,7 +161,8 @@ export default function CommitteeRequestsPage() {
                 <div className="listRowMain">
                   <div className="listRowTitle">{r.title}</div>
                   <p className="hint">
-                    {r.type.replace('_', ' ')} · {formatShortDate(r.createdAt)}
+                    {committeeName(r.committeeId)} · {r.type.replace('_', ' ')} ·{' '}
+                    {formatShortDate(r.createdAt)}
                   </p>
                   {r.reviewNote && <p className="hint">Note: {r.reviewNote}</p>}
                 </div>

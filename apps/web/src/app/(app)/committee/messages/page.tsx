@@ -3,13 +3,23 @@
 import { useState } from 'react';
 import { Badge, Button, GlassCard } from '@tms/ui';
 import { AppPage } from '@/components/AppPage';
-import type { Committee, CreateCommitteeMessageInput } from '@tms/types';
+import type { CreateCommitteeMessageInput } from '@tms/types';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
+import { useCommitteeScope } from '@/lib/use-committee-scope';
 
 export default function CommitteeMessagesPage() {
   const { api } = useTenant();
+  const {
+    committees,
+    scopeParams,
+    scopeSubtitle,
+    activeCommitteeId,
+    isAllCommittees,
+  } = useCommitteeScope();
+  const defaultCommitteeId =
+    !isAllCommittees && activeCommitteeId ? activeCommitteeId : (committees[0]?.id ?? '');
   const [committeeId, setCommitteeId] = useState('');
   const [form, setForm] = useState<CreateCommitteeMessageInput>({
     subject: '',
@@ -19,25 +29,18 @@ export default function CommitteeMessagesPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const { data: committeesData, loading: committeesLoading } = useApi((ep) =>
-    ep.getCommittees({ mine: true }),
-  );
-  const committees = committeesData?.data ?? [];
-  const activeCommitteeId = committeeId || committees[0]?.id || '';
+  const activeId = committeeId || defaultCommitteeId;
 
   const {
     data: messagesData,
     loading: messagesLoading,
     error,
     refetch,
-  } = useApi(
-    (ep) => ep.getCommitteeMessages(activeCommitteeId),
-    [activeCommitteeId],
-  );
+  } = useApi((ep) => ep.getCommitteeMessages(activeId), [activeId]);
   const messages = messagesData?.data ?? [];
 
   async function handlePost() {
-    if (!activeCommitteeId || !form.body.trim()) {
+    if (!activeId || !form.body.trim()) {
       setMsg('Select a committee and enter a message');
       return;
     }
@@ -45,7 +48,7 @@ export default function CommitteeMessagesPage() {
     setMsg(null);
     try {
       const ep = createEndpoints(api);
-      await ep.createCommitteeMessage(activeCommitteeId, {
+      await ep.createCommitteeMessage(activeId, {
         subject: form.subject?.trim() || undefined,
         body: form.body.trim(),
         isAnnouncement: form.isAnnouncement,
@@ -62,8 +65,8 @@ export default function CommitteeMessagesPage() {
 
   return (
     <AppPage
-      subtitle="Group announcements and discussion"
-      loading={committeesLoading || messagesLoading}
+      subtitle={scopeSubtitle}
+      loading={messagesLoading}
       error={error}
       showTenantContext={false}
     >
@@ -72,11 +75,8 @@ export default function CommitteeMessagesPage() {
           <div className="formStack">
             <label>
               Committee
-              <select
-                value={activeCommitteeId}
-                onChange={(e) => setCommitteeId(e.target.value)}
-              >
-                {committees.map((c: Committee) => (
+              <select value={activeId} onChange={(e) => setCommitteeId(e.target.value)}>
+                {committees.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -118,7 +118,11 @@ export default function CommitteeMessagesPage() {
             <p className="hint">No messages yet.</p>
           ) : (
             messages.map((m) => (
-              <div key={m.id} className="listRow" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+              <div
+                key={m.id}
+                className="listRow"
+                style={{ flexDirection: 'column', alignItems: 'stretch' }}
+              >
                 <div className="flexBetween" style={{ width: '100%' }}>
                   <div className="listRowTitle">{m.subject ?? 'Message'}</div>
                   {m.isAnnouncement && <Badge variant="info">Announcement</Badge>}
@@ -126,7 +130,9 @@ export default function CommitteeMessagesPage() {
                 <p className="hint">
                   {m.authorName ?? 'Member'} · {formatShortDate(m.createdAt)}
                 </p>
-                <p className="hint" style={{ marginTop: '0.35rem' }}>{m.body}</p>
+                <p className="hint" style={{ marginTop: '0.35rem' }}>
+                  {m.body}
+                </p>
               </div>
             ))
           )}

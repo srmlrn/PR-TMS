@@ -106,6 +106,7 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
       { id: 'cm-dir', emoji: '📖', label: 'Directory', href: '/committee/directory' },
       { id: 'cm-reports', emoji: '📝', label: 'Reports', href: '/committee/reports' },
       { id: 'cm-tasks', emoji: '✅', label: 'My Tasks', href: '/committee/tasks' },
+      { id: 'cm-appr', emoji: '✔️', label: 'Approvals', href: '/committee/approvals' },
       { id: 'cm-req', emoji: '📋', label: 'Requests', href: '/committee/requests' },
       { id: 'cm-cal', emoji: '📅', label: 'Calendar', href: '/committee/calendar' },
       { id: 'cm-msg', emoji: '💬', label: 'Messages', href: '/committee/messages' },
@@ -248,6 +249,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/committee/directory': 'Committee Directory',
   '/committee/reports': 'Committee Reports',
   '/committee/tasks': 'My Tasks',
+  '/committee/approvals': 'Pending Approvals',
   '/committee/requests': 'Requests',
   '/committee/calendar': 'Calendar Blocks',
   '/committee/messages': 'Committee Messages',
@@ -269,6 +271,9 @@ export function resolveRoleFromPath(pathname: string): AppRole {
 }
 
 export function getPageTitle(pathname: string): string {
+  if (/^\/committee\/committee-[^/]+$/.test(pathname)) {
+    return 'Committee Workspace';
+  }
   if (PAGE_TITLES[pathname]) {
     return PAGE_TITLES[pathname];
   }

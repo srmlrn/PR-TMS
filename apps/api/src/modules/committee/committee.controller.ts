@@ -50,6 +50,7 @@ import {
 } from './dto/committee-task.dto';
 import {
   CommitteeQueryDto,
+  CommitteeScopeQueryDto,
   CreateCommitteeDto,
   UpdateCommitteeDto,
 } from './dto/create-committee.dto';
@@ -92,8 +93,11 @@ export class CommitteeController {
   async dashboard(
     @TenantId() tenantId: string,
     @CurrentUser() user: AuthUser,
+    @Query() query: CommitteeScopeQueryDto,
   ): Promise<CommitteeDashboard> {
-    return this.committeeService.getDashboard(tenantId, user);
+    return this.committeeService.getDashboard(tenantId, user, {
+      committeeId: query.committeeId,
+    });
   }
 
   @Get('my/tasks')
@@ -101,8 +105,11 @@ export class CommitteeController {
   async myTasks(
     @TenantId() tenantId: string,
     @CurrentUser() user: AuthUser,
+    @Query() query: CommitteeScopeQueryDto,
   ): Promise<{ data: CommitteeTask[] }> {
-    const data = await this.committeeService.findMyTasks(tenantId, user);
+    const data = await this.committeeService.findMyTasks(tenantId, user, {
+      committeeId: query.committeeId,
+    });
     return { data };
   }
 
@@ -111,8 +118,11 @@ export class CommitteeController {
   async myBlocks(
     @TenantId() tenantId: string,
     @CurrentUser() user: AuthUser,
+    @Query() query: CommitteeScopeQueryDto,
   ): Promise<{ data: CommitteeCalendarBlock[] }> {
-    const data = await this.committeeService.findMyBlocks(tenantId, user);
+    const data = await this.committeeService.findMyBlocks(tenantId, user, {
+      committeeId: query.committeeId,
+    });
     return { data };
   }
 
@@ -121,8 +131,24 @@ export class CommitteeController {
   async myRequests(
     @TenantId() tenantId: string,
     @CurrentUser() user: AuthUser,
+    @Query() query: CommitteeScopeQueryDto,
   ): Promise<{ data: CommitteeRequest[] }> {
-    const data = await this.committeeService.findMyRequests(tenantId, user);
+    const data = await this.committeeService.findMyRequests(tenantId, user, {
+      committeeId: query.committeeId,
+    });
+    return { data };
+  }
+
+  @Get('my/pending-approvals')
+  @ApiOperation({ summary: 'Pending requests awaiting chair approval' })
+  async pendingApprovals(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() query: CommitteeScopeQueryDto,
+  ): Promise<{ data: CommitteeRequest[] }> {
+    const data = await this.committeeService.findPendingApprovals(tenantId, user, {
+      committeeId: query.committeeId,
+    });
     return { data };
   }
 
@@ -173,7 +199,7 @@ export class CommitteeController {
     @Param('id') id: string,
     @CurrentUser() user: AuthUser,
   ): Promise<CommitteeDashboard> {
-    return this.committeeService.getDashboard(tenantId, user);
+    return this.committeeService.getDashboard(tenantId, user, { committeeId: id });
   }
 
   @Get(':id/members')

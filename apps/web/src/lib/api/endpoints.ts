@@ -560,7 +560,11 @@ export function createEndpoints(client: ApiClient) {
     updateCommittee: (id: string, body: UpdateCommitteeInput) =>
       client.patch<Committee>(`/committees/${id}`, body),
 
-    getCommitteeDashboard: () => client.get<CommitteeDashboard>('/committees/dashboard'),
+    getCommitteeDashboard: (params?: { committeeId?: string }) =>
+      client.get<CommitteeDashboard>('/committees/dashboard', { params }),
+
+    getCommitteeDashboardFor: (committeeId: string) =>
+      client.get<CommitteeDashboard>(`/committees/${committeeId}/dashboard`),
 
     getCommitteeMembers: (committeeId: string) =>
       client.get<{ data: CommitteeMember[] }>(`/committees/${committeeId}/members`),
@@ -652,13 +656,17 @@ export function createEndpoints(client: ApiClient) {
     createCommitteeMessage: (committeeId: string, body: CreateCommitteeMessageInput) =>
       client.post<CommitteeMessage>(`/committees/${committeeId}/messages`, body),
 
-    getMyCommitteeTasks: () => client.get<{ data: CommitteeTask[] }>('/committees/my/tasks'),
+    getMyCommitteeTasks: (params?: { committeeId?: string }) =>
+      client.get<{ data: CommitteeTask[] }>('/committees/my/tasks', { params }),
 
-    getMyCommitteeBlocks: () =>
-      client.get<{ data: CommitteeCalendarBlock[] }>('/committees/my/blocks'),
+    getMyCommitteeBlocks: (params?: { committeeId?: string }) =>
+      client.get<{ data: CommitteeCalendarBlock[] }>('/committees/my/blocks', { params }),
 
-    getMyCommitteeRequests: () =>
-      client.get<{ data: CommitteeRequest[] }>('/committees/my/requests'),
+    getMyCommitteeRequests: (params?: { committeeId?: string }) =>
+      client.get<{ data: CommitteeRequest[] }>('/committees/my/requests', { params }),
+
+    getMyPendingApprovals: (params?: { committeeId?: string }) =>
+      client.get<{ data: CommitteeRequest[] }>('/committees/my/pending-approvals', { params }),
 
     getCommitteeRoster: () => client.get<CommitteeRoster>('/committees/roster'),
 

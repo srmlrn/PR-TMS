@@ -13,7 +13,10 @@ import {
 } from '@/lib/roles';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
+import { CommitteeSwitcher } from '@/components/CommitteeSwitcher';
+import { CommitteeProvider } from '@/lib/committee-context';
 import { useTenantSite } from '@/lib/tenant-site';
+import { UserRole } from '@tms/types';
 
 function RoleBadge({ role }: { role: AppRole }) {
   const config = getRoleConfigForUser(role);
@@ -77,8 +80,9 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   const envVariant =
     environment === 'prod' ? 'prod' : environment === 'uat' ? 'uat' : 'dev';
+  const isCommitteeRole = role === UserRole.COMMITTEE;
 
-  return (
+  const shell = (
     <div className={isKiosk ? 'kioskMode' : undefined}>
       {!isKiosk && !isFullscreenPage && (
         <>
@@ -97,7 +101,8 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             avatarInitials={config.avatarInitials}
             themeToggle={<ThemeToggle />}
             roleSwitcher={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {isCommitteeRole && <CommitteeSwitcher />}
                 <RoleBadge role={role} />
                 <Button size="sm" variant="outline" onClick={logout}>
                   Sign out
@@ -110,6 +115,12 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       <main className="appContent compactUi">{children}</main>
     </div>
   );
+
+  if (isCommitteeRole) {
+    return <CommitteeProvider>{shell}</CommitteeProvider>;
+  }
+
+  return shell;
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

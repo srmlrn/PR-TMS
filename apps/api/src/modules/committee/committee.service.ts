@@ -129,10 +129,19 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     return d.toISOString();
   }
 
-  private toCommittee(record: CommitteeRecord): Committee {
+  private toCommittee(record: CommitteeRecord, viewerUserId?: string): Committee {
     const memberCount = [...this.memberStore.values()].filter(
       (m) => m.tenantId === record.tenantId && m.committeeId === record.id && m.isActive,
     ).length;
+    const viewerMember = viewerUserId
+      ? [...this.memberStore.values()].find(
+          (m) =>
+            m.tenantId === record.tenantId &&
+            m.committeeId === record.id &&
+            m.userId === viewerUserId &&
+            m.isActive,
+        )
+      : undefined;
     return {
       id: record.id,
       name: record.name,
@@ -145,9 +154,23 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       publicRoster: record.publicRoster,
       isActive: record.isActive,
       memberCount,
+      myRole: viewerMember?.role,
+      myDisplayTitle: viewerMember?.displayTitle,
       createdAt: this.iso(record.createdAt),
       updatedAt: this.iso(record.updatedAt),
     };
+  }
+
+  private async resolveMyCommitteeIds(
+    tenantId: string,
+    user: AuthUser,
+    committeeId?: string,
+  ): Promise<string[]> {
+    const committees = await this.findAll(tenantId, user, { mine: true });
+    if (committeeId) {
+      return committees.some((c) => c.id === committeeId) ? [committeeId] : [];
+    }
+    return committees.map((c) => c.id);
   }
 
   private toReport(record: ReportRecord): CommitteeReport {
@@ -422,6 +445,132 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       updatedAt: now,
     });
 
+    if (isGanesha) {
+      const itCommitteeId = committeeIdFor(tenantId, 'it');
+      const eduCommitteeId = committeeIdFor(tenantId, 'education');
+
+      this.memberStore.set(`${itCommitteeId}-member-demo-user`, {
+        id: `${itCommitteeId}-member-demo-user`,
+        tenantId,
+        committeeId: itCommitteeId,
+        userId: committeeUserId,
+        name: 'Committee Member Priya',
+        email: 'committee@sgtemple.org',
+        role: 'vice_chair',
+        displayTitle: 'Co-Chair',
+        joinedAt: this.iso(now),
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.memberStore.set(`${eduCommitteeId}-member-demo-user`, {
+        id: `${eduCommitteeId}-member-demo-user`,
+        tenantId,
+        committeeId: eduCommitteeId,
+        userId: committeeUserId,
+        name: 'Committee Member Priya',
+        email: 'committee@sgtemple.org',
+        role: 'member',
+        joinedAt: this.iso(now),
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.taskStore.set(`${itCommitteeId}-task-demo-001`, {
+        id: `${itCommitteeId}-task-demo-001`,
+        tenantId,
+        committeeId: itCommitteeId,
+        title: 'Upgrade temple Wi-Fi coverage',
+        description: 'Survey dead zones and propose access-point placement for the community hall.',
+        assigneeUserId: committeeUserId,
+        assigneeName: 'Committee Member Priya',
+        status: 'todo',
+        priority: 'medium',
+        dueDate: new Date(now.getFullYear(), now.getMonth() + 1, 28).toISOString().slice(0, 10),
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.taskStore.set(`${eduCommitteeId}-task-demo-001`, {
+        id: `${eduCommitteeId}-task-demo-001`,
+        tenantId,
+        committeeId: eduCommitteeId,
+        title: 'Plan summer camp curriculum',
+        description: 'Draft age-group sessions and volunteer staffing for July camp.',
+        assigneeUserId: committeeUserId,
+        assigneeName: 'Committee Member Priya',
+        status: 'in_progress',
+        priority: 'high',
+        dueDate: new Date(now.getFullYear(), now.getMonth(), 25).toISOString().slice(0, 10),
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.blockStore.set(`${eduCommitteeId}-block-demo-001`, {
+        id: `${eduCommitteeId}-block-demo-001`,
+        tenantId,
+        committeeId: eduCommitteeId,
+        title: 'Summer camp registration week',
+        startDate: new Date(now.getFullYear(), now.getMonth() + 1, 10).toISOString().slice(0, 10),
+        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 14).toISOString().slice(0, 10),
+        reason: 'Education committee on-site registration and parent orientation',
+        blocksTempleCalendar: false,
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.requestStore.set(`${itCommitteeId}-request-demo-001`, {
+        id: `${itCommitteeId}-request-demo-001`,
+        tenantId,
+        committeeId: itCommitteeId,
+        type: 'budget',
+        title: 'Network hardware refresh quote',
+        description: 'Approve vendor quote for six wireless access points and cabling.',
+        status: 'pending',
+        requestedByUserId: 'roster-it-manohar-gudivada',
+        requestedByName: 'Manohar Gudivada',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    if (isSv) {
+      const financeCommitteeId = committeeIdFor(tenantId, 'finance');
+      this.memberStore.set(`${financeCommitteeId}-member-demo-user`, {
+        id: `${financeCommitteeId}-member-demo-user`,
+        tenantId,
+        committeeId: financeCommitteeId,
+        userId: committeeUserId,
+        name: 'Committee Member Raj',
+        email: 'committee@svtemple.org',
+        role: 'member',
+        joinedAt: this.iso(now),
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.taskStore.set(`${financeCommitteeId}-task-demo-001`, {
+        id: `${financeCommitteeId}-task-demo-001`,
+        tenantId,
+        committeeId: financeCommitteeId,
+        title: 'Reconcile Q2 donation batches',
+        assigneeUserId: committeeUserId,
+        assigneeName: 'Committee Member Raj',
+        status: 'todo',
+        priority: 'medium',
+        dueDate: new Date(now.getFullYear(), now.getMonth() + 1, 5).toISOString().slice(0, 10),
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
     this.tenantSeedVersions.set(tenantId, COMMITTEE_SEED_VERSION);
   }
 
@@ -499,15 +648,16 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       records = records.filter((c) => myCommitteeIds.has(c.id));
     }
 
+    const attachMembership = options?.mine || !this.isAdmin(user);
     return records
       .filter((c) => c.isActive || this.isAdmin(user))
-      .map((c) => this.toCommittee(c));
+      .map((c) => this.toCommittee(c, attachMembership ? user.id : undefined));
   }
 
   async findOne(tenantId: string, id: string, user: AuthUser): Promise<Committee> {
     this.seedDemoCommittees(tenantId);
     this.assertCommitteeAccess(tenantId, id, user);
-    return this.toCommittee(this.ensureCommittee(tenantId, id));
+    return this.toCommittee(this.ensureCommittee(tenantId, id), user.id);
   }
 
   async create(tenantId: string, input: CreateCommitteeInput, user: AuthUser): Promise<Committee> {
@@ -1007,9 +1157,16 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     return this.toMessage(record);
   }
 
-  async getDashboard(tenantId: string, user: AuthUser): Promise<CommitteeDashboard> {
+  async getDashboard(
+    tenantId: string,
+    user: AuthUser,
+    options?: { committeeId?: string },
+  ): Promise<CommitteeDashboard> {
     const committees = await this.findAll(tenantId, user, { mine: true });
-    const committeeIds = committees.map((c) => c.id);
+    const scopedCommittees = options?.committeeId
+      ? committees.filter((c) => c.id === options.committeeId)
+      : committees;
+    const committeeIds = scopedCommittees.map((c) => c.id);
 
     const allTasks: CommitteeTask[] = [];
     const allRequests: CommitteeRequest[] = [];
@@ -1036,12 +1193,12 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       .slice(0, 5);
 
     return {
-      committees,
+      committees: scopedCommittees,
       pendingApprovals,
       myTasks,
       upcomingBlocks,
       stats: {
-        totalCommittees: committees.length,
+        totalCommittees: scopedCommittees.length,
         openTasks: myTasks.length,
         pendingRequests: pendingApprovals.length,
         upcomingBlocks: upcomingBlocks.length,
@@ -1049,34 +1206,65 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     };
   }
 
-  async findMyTasks(tenantId: string, user: AuthUser): Promise<CommitteeTask[]> {
-    const committees = await this.findAll(tenantId, user, { mine: true });
+  async findMyTasks(
+    tenantId: string,
+    user: AuthUser,
+    options?: { committeeId?: string },
+  ): Promise<CommitteeTask[]> {
+    const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
     const tasks: CommitteeTask[] = [];
-    for (const c of committees) {
+    for (const cid of committeeIds) {
       tasks.push(
-        ...(await this.findTasks(tenantId, c.id, user, { assigneeUserId: user.id })),
+        ...(await this.findTasks(tenantId, cid, user, { assigneeUserId: user.id })),
       );
     }
     return tasks;
   }
 
-  async findMyBlocks(tenantId: string, user: AuthUser): Promise<CommitteeCalendarBlock[]> {
-    const committees = await this.findAll(tenantId, user, { mine: true });
+  async findMyBlocks(
+    tenantId: string,
+    user: AuthUser,
+    options?: { committeeId?: string },
+  ): Promise<CommitteeCalendarBlock[]> {
+    const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
     const blocks: CommitteeCalendarBlock[] = [];
-    for (const c of committees) {
-      blocks.push(...(await this.findBlocks(tenantId, c.id, user)));
+    for (const cid of committeeIds) {
+      blocks.push(...(await this.findBlocks(tenantId, cid, user)));
     }
     return blocks.sort((a, b) => a.startDate.localeCompare(b.startDate));
   }
 
-  async findMyRequests(tenantId: string, user: AuthUser): Promise<CommitteeRequest[]> {
-    const committees = await this.findAll(tenantId, user, { mine: true });
+  async findMyRequests(
+    tenantId: string,
+    user: AuthUser,
+    options?: { committeeId?: string },
+  ): Promise<CommitteeRequest[]> {
+    const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
     const requests: CommitteeRequest[] = [];
-    for (const c of committees) {
+    for (const cid of committeeIds) {
       requests.push(
-        ...(await this.findRequests(tenantId, c.id, user, {
+        ...(await this.findRequests(tenantId, cid, user, {
           requestedByUserId: user.id,
         })),
+      );
+    }
+    return requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async findPendingApprovals(
+    tenantId: string,
+    user: AuthUser,
+    options?: { committeeId?: string },
+  ): Promise<CommitteeRequest[]> {
+    const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
+    const requests: CommitteeRequest[] = [];
+    for (const cid of committeeIds) {
+      const all = await this.findRequests(tenantId, cid, user);
+      requests.push(
+        ...all.filter((r) => {
+          if (r.status !== 'pending') return false;
+          return this.isAdmin(user) || this.isChair(tenantId, cid, user.id);
+        }),
       );
     }
     return requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));

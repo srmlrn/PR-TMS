@@ -118,3 +118,10 @@ export class CommitteeQueryDto {
   @IsBoolean()
   mine?: boolean;
 }
+
+export class CommitteeScopeQueryDto {
+  @ApiPropertyOptional({ description: 'Filter to a single committee (omit for all my committees)' })
+  @IsOptional()
+  @IsString()
+  committeeId?: string;
+}

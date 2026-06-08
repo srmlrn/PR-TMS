@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge, Button, GlassCard } from '@tms/ui';
 import type { CommitteeTask, CommitteeTaskStatus } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
@@ -9,16 +9,28 @@ import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
 import { useTenant } from '@/lib/tenant-context';
 import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
+import { useCommitteeScope } from '@/lib/use-committee-scope';
 
 const STATUS_OPTIONS: CommitteeTaskStatus[] = ['todo', 'in_progress', 'done', 'blocked'];
 
 export default function CommitteeTasksPage() {
   const site = useTenantSite();
   const { api } = useTenant();
+  const { scopeParams, scopeSubtitle, committeeName } = useCommitteeScope();
+  const [showDone, setShowDone] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
-  const { data, loading, error, refetch } = useApi((ep) => ep.getMyCommitteeTasks());
-  const tasks =
+
+  const { data, loading, error, refetch } = useApi(
+    (ep) => ep.getMyCommitteeTasks(scopeParams),
+    [scopeParams.committeeId],
+  );
+  const allTasks =
     data?.data ?? (error ? demoCommitteeDashboard(site.name).myTasks : []);
+
+  const tasks = useMemo(
+    () => (showDone ? allTasks : allTasks.filter((t) => t.status !== 'done')),
+    [allTasks, showDone],
+  );
 
   async function updateStatus(task: CommitteeTask, status: CommitteeTaskStatus) {
     setActionId(task.id);
@@ -32,21 +44,34 @@ export default function CommitteeTasksPage() {
   }
 
   return (
-    <AppPage
-      subtitle="Tasks assigned to you across committees"
-      loading={loading}
-      error={error}
-      showTenantContext={false}
-    >
-      <GlassCard title={`Assigned tasks (${tasks.length})`} compact>
+    <AppPage subtitle={scopeSubtitle} loading={loading} error={error} showTenantContext={false}>
+      <GlassCard
+        title={`Assigned tasks (${tasks.length})`}
+        compact
+        headerRight={
+          <label className="flexRow tms-t3" style={{ gap: '0.35rem' }}>
+            <input
+              type="checkbox"
+              checked={showDone}
+              onChange={(e) => setShowDone(e.target.checked)}
+            />
+            Show completed
+          </label>
+        }
+      >
         {tasks.length === 0 ? (
           <p className="hint">No tasks assigned to you.</p>
         ) : (
           tasks.map((task) => (
-            <div key={task.id} className="listRow" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+            <div
+              key={task.id}
+              className="listRow"
+              style={{ flexDirection: 'column', alignItems: 'stretch' }}
+            >
               <div className="flexBetween" style={{ width: '100%' }}>
                 <div className="listRowMain">
                   <div className="listRowTitle">{task.title}</div>
+                  <p className="hint">{committeeName(task.committeeId)}</p>
                   {task.description && <p className="hint">{task.description}</p>}
                   {task.dueDate && <p className="hint">Due {formatShortDate(task.dueDate)}</p>}
                 </div>

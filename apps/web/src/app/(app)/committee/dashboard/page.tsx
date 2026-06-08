@@ -9,15 +9,20 @@ import { formatShortDate } from '@/lib/api/endpoints';
 import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
 import { useApi } from '@/lib/api/use-api';
 import { useTenantSite } from '@/lib/tenant-site';
+import { useCommitteeScope } from '@/lib/use-committee-scope';
 
 export default function CommitteeDashboardPage() {
   const site = useTenantSite();
-  const { data, loading, error } = useApi((ep) => ep.getCommitteeDashboard());
+  const { scopeParams, scopeSubtitle, committeeName, isAllCommittees } = useCommitteeScope();
+  const { data, loading, error } = useApi(
+    (ep) => ep.getCommitteeDashboard(scopeParams),
+    [scopeParams.committeeId],
+  );
   const dashboard = data ?? (error ? demoCommitteeDashboard(site.name) : null);
 
   return (
     <AppPage
-      subtitle="Your committees, tasks, and pending approvals"
+      subtitle={scopeSubtitle}
       loading={loading}
       error={error}
       showTenantContext={false}
@@ -34,20 +39,25 @@ export default function CommitteeDashboardPage() {
           />
 
           <div className="grid2">
-            <GlassCard title="My committees" compact>
-              {dashboard.committees.length === 0 ? (
-                <p className="hint">You are not assigned to any committee.</p>
-              ) : (
-                dashboard.committees.map((c) => (
-                  <div key={c.id} className="listRow">
-                    <div className="listRowMain">
-                      <div className="listRowTitle">{c.name}</div>
-                      <p className="hint">{c.purpose ?? c.description}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </GlassCard>
+            {isAllCommittees && (
+              <GlassCard title="My committees" compact>
+                {dashboard.committees.length === 0 ? (
+                  <p className="hint">You are not assigned to any committee.</p>
+                ) : (
+                  dashboard.committees.map((c) => (
+                    <Link key={c.id} href={`/committee/${c.id}`} className="listRow cardLink">
+                      <div className="listRowMain">
+                        <div className="listRowTitle">{c.name}</div>
+                        <p className="hint">{c.purpose ?? c.description}</p>
+                        {c.myDisplayTitle && (
+                          <p className="hint">Your role: {c.myDisplayTitle}</p>
+                        )}
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </GlassCard>
+            )}
 
             <GlassCard title="My open tasks" compact>
               {dashboard.myTasks.length === 0 ? (
@@ -57,6 +67,9 @@ export default function CommitteeDashboardPage() {
                   <div key={t.id} className="listRow">
                     <div className="listRowMain">
                       <div className="listRowTitle">{t.title}</div>
+                      {isAllCommittees && (
+                        <p className="hint">{committeeName(t.committeeId)}</p>
+                      )}
                     </div>
                     <Badge variant={t.priority === 'high' ? 'error' : 'pending'}>{t.status}</Badge>
                   </div>
@@ -78,6 +91,7 @@ export default function CommitteeDashboardPage() {
                     <div className="listRowMain">
                       <div className="listRowTitle">{r.title}</div>
                       <p className="hint">
+                        {isAllCommittees && `${committeeName(r.committeeId)} · `}
                         {r.type.replace('_', ' ')} · {r.requestedByName ?? 'Member'}
                       </p>
                     </div>
@@ -85,8 +99,8 @@ export default function CommitteeDashboardPage() {
                 ))
               )}
               {dashboard.pendingApprovals.length > 0 && (
-                <Link href="/committee/requests" className="cardLink">
-                  Review requests →
+                <Link href="/committee/approvals" className="cardLink">
+                  Review approvals →
                 </Link>
               )}
             </GlassCard>
@@ -100,6 +114,7 @@ export default function CommitteeDashboardPage() {
                     <div className="listRowMain">
                       <div className="listRowTitle">{b.title}</div>
                       <p className="hint">
+                        {isAllCommittees && `${committeeName(b.committeeId)} · `}
                         {formatShortDate(b.startDate)}
                         {b.startDate !== b.endDate && ` – ${formatShortDate(b.endDate)}`}
                       </p>

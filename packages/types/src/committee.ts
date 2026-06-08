@@ -43,6 +43,9 @@ export interface Committee {
   publicRoster: boolean;
   isActive: boolean;
   memberCount?: number;
+  /** Present when listing committees for the current user (mine=true) */
+  myRole?: CommitteeMemberRole;
+  myDisplayTitle?: string;
   createdAt: string;
   updatedAt: string;
 }

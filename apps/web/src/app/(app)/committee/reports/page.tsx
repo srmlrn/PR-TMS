@@ -1,23 +1,27 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Badge, DataTable, GlassCard } from '@tms/ui';
-import type { Committee, CommitteeReport } from '@tms/types';
+import type { CommitteeReport } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
 import { formatShortDate } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
+import { useCommitteeScope } from '@/lib/use-committee-scope';
 
 export default function CommitteeReportsPage() {
+  const { scopeParams, scopeSubtitle, committeeName, isAllCommittees } = useCommitteeScope();
   const { data: reportsData, loading: reportsLoading, error: reportsError } = useApi((ep) =>
     ep.getAllCommitteeReports(),
   );
-  const { data: committeesData } = useApi((ep) => ep.getCommittees());
-  const reports = reportsData?.data ?? [];
-  const committees = committeesData?.data ?? [];
-  const committeeById = new Map(committees.map((c: Committee) => [c.id, c]));
+  const allReports = reportsData?.data ?? [];
+  const reports = useMemo(() => {
+    if (isAllCommittees || !scopeParams.committeeId) return allReports;
+    return allReports.filter((r) => r.committeeId === scopeParams.committeeId);
+  }, [allReports, isAllCommittees, scopeParams.committeeId]);
 
   return (
     <AppPage
-      subtitle="Monthly and quarterly meeting reports with attendance"
+      subtitle={scopeSubtitle}
       loading={reportsLoading}
       error={reportsError}
       showTenantContext={false}
@@ -29,7 +33,7 @@ export default function CommitteeReportsPage() {
             {
               key: 'committee',
               header: 'Committee',
-              render: (r) => committeeById.get(r.committeeId)?.name ?? r.committeeId,
+              render: (r) => committeeName(r.committeeId),
             },
             { key: 'title', header: 'Title', render: (r) => r.title },
             {
