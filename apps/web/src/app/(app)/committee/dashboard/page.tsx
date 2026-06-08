@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@tms/ui';
-import type { Committee, CommitteeRequest, CommitteeTask } from '@tms/types';
+import type { Committee, CommitteeRequest, CommitteeTask, CommitteeTaskStatus } from '@tms/types';
+import { useAuth } from '@/lib/auth-context';
 import { AppPage } from '@/components/AppPage';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
@@ -11,6 +12,7 @@ import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import { useTenantSite } from '@/lib/tenant-site';
 import { useCommitteeScope } from '@/lib/use-committee-scope';
+import { nextStatusActions } from '../tasks/tasks-utils';
 import styles from './dashboard.module.css';
 
 type DashTab = 'overview' | 'tasks' | 'approvals' | 'calendar';
@@ -57,6 +59,7 @@ function Panel({
 export default function CommitteeDashboardPage() {
   const site = useTenantSite();
   const { api } = useTenant();
+  const { user } = useAuth();
   const { scopeParams, scopeLabel, committeeName, isAllCommittees, activeCommittee } =
     useCommitteeScope();
   const [tab, setTab] = useState<DashTab>('overview');
@@ -68,6 +71,23 @@ export default function CommitteeDashboardPage() {
     [scopeParams.committeeId],
   );
   const dashboard = data ?? (error ? demoCommitteeDashboard(site.name) : null);
+
+  async function updateTask(
+    task: CommitteeTask,
+    patch: { status?: CommitteeTaskStatus },
+  ) {
+    setActionId(task.id);
+    setMsg(null);
+    try {
+      await createEndpoints(api).updateCommitteeTask(task.committeeId, task.id, patch);
+      setMsg('Task updated.');
+      await refetch();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setActionId(null);
+    }
+  }
 
   async function review(request: CommitteeRequest, status: 'approved' | 'rejected') {
     setActionId(request.id);
@@ -213,17 +233,33 @@ export default function CommitteeDashboardPage() {
                 <>
                   <p className={styles.boardSectionLabel}>Your active tasks</p>
                   <div className={styles.rows}>
-                    {dashboard.myTasks.slice(0, 5).map((t: CommitteeTask) => (
-                      <div key={t.id} className={styles.row}>
-                        <div className={styles.rowMain}>
-                          <div className={styles.rowTitle}>{t.title}</div>
-                          {isAllCommittees && (
-                            <div className={styles.rowMeta}>{committeeName(t.committeeId)}</div>
-                          )}
+                    {dashboard.myTasks.slice(0, 5).map((t: CommitteeTask) => {
+                      const actions = nextStatusActions(t, user ?? undefined).slice(0, 1);
+                      return (
+                        <div key={t.id} className={styles.row}>
+                          <div className={styles.rowMain}>
+                            <div className={styles.rowTitle}>{t.title}</div>
+                            {isAllCommittees && (
+                              <div className={styles.rowMeta}>{committeeName(t.committeeId)}</div>
+                            )}
+                          </div>
+                          <div className={styles.approvalActions}>
+                            {actions.map((a) => (
+                              <Button
+                                key={a.status}
+                                size="sm"
+                                variant="outline"
+                                disabled={actionId === t.id}
+                                onClick={() => void updateTask(t, { status: a.status })}
+                              >
+                                {a.label}
+                              </Button>
+                            ))}
+                            <span className={statusClass(t)}>{t.status.replace('_', ' ')}</span>
+                          </div>
                         </div>
-                        <span className={statusClass(t)}>{t.status.replace('_', ' ')}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -245,7 +281,11 @@ export default function CommitteeDashboardPage() {
                         <div className={styles.rowTitle}>{r.title}</div>
                         <div className={styles.rowMeta}>
                           {isAllCommittees && `${committeeName(r.committeeId)} · `}
-                          {r.requestedByName ?? 'Member'} · {formatShortDate(r.createdAt)}
+                          {r.type.replace('_', ' ')} · {r.requestedByName ?? 'Member'} ·{' '}
+                          {formatShortDate(r.createdAt)}
+                          {r.blockStartDate && r.blockEndDate && (
+                            <> · {r.blockStartDate}–{r.blockEndDate}</>
+                          )}
                         </div>
                       </div>
                       <div className={styles.approvalActions}>

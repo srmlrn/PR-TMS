@@ -124,6 +124,25 @@
   margin-bottom: 0.65rem;
 }
 
+.toolbarControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.viewSelect {
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.33rem 0.65rem;
+  color: var(--txt);
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
 .emptyCol {
   margin: 0;
   font-size: 0.68rem;

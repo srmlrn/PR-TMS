@@ -7,7 +7,7 @@ import {
   SV_TEMPLE_ID,
 } from '@tms/types';
 
-export const COMMITTEE_SEED_VERSION = 'v6-committee-photos';
+export const COMMITTEE_SEED_VERSION = 'v7-committee-workflow';
 
 export interface ParsedMember {
   name: string;

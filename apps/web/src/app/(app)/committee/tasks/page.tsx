@@ -14,10 +14,13 @@ import { useApi } from '@/lib/api/use-api';
 import { useCommitteeScope } from '@/lib/use-committee-scope';
 import {
   BOARD_COLUMNS,
+  filterBoardTasks,
   formatTaskDueDate,
   groupBoardTasks,
+  isTaskMine,
   nextStatusActions,
   type BoardColumnId,
+  type TaskViewFilter,
 } from './tasks-utils';
 import styles from './tasks.module.css';
 
@@ -26,6 +29,7 @@ export default function CommitteeTasksPage() {
   const { api } = useTenant();
   const { user } = useAuth();
   const { scopeParams, scopeSubtitle, committeeName } = useCommitteeScope();
+  const [view, setView] = useState<TaskViewFilter>('mine');
   const [showDone, setShowDone] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -42,9 +46,14 @@ export default function CommitteeTasksPage() {
     return [];
   }, [data?.data, error, site.name]);
 
+  const filteredTasks = useMemo(
+    () => filterBoardTasks(allTasks, view, user ?? undefined),
+    [allTasks, view, user],
+  );
+
   const columns = useMemo(
-    () => groupBoardTasks(allTasks, showDone),
-    [allTasks, showDone],
+    () => groupBoardTasks(filteredTasks, showDone),
+    [filteredTasks, showDone],
   );
 
   async function runTaskAction(
@@ -71,8 +80,8 @@ export default function CommitteeTasksPage() {
   }
 
   function renderCard(task: CommitteeTask, column: BoardColumnId) {
-    const isMine = task.assigneeUserId === user?.id;
-    const actions = nextStatusActions(task, user?.id);
+    const isMine = isTaskMine(task, user ?? undefined);
+    const actions = nextStatusActions(task, user ?? undefined);
 
     return (
       <article key={task.id} className={styles.card}>
@@ -126,6 +135,17 @@ export default function CommitteeTasksPage() {
           Pick up open work, track progress, and flag blockers. Discuss tasks in{' '}
           <Link href="/committee/messages">Messages</Link>.
         </p>
+        <div className={styles.toolbarControls}>
+          <select
+            className={styles.viewSelect}
+            value={view}
+            onChange={(e) => setView(e.target.value as TaskViewFilter)}
+            aria-label="Task view"
+          >
+            <option value="mine">My work</option>
+            <option value="open">Open pool</option>
+            <option value="all">All tasks</option>
+          </select>
         <label className="flexRow tms-t3" style={{ gap: '0.35rem' }}>
           <input
             type="checkbox"
@@ -134,6 +154,7 @@ export default function CommitteeTasksPage() {
           />
           Show completed
         </label>
+        </div>
       </div>
 
       <div className={styles.board}>

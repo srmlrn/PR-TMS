@@ -1,4 +1,8 @@
-import type { CommitteeCalendarBlock, CommitteeCalendarBlockType } from '@tms/types';
+import type {
+  CommitteeCalendarBlock,
+  CommitteeCalendarBlockType,
+  CommitteeRequest,
+} from '@tms/types';
 
 export const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
 
@@ -146,4 +150,18 @@ export function dominantBlockTypeForDate(
   if (dayBlocks.some((b) => normalizeBlockType(b) === 'temple')) return 'temple';
   if (dayBlocks.some((b) => normalizeBlockType(b) === 'committee')) return 'committee';
   return 'personal';
+}
+
+export function pendingLeaveForDate(
+  requests: CommitteeRequest[],
+  date: string,
+): CommitteeRequest[] {
+  return requests.filter(
+    (r) =>
+      r.type === 'leave' &&
+      r.status === 'pending' &&
+      r.blockStartDate &&
+      r.blockEndDate &&
+      dateInRange(date, r.blockStartDate, r.blockEndDate),
+  );
 }

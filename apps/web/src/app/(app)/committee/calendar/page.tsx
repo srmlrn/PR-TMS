@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Badge, Button, GlassCard } from '@tms/ui';
 import type {
   CommitteeCalendarBlockType,
+  CommitteeRequest,
   CreateCommitteeCalendarBlockInput,
 } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
@@ -25,6 +26,7 @@ import {
   formatLocalDateKey,
   formatLocalDateRange,
   localDateKey,
+  pendingLeaveForDate,
   monthKey,
   monthLabel,
   parseMonthKey,
@@ -110,8 +112,14 @@ export default function CommitteeCalendarPage() {
     [scopeParams.committeeId],
   );
 
+  const { data: leaveData } = useApi(
+    (ep) => ep.getMyPendingLeave(scopeParams),
+    [scopeParams.committeeId],
+  );
+
   const allBlocks =
     data?.data ?? (error ? demoCommitteeDashboard(site.name).upcomingBlocks : []);
+  const pendingLeave = leaveData?.data ?? [];
 
   const blocks = useMemo(
     () => filterBlocks(allBlocks, filter, user?.id),
@@ -127,6 +135,11 @@ export default function CommitteeCalendarPage() {
   const selectedBlocks = useMemo(
     () => (selectedDate ? blocksForDate(blocks, selectedDate) : []),
     [blocks, selectedDate],
+  );
+
+  const selectedLeave = useMemo(
+    () => (selectedDate ? pendingLeaveForDate(pendingLeave, selectedDate) : []),
+    [pendingLeave, selectedDate],
   );
 
   const defaultCommitteeId =
@@ -254,8 +267,14 @@ export default function CommitteeCalendarPage() {
                     }
                     if ('empty' in cell) return null;
                     const dayBlocks = blocksForDate(blocks, cell.date);
+                    const dayLeave = pendingLeaveForDate(pendingLeave, cell.date);
                     const visible = dayBlocks.slice(0, 2);
-                    const extra = dayBlocks.length - visible.length;
+                    const visibleLeave = dayLeave.slice(0, Math.max(0, 2 - visible.length));
+                    const extra =
+                      dayBlocks.length -
+                      visible.length +
+                      dayLeave.length -
+                      visibleLeave.length;
                     return (
                       <button
                         key={cell.key}
@@ -278,6 +297,15 @@ export default function CommitteeCalendarPage() {
                             {b.title}
                           </span>
                         ))}
+                        {visibleLeave.map((r) => (
+                          <span
+                            key={r.id}
+                            className={[styles.eventChip, styles.eventPendingLeave].join(' ')}
+                            title="Pending leave approval"
+                          >
+                            Leave: {r.requestedByName ?? 'Member'}
+                          </span>
+                        ))}
                         {extra > 0 && <span className={styles.moreChip}>+{extra} more</span>}
                       </button>
                     );
@@ -292,6 +320,10 @@ export default function CommitteeCalendarPage() {
                   </span>
                   <span className="flexRow">
                     <span className={[styles.legendDot, styles.eventPersonal].join(' ')} /> Personal
+                  </span>
+                  <span className="flexRow">
+                    <span className={[styles.legendDot, styles.eventPendingLeave].join(' ')} />{' '}
+                    Pending leave
                   </span>
                 </div>
               </>
@@ -356,6 +388,31 @@ export default function CommitteeCalendarPage() {
           >
             <div className={styles.detailPanel}>
               {msg && <p className="hint">{msg}</p>}
+
+              {selectedDate && selectedLeave.length > 0 && (
+                <div className={styles.blockList}>
+                  <p className={styles.formLabel}>Pending leave</p>
+                  {selectedLeave.map((r: CommitteeRequest) => (
+                    <div key={r.id} className={styles.blockItem}>
+                      <div className={styles.blockItemHead}>
+                        <div>
+                          <div className={styles.blockItemTitle}>{r.title}</div>
+                          <p className="hint">
+                            {committeeName(r.committeeId)} · {r.requestedByName ?? 'Member'}
+                          </p>
+                        </div>
+                        <Badge variant="pending">Awaiting approval</Badge>
+                      </div>
+                      {r.blockStartDate && r.blockEndDate && (
+                        <p className="hint">
+                          {formatLocalDateRange(r.blockStartDate, r.blockEndDate)}
+                        </p>
+                      )}
+                      {r.description && <p className="hint">{r.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {selectedDate && selectedBlocks.length > 0 && (
                 <div className={styles.blockList}>
@@ -474,7 +531,7 @@ export default function CommitteeCalendarPage() {
                 </div>
               ) : !selectedDate ? (
                 <p className="hint">Click a date on the calendar to add an event.</p>
-              ) : selectedBlocks.length === 0 ? (
+              ) : selectedBlocks.length === 0 && selectedLeave.length === 0 ? (
                 <p className="hint">No events on this date. Use Add event to create one.</p>
               ) : null}
             </div>

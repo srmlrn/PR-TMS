@@ -152,6 +152,19 @@ export class CommitteeController {
     return { data };
   }
 
+  @Get('my/pending-leave')
+  @ApiOperation({ summary: 'Pending leave requests for calendar overlay' })
+  async pendingLeave(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() query: CommitteeScopeQueryDto,
+  ): Promise<{ data: CommitteeRequest[] }> {
+    const data = await this.committeeService.findPendingLeaveForCalendar(tenantId, user, {
+      committeeId: query.committeeId,
+    });
+    return { data };
+  }
+
   @Get('my/pending-approvals')
   @ApiOperation({ summary: 'Pending requests awaiting chair approval' })
   async pendingApprovals(

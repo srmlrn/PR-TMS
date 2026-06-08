@@ -58,11 +58,34 @@ export function formatTaskDueDate(dateKey: string): string {
   });
 }
 
+export type TaskViewFilter = 'all' | 'mine' | 'open';
+
+export function isTaskMine(
+  task: CommitteeTask,
+  user?: { id: string; name?: string | null },
+): boolean {
+  if (!user || !task.assigneeUserId) return false;
+  if (task.assigneeUserId === user.id) return true;
+  return !!user.name && task.assigneeName === user.name;
+}
+
+export function filterBoardTasks(
+  tasks: CommitteeTask[],
+  view: TaskViewFilter,
+  user?: { id: string; name?: string | null },
+): CommitteeTask[] {
+  if (view === 'all') return tasks;
+  if (view === 'mine') return tasks.filter((t) => isTaskMine(t, user));
+  return tasks.filter(
+    (t) => !t.assigneeUserId && t.status !== 'done' && t.status !== 'blocked',
+  );
+}
+
 export function nextStatusActions(
   task: CommitteeTask,
-  userId?: string,
+  user?: { id: string; name?: string | null },
 ): { status: CommitteeTaskStatus; label: string }[] {
-  const isMine = task.assigneeUserId === userId;
+  const isMine = isTaskMine(task, user);
   if (!isMine || task.status === 'done') return [];
 
   switch (task.status) {

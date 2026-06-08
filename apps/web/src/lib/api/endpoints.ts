@@ -671,6 +671,9 @@ export function createEndpoints(client: ApiClient) {
     getMyPendingApprovals: (params?: { committeeId?: string }) =>
       client.get<{ data: CommitteeRequest[] }>('/committees/my/pending-approvals', { params }),
 
+    getMyPendingLeave: (params?: { committeeId?: string }) =>
+      client.get<{ data: CommitteeRequest[] }>('/committees/my/pending-leave', { params }),
+
     getCommitteeRoster: () => client.get<CommitteeRoster>('/committees/roster'),
 
     getAllCommitteeReports: () =>

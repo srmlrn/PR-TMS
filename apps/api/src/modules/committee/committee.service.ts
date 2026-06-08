@@ -695,6 +695,40 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
         createdAt: now,
         updatedAt: now,
       });
+
+      this.requestStore.set(`${itCommitteeId}-request-leave-001`, {
+        id: `${itCommitteeId}-request-leave-001`,
+        tenantId,
+        committeeId: itCommitteeId,
+        type: 'leave',
+        title: 'Family event — out of town',
+        description: 'Unavailable for committee meetings and on-call support.',
+        status: 'pending',
+        requestedByUserId: 'roster-it-manohar-gudivada',
+        requestedByName: 'Manohar Gudivada',
+        blockStartDate: dateAt(2, 10),
+        blockEndDate: dateAt(2, 12),
+        blockTitle: 'Leave — Manohar Gudivada',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.requestStore.set(`${eduCommitteeId}-request-leave-001`, {
+        id: `${eduCommitteeId}-request-leave-001`,
+        tenantId,
+        committeeId: eduCommitteeId,
+        type: 'leave',
+        title: 'Summer travel — limited availability',
+        description: 'Personal travel; will check email weekly.',
+        status: 'pending',
+        requestedByUserId: committeeUserId,
+        requestedByName: isGanesha ? 'Committee Member Priya' : 'Committee Member Raj',
+        blockStartDate: dateAt(3, 18),
+        blockEndDate: dateAt(3, 22),
+        blockTitle: 'Leave — Committee Member Priya',
+        createdAt: now,
+        updatedAt: now,
+      });
     }
 
     if (isSv) {
@@ -757,6 +791,32 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
 
   private isMember(tenantId: string, committeeId: string, userId: string): boolean {
     return !!this.getMemberRecord(tenantId, committeeId, userId);
+  }
+
+  /** Auth user id plus roster userIds linked by email (for task assignment matching). */
+  private getUserAssigneeIds(tenantId: string, user: AuthUser): Set<string> {
+    const ids = new Set<string>([user.id]);
+    const email = user.email?.toLowerCase();
+    if (!email) return ids;
+    for (const m of this.memberStore.values()) {
+      if (
+        m.tenantId === tenantId &&
+        m.isActive &&
+        m.email?.toLowerCase() === email
+      ) {
+        ids.add(m.userId);
+      }
+    }
+    return ids;
+  }
+
+  private isTaskAssignedToUser(
+    task: Pick<CommitteeTask, 'assigneeUserId'>,
+    tenantId: string,
+    user: AuthUser,
+  ): boolean {
+    if (!task.assigneeUserId) return false;
+    return this.getUserAssigneeIds(tenantId, user).has(task.assigneeUserId);
   }
 
   assertCommitteeAccess(
@@ -1075,10 +1135,12 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
       throw new NotFoundException(`Task ${taskId} not found`);
     }
-    const isAssignee = existing.assigneeUserId === user.id;
+    const isAssignee = this.isTaskAssignedToUser(existing, tenantId, user);
     const isUnassigned = !existing.assigneeUserId;
     const isClaiming =
-      isUnassigned && input.assigneeUserId === user.id;
+      isUnassigned &&
+      input.assigneeUserId != null &&
+      this.getUserAssigneeIds(tenantId, user).has(input.assigneeUserId);
     const canManage = this.isAdmin(user) || this.isChair(tenantId, committeeId, user.id);
     if (!canManage && !isAssignee && !isClaiming) {
       throw new ForbiddenException('Cannot update this task');
@@ -1235,7 +1297,9 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       throw new NotFoundException(`Request ${requestId} not found`);
     }
 
-    const isRequester = existing.requestedByUserId === user.id;
+    const isRequester = this.getUserAssigneeIds(tenantId, user).has(
+      existing.requestedByUserId,
+    );
     const canReview =
       this.isAdmin(user) || this.isChair(tenantId, committeeId, user.id);
 
@@ -1256,26 +1320,43 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     };
     this.requestStore.set(requestId, updated);
 
-    if (
-      input.status === 'approved' &&
-      existing.type === 'calendar_block' &&
-      existing.blockStartDate &&
-      existing.blockEndDate
-    ) {
-      await this.createBlock(
-        tenantId,
-        committeeId,
-        {
-          title: existing.blockTitle ?? existing.title,
-          startDate: existing.blockStartDate,
-          endDate: existing.blockEndDate,
-          reason: existing.description,
-          blockType: 'temple',
-          blocksTempleCalendar: true,
-        },
-        user,
-        requestId,
-      );
+    if (input.status === 'approved' && existing.blockStartDate && existing.blockEndDate) {
+      if (existing.type === 'calendar_block') {
+        await this.createBlock(
+          tenantId,
+          committeeId,
+          {
+            title: existing.blockTitle ?? existing.title,
+            startDate: existing.blockStartDate,
+            endDate: existing.blockEndDate,
+            reason: existing.description,
+            blockType: 'temple',
+            blocksTempleCalendar: true,
+          },
+          user,
+          requestId,
+        );
+      } else if (existing.type === 'leave') {
+        const block = await this.createBlock(
+          tenantId,
+          committeeId,
+          {
+            title: existing.blockTitle ?? `Leave — ${existing.requestedByName ?? 'Member'}`,
+            startDate: existing.blockStartDate,
+            endDate: existing.blockEndDate,
+            reason: existing.description,
+            blockType: 'personal',
+            blocksTempleCalendar: false,
+          },
+          user,
+          requestId,
+        );
+        const leaveRecord = this.blockStore.get(block.id);
+        if (leaveRecord) {
+          leaveRecord.createdByUserId = existing.requestedByUserId;
+          this.blockStore.set(block.id, leaveRecord);
+        }
+      }
     }
 
     if (reviewed) {
@@ -1353,7 +1434,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     }
 
     const myTasks = allTasks.filter(
-      (t) => t.assigneeUserId === user.id && t.status !== 'done',
+      (t) => this.isTaskAssignedToUser(t, tenantId, user) && t.status !== 'done',
     );
     const isAvailable = (t: CommitteeTask) =>
       !t.assigneeUserId && t.status !== 'done' && t.status !== 'blocked';
@@ -1399,14 +1480,8 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     user: AuthUser,
     options?: { committeeId?: string },
   ): Promise<CommitteeTask[]> {
-    const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
-    const tasks: CommitteeTask[] = [];
-    for (const cid of committeeIds) {
-      tasks.push(
-        ...(await this.findTasks(tenantId, cid, user, { assigneeUserId: user.id })),
-      );
-    }
-    return tasks;
+    const board = await this.findBoardTasks(tenantId, user, options);
+    return board.filter((t) => this.isTaskAssignedToUser(t, tenantId, user));
   }
 
   async findBoardTasks(
@@ -1447,15 +1522,39 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     options?: { committeeId?: string },
   ): Promise<CommitteeRequest[]> {
     const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
+    const assigneeIds = this.getUserAssigneeIds(tenantId, user);
     const requests: CommitteeRequest[] = [];
     for (const cid of committeeIds) {
+      const all = await this.findRequests(tenantId, cid, user);
       requests.push(
-        ...(await this.findRequests(tenantId, cid, user, {
-          requestedByUserId: user.id,
-        })),
+        ...all.filter((r) => assigneeIds.has(r.requestedByUserId)),
       );
     }
     return requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async findPendingLeaveForCalendar(
+    tenantId: string,
+    user: AuthUser,
+    options?: { committeeId?: string },
+  ): Promise<CommitteeRequest[]> {
+    const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
+    const requests: CommitteeRequest[] = [];
+    for (const cid of committeeIds) {
+      const all = await this.findRequests(tenantId, cid, user);
+      requests.push(
+        ...all.filter(
+          (r) =>
+            r.type === 'leave' &&
+            r.status === 'pending' &&
+            r.blockStartDate &&
+            r.blockEndDate,
+        ),
+      );
+    }
+    return requests.sort((a, b) =>
+      (a.blockStartDate ?? '').localeCompare(b.blockStartDate ?? ''),
+    );
   }
 
   async findPendingApprovals(

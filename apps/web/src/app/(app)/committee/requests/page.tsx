@@ -118,17 +118,19 @@ export default function CommitteeRequestsPage() {
                 rows={3}
               />
             </label>
-            {form.type === 'calendar_block' && (
+            {(form.type === 'calendar_block' || form.type === 'leave') && (
               <>
+                {form.type === 'calendar_block' && (
+                  <label>
+                    Block title
+                    <input
+                      value={form.blockTitle ?? ''}
+                      onChange={(e) => setForm({ ...form, blockTitle: e.target.value })}
+                    />
+                  </label>
+                )}
                 <label>
-                  Block title
-                  <input
-                    value={form.blockTitle ?? ''}
-                    onChange={(e) => setForm({ ...form, blockTitle: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Start date
+                  {form.type === 'leave' ? 'Leave start' : 'Start date'}
                   <input
                     type="date"
                     value={form.blockStartDate ?? ''}
@@ -136,7 +138,7 @@ export default function CommitteeRequestsPage() {
                   />
                 </label>
                 <label>
-                  End date
+                  {form.type === 'leave' ? 'Leave end' : 'End date'}
                   <input
                     type="date"
                     value={form.blockEndDate ?? ''}
@@ -163,6 +165,13 @@ export default function CommitteeRequestsPage() {
                   <p className="hint">
                     {committeeName(r.committeeId)} · {r.type.replace('_', ' ')} ·{' '}
                     {formatShortDate(r.createdAt)}
+                    {r.blockStartDate && r.blockEndDate && (
+                      <>
+                        {' '}
+                        · {r.blockStartDate}
+                        {r.blockStartDate !== r.blockEndDate && `–${r.blockEndDate}`}
+                      </>
+                    )}
                   </p>
                   {r.reviewNote && <p className="hint">Note: {r.reviewNote}</p>}
                 </div>
