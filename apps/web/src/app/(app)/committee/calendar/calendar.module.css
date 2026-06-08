@@ -1,0 +1,279 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.toolbarGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.select {
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.33rem 0.65rem;
+  color: var(--txt);
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.viewTabs {
+  display: inline-flex;
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  overflow: hidden;
+}
+
+.viewTab {
+  background: none;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.72rem;
+  color: var(--txt3);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.viewTabActive {
+  background: var(--adim);
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.monthTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  min-width: 9rem;
+  text-align: center;
+}
+
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+}
+
+.calHead {
+  text-align: center;
+  font-size: 0.66rem;
+  color: var(--txt3);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.35rem 0;
+}
+
+.calDay {
+  min-height: 4.25rem;
+  border-radius: var(--rs);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  font-size: 0.78rem;
+  position: relative;
+  cursor: pointer;
+  transition: 0.15s;
+  border: 1px solid transparent;
+  background: none;
+  font-family: inherit;
+  color: inherit;
+  padding: 0.3rem 0.25rem;
+  text-align: left;
+  gap: 0.15rem;
+}
+
+.calDay:hover {
+  background: var(--glass2);
+}
+
+.calSelected {
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 0 1px var(--accent-border);
+}
+
+.calToday {
+  background: var(--adim);
+}
+
+.calToday .dayNum {
+  color: var(--amber);
+  font-weight: 800;
+}
+
+.calEmpty {
+  opacity: 0.12;
+  pointer-events: none;
+  min-height: 4.25rem;
+}
+
+.dayNum {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.eventChip {
+  font-size: 0.58rem;
+  line-height: 1.2;
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid transparent;
+}
+
+.eventTemple {
+  background: var(--adim);
+  border-color: var(--accent-border-soft);
+  color: var(--amber);
+}
+
+.eventCommittee {
+  background: var(--info-bg-soft, rgba(56, 139, 253, 0.12));
+  border-color: var(--info-border-soft, rgba(56, 139, 253, 0.35));
+  color: var(--info, #58a6ff);
+}
+
+.eventPersonal {
+  background: var(--success-bg-soft);
+  border-color: var(--success-border-soft);
+  color: var(--gr);
+}
+
+.moreChip {
+  font-size: 0.55rem;
+  color: var(--txt3);
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+  flex-wrap: wrap;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.yearGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.65rem;
+}
+
+.yearMonth {
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.45rem;
+  background: var(--glass);
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.yearMonth:hover {
+  border-color: var(--accent-border-soft);
+  background: var(--glass2);
+}
+
+.yearMonthTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.miniCal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.miniDay {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  font-size: 0;
+}
+
+.miniEmpty {
+  opacity: 0;
+}
+
+.miniHasEvent {
+  background: var(--amber);
+  opacity: 0.55;
+}
+
+.miniHasTemple {
+  background: var(--amber);
+  opacity: 0.9;
+}
+
+.miniHasPersonal {
+  background: var(--gr);
+  opacity: 0.7;
+}
+
+.miniHasCommittee {
+  background: #58a6ff;
+  opacity: 0.65;
+}
+
+.miniToday {
+  box-shadow: 0 0 0 1px var(--amber);
+}
+
+.detailPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.blockList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.blockItem {
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.55rem 0.65rem;
+  background: var(--glass);
+}
+
+.blockItemHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.blockItemTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}

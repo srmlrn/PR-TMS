@@ -63,6 +63,8 @@ export interface CommitteeMember {
   isActive: boolean;
 }
 
+export type CommitteeCalendarBlockType = 'committee' | 'personal' | 'temple';
+
 export interface CommitteeCalendarBlock {
   id: string;
   committeeId: string;
@@ -70,6 +72,7 @@ export interface CommitteeCalendarBlock {
   startDate: string;
   endDate: string;
   reason?: string;
+  blockType: CommitteeCalendarBlockType;
   blocksTempleCalendar: boolean;
   requestId?: string;
   createdByUserId?: string;
@@ -247,6 +250,7 @@ export interface CreateCommitteeCalendarBlockInput {
   startDate: string;
   endDate: string;
   reason?: string;
+  blockType?: CommitteeCalendarBlockType;
   blocksTempleCalendar?: boolean;
 }
 
@@ -255,6 +259,7 @@ export interface UpdateCommitteeCalendarBlockInput {
   startDate?: string;
   endDate?: string;
   reason?: string;
+  blockType?: CommitteeCalendarBlockType;
   blocksTempleCalendar?: boolean;
 }
 

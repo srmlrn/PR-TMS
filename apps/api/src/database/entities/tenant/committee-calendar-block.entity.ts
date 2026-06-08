@@ -26,6 +26,9 @@ export class CommitteeCalendarBlockEntity {
   @Column({ type: 'text', nullable: true })
   reason?: string;
 
+  @Column({ name: 'block_type', length: 16, default: 'committee' })
+  blockType!: 'committee' | 'personal' | 'temple';
+
   @Column({ name: 'blocks_temple_calendar', default: true })
   blocksTempleCalendar!: boolean;
 

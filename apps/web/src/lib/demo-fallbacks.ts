@@ -103,14 +103,27 @@ export function demoCommitteeDashboard(templeName: string): CommitteeDashboard {
     },
   ];
 
+  const today = new Date().toISOString().slice(0, 10);
   const upcomingBlocks: CommitteeCalendarBlock[] = [
     {
       id: 'demo-block-1',
       committeeId: committee.id,
       title: 'Monthly board meeting',
-      startDate: new Date().toISOString().slice(0, 10),
-      endDate: new Date().toISOString().slice(0, 10),
+      startDate: today,
+      endDate: today,
+      blockType: 'temple',
       blocksTempleCalendar: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'demo-block-2',
+      committeeId: committee.id,
+      title: 'Volunteer orientation',
+      startDate: today,
+      endDate: today,
+      blockType: 'committee',
+      blocksTempleCalendar: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },

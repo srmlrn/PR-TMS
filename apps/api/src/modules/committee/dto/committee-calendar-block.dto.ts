@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateCommitteeCalendarBlockDto {
   @ApiProperty()
@@ -19,6 +26,11 @@ export class CreateCommitteeCalendarBlockDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiPropertyOptional({ enum: ['committee', 'personal', 'temple'] })
+  @IsOptional()
+  @IsEnum(['committee', 'personal', 'temple'])
+  blockType?: 'committee' | 'personal' | 'temple';
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -47,6 +59,11 @@ export class UpdateCommitteeCalendarBlockDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiPropertyOptional({ enum: ['committee', 'personal', 'temple'] })
+  @IsOptional()
+  @IsEnum(['committee', 'personal', 'temple'])
+  blockType?: 'committee' | 'personal' | 'temple';
 
   @ApiPropertyOptional()
   @IsOptional()

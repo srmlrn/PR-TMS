@@ -8,6 +8,7 @@ import {
   AuthUser,
   Committee,
   CommitteeCalendarBlock,
+  CommitteeCalendarBlockType,
   CommitteeCategory,
   CommitteeDashboard,
   CommitteeLeadershipRecord,
@@ -200,9 +201,19 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     };
   }
 
+  private resolveBlockType(record: BlockRecord): CommitteeCalendarBlockType {
+    if (record.blockType) return record.blockType;
+    return record.blocksTempleCalendar ? 'temple' : 'committee';
+  }
+
   private toBlock(record: BlockRecord): CommitteeCalendarBlock {
-    const { tenantId: _t, createdAt, updatedAt, ...b } = record;
-    return { ...b, createdAt: this.iso(createdAt), updatedAt: this.iso(updatedAt) };
+    const { tenantId: _t, createdAt, updatedAt, blockType: _bt, ...b } = record;
+    return {
+      ...b,
+      blockType: this.resolveBlockType(record),
+      createdAt: this.iso(createdAt),
+      updatedAt: this.iso(updatedAt),
+    };
   }
 
   private toTask(record: TaskRecord): CommitteeTask {
@@ -375,14 +386,64 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       updatedAt: now,
     });
 
+    const year = now.getFullYear();
+    const dateAt = (monthOffset: number, day: number) =>
+      new Date(year, now.getMonth() + monthOffset, day).toISOString().slice(0, 10);
+
     this.blockStore.set(`${primaryCommitteeId}-block-001`, {
       id: `${primaryCommitteeId}-block-001`,
       tenantId,
       committeeId: primaryCommitteeId,
       title: 'Annual General Meeting',
-      startDate: new Date(now.getFullYear(), now.getMonth() + 2, 1).toISOString().slice(0, 10),
-      endDate: new Date(now.getFullYear(), now.getMonth() + 2, 1).toISOString().slice(0, 10),
+      startDate: dateAt(2, 1),
+      endDate: dateAt(2, 1),
       reason: 'Reserved for AGM and committee elections',
+      blockType: 'temple',
+      blocksTempleCalendar: true,
+      createdByUserId: adminUserId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    this.blockStore.set(`${primaryCommitteeId}-block-002`, {
+      id: `${primaryCommitteeId}-block-002`,
+      tenantId,
+      committeeId: primaryCommitteeId,
+      title: 'Quarterly board planning retreat',
+      startDate: dateAt(4, 8),
+      endDate: dateAt(4, 9),
+      reason: 'Off-site planning for next fiscal year priorities',
+      blockType: 'committee',
+      blocksTempleCalendar: false,
+      createdByUserId: adminUserId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    this.blockStore.set(`${primaryCommitteeId}-block-personal-001`, {
+      id: `${primaryCommitteeId}-block-personal-001`,
+      tenantId,
+      committeeId: primaryCommitteeId,
+      title: 'Family travel — unavailable',
+      startDate: dateAt(3, 18),
+      endDate: dateAt(3, 22),
+      reason: 'Out of town; limited email access',
+      blockType: 'personal',
+      blocksTempleCalendar: false,
+      createdByUserId: committeeUserId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    this.blockStore.set(`${primaryCommitteeId}-block-temple-002`, {
+      id: `${primaryCommitteeId}-block-temple-002`,
+      tenantId,
+      committeeId: primaryCommitteeId,
+      title: isGanesha ? 'Vinayaka Chaturthi festival week' : 'Major festival coordination',
+      startDate: dateAt(5, 1),
+      endDate: dateAt(5, 7),
+      reason: 'Temple-wide event calendar hold for festival logistics',
+      blockType: 'temple',
       blocksTempleCalendar: true,
       createdByUserId: adminUserId,
       createdAt: now,
@@ -520,11 +581,57 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
         tenantId,
         committeeId: eduCommitteeId,
         title: 'Summer camp registration week',
-        startDate: new Date(now.getFullYear(), now.getMonth() + 1, 10).toISOString().slice(0, 10),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 14).toISOString().slice(0, 10),
+        startDate: dateAt(1, 10),
+        endDate: dateAt(1, 14),
         reason: 'Education committee on-site registration and parent orientation',
+        blockType: 'committee',
         blocksTempleCalendar: false,
         createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.blockStore.set(`${itCommitteeId}-block-demo-001`, {
+        id: `${itCommitteeId}-block-demo-001`,
+        tenantId,
+        committeeId: itCommitteeId,
+        title: 'Network maintenance window',
+        startDate: dateAt(0, 22),
+        endDate: dateAt(0, 22),
+        reason: 'After-hours firmware upgrade for community hall Wi-Fi',
+        blockType: 'committee',
+        blocksTempleCalendar: false,
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.blockStore.set(`${itCommitteeId}-block-personal-001`, {
+        id: `${itCommitteeId}-block-personal-001`,
+        tenantId,
+        committeeId: itCommitteeId,
+        title: 'Day job — on-site client visit',
+        startDate: dateAt(1, 3),
+        endDate: dateAt(1, 3),
+        reason: 'Unavailable during business hours',
+        blockType: 'personal',
+        blocksTempleCalendar: false,
+        createdByUserId: committeeUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.blockStore.set(`${eduCommitteeId}-block-personal-001`, {
+        id: `${eduCommitteeId}-block-personal-001`,
+        tenantId,
+        committeeId: eduCommitteeId,
+        title: 'Volunteer training prep day',
+        startDate: dateAt(2, 12),
+        endDate: dateAt(2, 12),
+        reason: 'Personal prep time before camp volunteer orientation',
+        blockType: 'personal',
+        blocksTempleCalendar: false,
+        createdByUserId: committeeUserId,
         createdAt: now,
         updatedAt: now,
       });
@@ -800,6 +907,10 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     this.seedDemoCommittees(tenantId);
     this.assertCommitteeAccess(tenantId, committeeId, user);
     const now = new Date();
+    const blockType: CommitteeCalendarBlockType = input.blockType ?? 'committee';
+    const blocksTempleCalendar =
+      input.blocksTempleCalendar ??
+      (blockType === 'temple' ? true : blockType === 'personal' ? false : false);
     const record: BlockRecord = {
       id: uuidv4(),
       tenantId,
@@ -808,7 +919,8 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       startDate: input.startDate,
       endDate: input.endDate,
       reason: input.reason,
-      blocksTempleCalendar: input.blocksTempleCalendar ?? true,
+      blockType,
+      blocksTempleCalendar,
       requestId,
       createdByUserId: user.id,
       createdAt: now,
@@ -1103,6 +1215,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
           startDate: existing.blockStartDate,
           endDate: existing.blockEndDate,
           reason: existing.description,
+          blockType: 'temple',
           blocksTempleCalendar: true,
         },
         user,

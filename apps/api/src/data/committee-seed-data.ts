@@ -7,7 +7,7 @@ import {
   SV_TEMPLE_ID,
 } from '@tms/types';
 
-export const COMMITTEE_SEED_VERSION = 'v3-multi-committee-demo';
+export const COMMITTEE_SEED_VERSION = 'v4-calendar-blocks';
 
 export interface ParsedMember {
   name: string;
