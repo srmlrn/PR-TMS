@@ -287,7 +287,7 @@ export class FrontDeskService
     const checkedIn = this.checkedInSet(tenantId);
     const now = new Date();
 
-    const { data: allBookings } = await this.bookingService.findAll(tenantId, 1, 50, {
+    const { data: allBookings } = await this.bookingService.findAll(tenantId, 1, 80, {
       devoteeId,
     });
 
@@ -310,6 +310,8 @@ export class FrontDeskService
       currency: b.currency,
       channel: b.channel,
       checkedIn: checkedIn.has(b.id),
+      receiptNumber: b.receiptNumber,
+      paymentStatus: b.paymentStatus,
     });
 
     const upcomingBookings = allBookings
@@ -325,10 +327,10 @@ export class FrontDeskService
     const bookingHistory = allBookings
       .filter((b) => b.scheduledAt < now || b.status === BookingStatus.COMPLETED)
       .sort((a, b) => b.scheduledAt.getTime() - a.scheduledAt.getTime())
-      .slice(0, 12)
+      .slice(0, 25)
       .map(toProfileBooking);
 
-    const { data: donations } = await this.donationService.findDonations(tenantId, 1, 10, {
+    const { data: donations } = await this.donationService.findDonations(tenantId, 1, 25, {
       devoteeId,
     });
 
@@ -370,14 +372,25 @@ export class FrontDeskService
       todayBookings,
       upcomingBookings,
       bookingHistory,
-      recentDonations: donations.map((d: { id: string; amount: number; currency: string; purpose: string; createdAt: Date; receiptNumber?: string }) => ({
-        id: d.id,
-        amount: d.amount,
-        currency: d.currency,
-        purpose: d.purpose,
-        createdAt: d.createdAt.toISOString(),
-        receiptNumber: d.receiptNumber,
-      })),
+      recentDonations: donations.map(
+        (d: {
+          id: string;
+          amount: number;
+          currency: string;
+          purpose: string;
+          createdAt: Date;
+          receiptNumber?: string;
+          paymentStatus?: string;
+        }) => ({
+          id: d.id,
+          amount: d.amount,
+          currency: d.currency,
+          purpose: d.purpose,
+          createdAt: d.createdAt.toISOString(),
+          receiptNumber: d.receiptNumber,
+          paymentStatus: d.paymentStatus,
+        }),
+      ),
     };
   }
 

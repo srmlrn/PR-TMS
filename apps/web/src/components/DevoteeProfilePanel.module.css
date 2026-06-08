@@ -135,6 +135,108 @@
   color: var(--red, #c44);
 }
 
+.summaryStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.72rem;
+  color: var(--txt2);
+}
+
+.summaryStrip strong {
+  color: var(--txt);
+}
+
+.summaryDot {
+  color: var(--txt3);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  margin-top: 0.25rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.35rem 0.4rem;
+  color: var(--txt3);
+  font-weight: 600;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--b2);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.4rem 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--b2) 60%, transparent);
+  vertical-align: top;
+  color: var(--txt2);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.subMeta {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--txt3);
+  margin-top: 0.1rem;
+}
+
+.typeBadge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.12rem 0.35rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--gr) 14%, var(--ink3));
+  color: var(--gr);
+  border: 1px solid color-mix(in srgb, var(--gr) 35%, transparent);
+}
+
+.typeDonation {
+  background: color-mix(in srgb, var(--amber) 14%, var(--ink3));
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 35%, transparent);
+}
+
+.actionsCell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.receiptNum {
+  font-size: 0.66rem;
+  color: var(--txt3);
+}
+
+.receiptLink {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--gr);
+  text-decoration: none;
+}
+
+.receiptLink:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .dl {
     grid-template-columns: 1fr;

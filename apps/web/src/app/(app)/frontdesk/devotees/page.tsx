@@ -95,6 +95,7 @@ function FrontDeskDevoteesPageInner() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [profileRefresh, setProfileRefresh] = useState(0);
+  const [checkInBusy, setCheckInBusy] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
 
   const { data, loading, error, refetch } = useApi(
@@ -354,7 +355,7 @@ function FrontDeskDevoteesPageInner() {
   return (
     <>
       <PageIntro
-        subtitle="Search · add · edit · family · seva & donation history"
+        subtitle="Search · add · edit · family · bookings · payments · receipts"
         actions={
           <div className={styles.detailActions}>
             <Button
@@ -749,6 +750,20 @@ function FrontDeskDevoteesPageInner() {
                 devoteeId={selectedId}
                 services={services ?? []}
                 onSelectMember={selectDevotee}
+                onCheckIn={async (bookingId) => {
+                  setCheckInBusy(true);
+                  setMessage(null);
+                  try {
+                    await ep.checkInBooking(bookingId);
+                    setProfileRefresh((n) => n + 1);
+                    setMessage('Checked in for today’s seva.');
+                  } catch (e) {
+                    setMessage(e instanceof Error ? e.message : 'Check-in failed');
+                  } finally {
+                    setCheckInBusy(false);
+                  }
+                }}
+                checkInBusy={checkInBusy}
                 refreshToken={profileRefresh}
                 showCrmLink={false}
               />

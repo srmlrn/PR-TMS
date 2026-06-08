@@ -61,6 +61,8 @@ export interface DevoteeProfileBooking {
   currency: string;
   channel: string;
   checkedIn?: boolean;
+  receiptNumber?: string;
+  paymentStatus?: string;
 }
 
 export interface DevoteeProfileDonation {
@@ -70,6 +72,7 @@ export interface DevoteeProfileDonation {
   purpose: string;
   createdAt: string;
   receiptNumber?: string;
+  paymentStatus?: string;
 }
 
 export interface DevoteeProfile {
