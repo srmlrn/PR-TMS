@@ -94,8 +94,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           />
           <TopBar
             title={title}
-            brandLabel={site.name}
-            brandIcon={site.icon}
             envLabel={environment.toUpperCase()}
             envVariant={envVariant}
             avatarInitials={config.avatarInitials}

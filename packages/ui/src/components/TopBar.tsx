@@ -6,8 +6,6 @@ import styles from './TopBar.module.css';
 
 export interface TopBarProps {
   title: string;
-  brandLabel?: string;
-  brandIcon?: string;
   envLabel?: string;
   envVariant?: EnvBadgeVariant;
   avatarInitials?: string;
@@ -19,8 +17,6 @@ export interface TopBarProps {
 
 export function TopBar({
   title,
-  brandLabel = 'TMS',
-  brandIcon = '🛕',
   envLabel = 'PROD',
   envVariant = 'prod',
   avatarInitials = 'RK',
@@ -32,10 +28,6 @@ export function TopBar({
   return (
     <header className={styles.topbar}>
       <div className={styles.left}>
-        <span className={styles.brand}>
-          {brandIcon} {brandLabel}
-        </span>
-        <span className={styles.sep}>/</span>
         <span className={styles.title}>{title}</span>
         <EnvBadge variant={envVariant}>{envLabel}</EnvBadge>
       </div>
