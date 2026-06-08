@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GANESHA_TEMPLE_ID, POS_SALES_CATALOG, TenantContext } from '@tms/types';
+import { seedGaneshaSevaCatalog } from './ganesha-catalog.seed';
 import { TenantConnectionService } from './tenant-connection.service';
 import { seedCommitteesToPostgres } from '../modules/committee/committee-postgres.seed';
 import {
@@ -31,6 +32,22 @@ export class TenantSeedService {
 
   private key(ctx: TenantContext): string {
     return `${ctx.tenantId}:${ctx.environment}`;
+  }
+
+  async syncGaneshaCatalogIfNeeded(ctx: TenantContext): Promise<number> {
+    if (ctx.tenantId !== GANESHA_TEMPLE_ID) return 0;
+    const ds = await this.connections.getDataSource(ctx);
+    const sevaRepo = ds.getRepository(SevaServiceEntity);
+    const { syncGaneshaSevaCatalogIfNeeded } = await import('./ganesha-catalog.seed');
+    const added = await syncGaneshaSevaCatalogIfNeeded(
+      sevaRepo,
+      ctx.tenantId,
+      'Lord Ganesha',
+    );
+    if (added > 0) {
+      this.logger.log(`Synced ${added} SGT catalog sevas into ${ctx.dbName}`);
+    }
+    return added;
   }
 
   async seedIfEmpty(ctx: TenantContext): Promise<void> {
@@ -433,46 +450,14 @@ export class TenantSeedService {
     ]);
 
     const sevaRepo = ds.getRepository(SevaServiceEntity);
-    const services = await sevaRepo.save([
-      sevaRepo.create({
-        name: 'Archana',
-        deity: 'Lord Ganesha',
-        description: 'Daily archana with sankalpa name, gotram, and nakshatra',
-        price: 25,
-        priceOffSite: 51,
-        currency: 'USD',
-        durationMinutes: 30,
-      }),
-      sevaRepo.create({
-        name: 'Abhishekam',
-        deity: 'Lord Ganesha',
-        description: 'Special abhishekam ritual bathing of the deity',
-        price: 101,
-        priceOffSite: 151,
-        currency: 'USD',
-        durationMinutes: 60,
-      }),
-      sevaRepo.create({
-        name: 'Homam',
-        deity: 'Lord Ganesha',
-        description: 'Sacred fire ritual with priest-led homam',
-        price: 251,
-        priceOffSite: 401,
-        currency: 'USD',
-        durationMinutes: 90,
-      }),
-      sevaRepo.create({
-        name: 'VIP Darshan',
-        deity: 'Lord Ganesha',
-        description: 'Priority darshan with shorter queue wait (on-site only)',
-        price: 51,
-        currency: 'USD',
-        durationMinutes: 15,
-      }),
-    ]);
+    const services = await seedGaneshaSevaCatalog(sevaRepo, 'Lord Ganesha');
 
-    const archana = services[0];
-    const abhishekam = services[1];
+    const archana =
+      services.find((s) => s.name === 'Archana') ??
+      services.find((s) => s.name.toLowerCase().includes('archana'))!;
+    const abhishekam =
+      services.find((s) => s.name === 'Abhishekam') ??
+      services.find((s) => s.name.toLowerCase().includes('abhishekam'))!;
 
     const bookingRepo = ds.getRepository(BookingEntity);
     const today = new Date().toISOString().slice(0, 10);

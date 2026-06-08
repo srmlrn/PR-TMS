@@ -1,0 +1,1616 @@
+[
+  {
+    "id": 1,
+    "name": "60th Birthday (Shasti Abda Poorthi)",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 2,
+    "name": "Aalayadhar ($1501)",
+    "priceUsd": 1501,
+    "type": "seva"
+  },
+  {
+    "id": 3,
+    "name": "Aalayadhar (ABW)",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 4,
+    "name": "Aalayadhar-Mukhya ($3501)",
+    "priceUsd": 3501,
+    "type": "seva"
+  },
+  {
+    "id": 5,
+    "name": "Aalayadhar-Mukhya (ABW)",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 6,
+    "name": "Aalayadhar-Pradhana ($3501)",
+    "priceUsd": 3501,
+    "type": "seva"
+  },
+  {
+    "id": 7,
+    "name": "Aalayadhar-Pradhana (ABW)",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 8,
+    "name": "Aayush Homa",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 9,
+    "name": "Abhishekam ($125)",
+    "priceUsd": 125,
+    "type": "seva"
+  },
+  {
+    "id": 10,
+    "name": "Advertisement-Aradhana Center page ($1500)",
+    "priceUsd": 1500,
+    "type": "event"
+  },
+  {
+    "id": 11,
+    "name": "Advertisement-Aradhana Full page ($1000)",
+    "priceUsd": 1000,
+    "type": "event"
+  },
+  {
+    "id": 12,
+    "name": "Advertisement-Aradhana Half page ($500)",
+    "priceUsd": 500,
+    "type": "event"
+  },
+  {
+    "id": 13,
+    "name": "Advertisement-Aradhana Quarter page ($250)",
+    "priceUsd": 250,
+    "type": "event"
+  },
+  {
+    "id": 14,
+    "name": "Aksharabyasa",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 15,
+    "name": "Aksharabyasa on Vasantha Panchami ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 16,
+    "name": "All poojas of Rathayatra ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 17,
+    "name": "Annadhan",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 18,
+    "name": "Annaprasanam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 19,
+    "name": "Aradhana Sponsors",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 20,
+    "name": "Archana",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 21,
+    "name": "Archana Seva SSK April 22nd",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 22,
+    "name": "Auditorium - 12 hours ($1500)",
+    "priceUsd": 1500,
+    "type": "rental"
+  },
+  {
+    "id": 23,
+    "name": "Auditorium - 6 hours ($1000)",
+    "priceUsd": 1000,
+    "type": "rental"
+  },
+  {
+    "id": 24,
+    "name": "Auditorium - Additional Charge for Saturday Morning ($1500)",
+    "priceUsd": 1500,
+    "type": "rental"
+  },
+  {
+    "id": 25,
+    "name": "Auditorium Advance ($300)",
+    "priceUsd": 300,
+    "type": "rental"
+  },
+  {
+    "id": 26,
+    "name": "Bahudayatra Homa ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 27,
+    "name": "Bala Vihar - Sunday School",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 28,
+    "name": "Bala Vihar Award Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 29,
+    "name": "Bala Vihar Certification Fee",
+    "priceUsd": null,
+    "type": "fee"
+  },
+  {
+    "id": 30,
+    "name": "Bala Vihar Summer Camp",
+    "priceUsd": null,
+    "type": "event"
+  },
+  {
+    "id": 31,
+    "name": "Bala Vihar Youth Leadership Program",
+    "priceUsd": null,
+    "type": "event"
+  },
+  {
+    "id": 32,
+    "name": "Bhoomi Pooja",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 33,
+    "name": "Bulletin Board Adv for a month ($30)",
+    "priceUsd": 30,
+    "type": "event"
+  },
+  {
+    "id": 34,
+    "name": "Car Pooja ($75)",
+    "priceUsd": 75,
+    "type": "seva"
+  },
+  {
+    "id": 35,
+    "name": "Chalisa ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 36,
+    "name": "Chandi Homam - All 4 Days ($3001)",
+    "priceUsd": 3001,
+    "type": "seva"
+  },
+  {
+    "id": 37,
+    "name": "Chandi Homam - Annadanam",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 38,
+    "name": "Chandi Homam - Archana ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 39,
+    "name": "Chandi Homam - Deepa Lakshmi Pooja ($251)",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 40,
+    "name": "Chandi Homam - Flowers Offering",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 41,
+    "name": "Chandi Homam - Groceries Offering",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 42,
+    "name": "Chandi Homam - One Day ($1001)",
+    "priceUsd": 1001,
+    "type": "seva"
+  },
+  {
+    "id": 43,
+    "name": "Chandi Homam - Sri Yantra Pooja ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 44,
+    "name": "Chandi Homam - Suvasini Pooja ($251)",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 45,
+    "name": "Chandi Homam - Yaama Pooja ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 46,
+    "name": "Choula",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 47,
+    "name": "Class Room Rentals ($25 for 1 Hour)",
+    "priceUsd": 25,
+    "type": "rental"
+  },
+  {
+    "id": 48,
+    "name": "Cleaning Fee",
+    "priceUsd": null,
+    "type": "fee"
+  },
+  {
+    "id": 49,
+    "name": "Conversion",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 50,
+    "name": "Cookville Satyanarayana Fundraising",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 51,
+    "name": "Cultural Events Donation",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 52,
+    "name": "Cultural Patron Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 53,
+    "name": "Dhwajasthabha Kumbhabhishekam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 54,
+    "name": "Durga Pooja - All Days ($251)",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 55,
+    "name": "Durga Pooja - Archana ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 56,
+    "name": "Durva Yugma Pooja ($21)",
+    "priceUsd": 21,
+    "type": "seva"
+  },
+  {
+    "id": 57,
+    "name": "Endowment Trust Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 58,
+    "name": "Engagement",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 59,
+    "name": "Facilities Rental - Additional Hours",
+    "priceUsd": null,
+    "type": "rental"
+  },
+  {
+    "id": 60,
+    "name": "Flower Offering",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 61,
+    "name": "Food",
+    "priceUsd": null,
+    "type": "sales"
+  },
+  {
+    "id": 62,
+    "name": "Fund Raising",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 63,
+    "name": "Funeral Service",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 64,
+    "name": "Ganapati Homam on Ganesha Chaturthi ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 65,
+    "name": "Ganesh Chaturthi Pooja ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 66,
+    "name": "Ganesh Puran",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 67,
+    "name": "Ganesha Abhishekam on Ganesha Chaturthi ($125)",
+    "priceUsd": 125,
+    "type": "seva"
+  },
+  {
+    "id": 68,
+    "name": "Ganesha Archana on Ganesha Chaturthi ($15)",
+    "priceUsd": 15,
+    "type": "seva"
+  },
+  {
+    "id": 69,
+    "name": "Ganesha Chaturthi - All Day Pooja ($251)",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 70,
+    "name": "Ganesha Moorti Visarjan",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 71,
+    "name": "Garland for Ganesha (8x8) ($250)",
+    "priceUsd": 250,
+    "type": "donation"
+  },
+  {
+    "id": 72,
+    "name": "Garland for Other Deities (3x3) ($100)",
+    "priceUsd": 100,
+    "type": "donation"
+  },
+  {
+    "id": 73,
+    "name": "Garland for Shiva (5x5) ($150)",
+    "priceUsd": 150,
+    "type": "donation"
+  },
+  {
+    "id": 74,
+    "name": "Garland for Venkateswara (8x8) ($250)",
+    "priceUsd": 250,
+    "type": "donation"
+  },
+  {
+    "id": 75,
+    "name": "General",
+    "priceUsd": null,
+    "type": "other"
+  },
+  {
+    "id": 76,
+    "name": "Ghee Abhishekam for Swami Ayyappa on Padi Pooja ($151)",
+    "priceUsd": 151,
+    "type": "seva"
+  },
+  {
+    "id": 77,
+    "name": "Gift Shop",
+    "priceUsd": null,
+    "type": "sales"
+  },
+  {
+    "id": 78,
+    "name": "Gita Parayan - All Day ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 79,
+    "name": "Gita Parayan - one day ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 80,
+    "name": "Group Pithru Tarpanam ($21)",
+    "priceUsd": 21,
+    "type": "seva"
+  },
+  {
+    "id": 81,
+    "name": "Gruhapravesam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 82,
+    "name": "Gruhapravesam - All Day ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 83,
+    "name": "Gruhapravesam and Satyanarayana Pooja",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 84,
+    "name": "Gruhapravesam Key Pooja ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 85,
+    "name": "Habitat for Humanity",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 86,
+    "name": "Hanuman Chalisa ($21)",
+    "priceUsd": 21,
+    "type": "seva"
+  },
+  {
+    "id": 87,
+    "name": "Hanuman Jayanti - $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 88,
+    "name": "Harvey Disaster Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 89,
+    "name": "Hasya Kavi Sammelan",
+    "priceUsd": null,
+    "type": "event"
+  },
+  {
+    "id": 90,
+    "name": "Homa",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 91,
+    "name": "Homa - All Day ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 92,
+    "name": "Homa on New Years Day ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 93,
+    "name": "Hundi",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 94,
+    "name": "India Covid-19 Relief Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 95,
+    "name": "Individual Pooja Done by Devotees ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 96,
+    "name": "Individual Pooja on Special Days ($21)",
+    "priceUsd": 21,
+    "type": "seva"
+  },
+  {
+    "id": 97,
+    "name": "Individual Pooja on Special Days ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 98,
+    "name": "Individual Pooja on Special Days ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 99,
+    "name": "Irumudi - $125",
+    "priceUsd": 125,
+    "type": "seva"
+  },
+  {
+    "id": 100,
+    "name": "Jagannath Ratha Yatra ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 101,
+    "name": "Janmashtami 4 day Sponsorship ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 102,
+    "name": "Jeernodharana Kumbhabhishekam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 103,
+    "name": "Jeernodharana Kumbhabhishekam - $10001",
+    "priceUsd": 10001,
+    "type": "seva"
+  },
+  {
+    "id": 104,
+    "name": "Jeernodharana Kumbhabhishekam - $1001",
+    "priceUsd": 1001,
+    "type": "seva"
+  },
+  {
+    "id": 105,
+    "name": "Jeernodharana Kumbhabhishekam - $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 106,
+    "name": "Jeernodharana Kumbhabhishekam - $2001",
+    "priceUsd": 2001,
+    "type": "seva"
+  },
+  {
+    "id": 107,
+    "name": "Jeernodharana Kumbhabhishekam - $2501",
+    "priceUsd": 2501,
+    "type": "seva"
+  },
+  {
+    "id": 108,
+    "name": "Jeernodharana Kumbhabhishekam - $251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 109,
+    "name": "Jeernodharana Kumbhabhishekam - $5001",
+    "priceUsd": 5001,
+    "type": "seva"
+  },
+  {
+    "id": 110,
+    "name": "Jeernodharana Kumbhabhishekam - $501",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 111,
+    "name": "Jeernodharana Kumbhabhishekam - $751",
+    "priceUsd": 751,
+    "type": "seva"
+  },
+  {
+    "id": 112,
+    "name": "Jeernodharana Kumbhabhishekam - Mandala Pooja - $251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 113,
+    "name": "Jeernodharana Kumbhabhishekam Prasadam Sponsor",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 114,
+    "name": "Kalyana Utsavam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 115,
+    "name": "Laksharchana-45 days ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 116,
+    "name": "Laksharchana-One day ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 117,
+    "name": "Maala Dhaaranam - $31",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 118,
+    "name": "Maala Dhaaranam and Irumudi - $151",
+    "priceUsd": 151,
+    "type": "seva"
+  },
+  {
+    "id": 119,
+    "name": "Maala Dhaaranam plus Dhothi - $51",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 120,
+    "name": "Mahalaya Pithru Tarpanam - Individual ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 121,
+    "name": "Main Mandap in Prayer Hall (3 hours) ($501)",
+    "priceUsd": 501,
+    "type": "rental"
+  },
+  {
+    "id": 122,
+    "name": "Main Mandap in Prayer Hall (Less than 50 people) ($251)",
+    "priceUsd": 251,
+    "type": "rental"
+  },
+  {
+    "id": 123,
+    "name": "Main Temple Expansion Project",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 124,
+    "name": "Mata Ki Chowki ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 125,
+    "name": "Mata Ki Chowki ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 126,
+    "name": "Membership - Life Member in 1 Year ($2000)",
+    "priceUsd": 2000,
+    "type": "membership"
+  },
+  {
+    "id": 127,
+    "name": "Membership - Life Patron Member ($10000)",
+    "priceUsd": 10000,
+    "type": "membership"
+  },
+  {
+    "id": 128,
+    "name": "Membership - Patron Member in 3 Years ($10000)",
+    "priceUsd": 10000,
+    "type": "membership"
+  },
+  {
+    "id": 129,
+    "name": "Membership - Regular per Year - Family ($200)",
+    "priceUsd": 200,
+    "type": "membership"
+  },
+  {
+    "id": 130,
+    "name": "Membership - Regular per Year - Single ($100)",
+    "priceUsd": 100,
+    "type": "membership"
+  },
+  {
+    "id": 131,
+    "name": "Monthly Contribution (ABW)",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 132,
+    "name": "Musical Concert 16-Sep-2017",
+    "priceUsd": null,
+    "type": "event"
+  },
+  {
+    "id": 133,
+    "name": "Namakarnam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 134,
+    "name": "Navagraha Abhishekam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 135,
+    "name": "Navagraha Abhishekam on Saturdays",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 136,
+    "name": "Navagraha Puja",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 137,
+    "name": "New Born Baby Blessings ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 138,
+    "name": "New Yagashala Rental Deposit ($50)",
+    "priceUsd": 50,
+    "type": "rental"
+  },
+  {
+    "id": 139,
+    "name": "Open Table Nashville",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 140,
+    "name": "Other",
+    "priceUsd": null,
+    "type": "other"
+  },
+  {
+    "id": 141,
+    "name": "Outdoor Kitchen Rental per hour ($50)",
+    "priceUsd": 50,
+    "type": "rental"
+  },
+  {
+    "id": 142,
+    "name": "Paal (Milk) Kudam ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 143,
+    "name": "Padi Pooja",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 144,
+    "name": "Padi Pooja - $1001",
+    "priceUsd": 1001,
+    "type": "seva"
+  },
+  {
+    "id": 145,
+    "name": "Padi Pooja - $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 146,
+    "name": "Padi Pooja - $501",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 147,
+    "name": "Padi Pooja - $51",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 148,
+    "name": "Pahandi ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 149,
+    "name": "Pakshastry Dakshina",
+    "priceUsd": null,
+    "type": "fee"
+  },
+  {
+    "id": 150,
+    "name": "Pooja",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 151,
+    "name": "Prasadam Additional Item ($100)",
+    "priceUsd": 100,
+    "type": "sales"
+  },
+  {
+    "id": 152,
+    "name": "Prasadam Additional Item ($200)",
+    "priceUsd": 200,
+    "type": "sales"
+  },
+  {
+    "id": 153,
+    "name": "Prasadam Hall - 12 Hours ($450)",
+    "priceUsd": 450,
+    "type": "rental"
+  },
+  {
+    "id": 154,
+    "name": "Prasadam Hall - 6 Hours ($300)",
+    "priceUsd": 300,
+    "type": "rental"
+  },
+  {
+    "id": 155,
+    "name": "Prasadam Hall - Deposit ($100)",
+    "priceUsd": 100,
+    "type": "rental"
+  },
+  {
+    "id": 156,
+    "name": "Prasadam Option A",
+    "priceUsd": null,
+    "type": "sales"
+  },
+  {
+    "id": 157,
+    "name": "Prasadam Option B",
+    "priceUsd": null,
+    "type": "sales"
+  },
+  {
+    "id": 158,
+    "name": "Prasadam Option C",
+    "priceUsd": null,
+    "type": "sales"
+  },
+  {
+    "id": 159,
+    "name": "Priest Dakshina",
+    "priceUsd": null,
+    "type": "fee"
+  },
+  {
+    "id": 160,
+    "name": "Priest Self Travel ($30)",
+    "priceUsd": 30,
+    "type": "fee"
+  },
+  {
+    "id": 161,
+    "name": "Priest Services to Other Temples ($351)",
+    "priceUsd": 351,
+    "type": "fee"
+  },
+  {
+    "id": 162,
+    "name": "Priest Travel 40-100 Miles ($100)",
+    "priceUsd": 100,
+    "type": "fee"
+  },
+  {
+    "id": 163,
+    "name": "Priest Travel Beyond 100 Miles ($251)",
+    "priceUsd": 251,
+    "type": "fee"
+  },
+  {
+    "id": 164,
+    "name": "Priests Benefits Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 165,
+    "name": "Raksha Sutra Bandhan ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 166,
+    "name": "Ram Pattabhishekam ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 167,
+    "name": "Ramayan Paat - All Days ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 168,
+    "name": "Ramayan Paat - One Day ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 169,
+    "name": "Ratha Yatra - All Day ($201)",
+    "priceUsd": 201,
+    "type": "seva"
+  },
+  {
+    "id": 170,
+    "name": "Sahasranama ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 171,
+    "name": "Sankaabhishekam ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 172,
+    "name": "Sankatahara Chaturthi Homa ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 173,
+    "name": "Satyanarayana Pooja",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 174,
+    "name": "Satyanarayana Pooja - All Day ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 175,
+    "name": "Satyanarayana Pooja on Poornima Day ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 176,
+    "name": "Seemantham",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 177,
+    "name": "Self Service Poojas",
+    "priceUsd": null,
+    "type": "other"
+  },
+  {
+    "id": 178,
+    "name": "Shani Shanti Homa - $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 179,
+    "name": "Shilpies Dakshina",
+    "priceUsd": null,
+    "type": "fee"
+  },
+  {
+    "id": 180,
+    "name": "Shivarathri Annadhanam ($51)",
+    "priceUsd": 51,
+    "type": "donation"
+  },
+  {
+    "id": 181,
+    "name": "Shivarathri Rudrabhishekam ($125)",
+    "priceUsd": 125,
+    "type": "seva"
+  },
+  {
+    "id": 182,
+    "name": "Shraddha",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 183,
+    "name": "Sita Rama Kalyanam ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 184,
+    "name": "Sita Rama Kalyanam ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 185,
+    "name": "Soorasamharam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 186,
+    "name": "Soorasamharam $1001",
+    "priceUsd": 1001,
+    "type": "seva"
+  },
+  {
+    "id": 187,
+    "name": "Soorasamharam $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 188,
+    "name": "Soorasamharam $251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 189,
+    "name": "Soorasamharam $3001",
+    "priceUsd": 3001,
+    "type": "seva"
+  },
+  {
+    "id": 190,
+    "name": "Soorasamharam $501",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 191,
+    "name": "Soorasamharam-Annadhanam ($51)",
+    "priceUsd": 51,
+    "type": "donation"
+  },
+  {
+    "id": 192,
+    "name": "Special Events",
+    "priceUsd": null,
+    "type": "event"
+  },
+  {
+    "id": 193,
+    "name": "Sri Ganesha Abhishekam on New Years Day ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 194,
+    "name": "Sri Shiva Abhishekam on New Year's Day ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 195,
+    "name": "Sri Srinivasa (Balaji) Dolotsavam (Unjal) - $54",
+    "priceUsd": 54,
+    "type": "seva"
+  },
+  {
+    "id": 196,
+    "name": "Sri Srinivasa (Balaji) Kalyana Seva - $116",
+    "priceUsd": 116,
+    "type": "seva"
+  },
+  {
+    "id": 197,
+    "name": "Sri Srinivasa Kalyanam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 198,
+    "name": "Sri Srinivasa Kalyanam (minimum $101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 199,
+    "name": "Sri Srinivasa Kalyanam - $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 200,
+    "name": "Sri Subrahmanya Kalyanam ($101)",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 201,
+    "name": "Sri Valli Devasena Kalyana Utsavam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 202,
+    "name": "Sri Valli Devasena Kalyana Utsavam - $25",
+    "priceUsd": 25,
+    "type": "seva"
+  },
+  {
+    "id": 203,
+    "name": "Sri Valli Devasena Kalyana Utsavam-$101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 204,
+    "name": "Sri Valli Devasena Kalyana Utsavam-1001",
+    "priceUsd": 1001,
+    "type": "seva"
+  },
+  {
+    "id": 205,
+    "name": "Sri Valli Devasena Kalyana Utsavam-251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 206,
+    "name": "Sri Valli Devasena Kalyana Utsavam-3001",
+    "priceUsd": 3001,
+    "type": "seva"
+  },
+  {
+    "id": 207,
+    "name": "Sri Valli Devasena Kalyana Utsavam-501",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 208,
+    "name": "Sri Valli Sri Deva Sena Prathista",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 209,
+    "name": "Sri Venkateswara Abhishekam on New Year's Day ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 210,
+    "name": "Sri Venkateswara Abhishekam on Vaikunta Ekadashi ($125)",
+    "priceUsd": 125,
+    "type": "seva"
+  },
+  {
+    "id": 211,
+    "name": "Sri Venkateswara Kalyana Utsavam ($201)",
+    "priceUsd": 201,
+    "type": "seva"
+  },
+  {
+    "id": 212,
+    "name": "Sri Venkateswara Kalyana Utsavam - Archana ($51)",
+    "priceUsd": 51,
+    "type": "seva"
+  },
+  {
+    "id": 213,
+    "name": "Sri Venkateswara Kalyana Utsavam Flowers ($501)",
+    "priceUsd": 501,
+    "type": "donation"
+  },
+  {
+    "id": 214,
+    "name": "Sri Venkateswara Kalyana Utsavam Prasadam ($501)",
+    "priceUsd": 501,
+    "type": "donation"
+  },
+  {
+    "id": 215,
+    "name": "Subrahmanya Kalyana Utsavam-$101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 216,
+    "name": "Sundarakand Havan ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 217,
+    "name": "Sunday Lunch Prasad",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 218,
+    "name": "Sunday Prasad ($2500)",
+    "priceUsd": 2500,
+    "type": "donation"
+  },
+  {
+    "id": 219,
+    "name": "Suprabhata Seva SSK April 22nd",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 220,
+    "name": "Swamy Ayyappa 18 Steps (Each Step) - $1000",
+    "priceUsd": 1000,
+    "type": "seva"
+  },
+  {
+    "id": 221,
+    "name": "Swamy Ayyappa Abhisheka Peetam - $2500",
+    "priceUsd": 2500,
+    "type": "seva"
+  },
+  {
+    "id": 222,
+    "name": "Swamy Ayyappa Murthi - $1000",
+    "priceUsd": 1000,
+    "type": "seva"
+  },
+  {
+    "id": 223,
+    "name": "Swamy Ayyappa Prabhavali - $2500",
+    "priceUsd": 2500,
+    "type": "seva"
+  },
+  {
+    "id": 224,
+    "name": "Swamy Ayyappa Prathista - $1001",
+    "priceUsd": 1001,
+    "type": "seva"
+  },
+  {
+    "id": 225,
+    "name": "Swamy Ayyappa Prathista - $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 226,
+    "name": "Swamy Ayyappa Prathista - $251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 227,
+    "name": "Swamy Ayyappa Prathista - $3001",
+    "priceUsd": 3001,
+    "type": "seva"
+  },
+  {
+    "id": 228,
+    "name": "Swamy Ayyappa Prathista - $501",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 229,
+    "name": "Swamy Ayyappa Prathista - Adivasa - $251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 230,
+    "name": "Swamy Ayyappa Weekly Abhishekam and Padi Pooja - $251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 231,
+    "name": "Tamil Vishu Baishaki Odiya New Year Dinner Sponsorship ($51)",
+    "priceUsd": 51,
+    "type": "donation"
+  },
+  {
+    "id": 232,
+    "name": "Temple Anniversary Pooja (All Days) ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 233,
+    "name": "Temple Anniversary Pooja (One Day) ($151)",
+    "priceUsd": 151,
+    "type": "seva"
+  },
+  {
+    "id": 234,
+    "name": "Temple Expansion Rajagopuram - 1 Brick ($51)",
+    "priceUsd": 51,
+    "type": "donation"
+  },
+  {
+    "id": 235,
+    "name": "Temple Expansion Rajagopuram - 11 Bricks ($501)",
+    "priceUsd": 501,
+    "type": "donation"
+  },
+  {
+    "id": 236,
+    "name": "Temple Expansion Rajagopuram - 2 Bricks ($101)",
+    "priceUsd": 101,
+    "type": "donation"
+  },
+  {
+    "id": 237,
+    "name": "Temple Restoration and Future Expansion Projects Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 238,
+    "name": "Temple Short Term Stay",
+    "priceUsd": null,
+    "type": "rental"
+  },
+  {
+    "id": 239,
+    "name": "Temple Short Term Stay Deposit",
+    "priceUsd": null,
+    "type": "rental"
+  },
+  {
+    "id": 240,
+    "name": "Thaipoosam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 241,
+    "name": "Thaipoosam - $1001",
+    "priceUsd": 1001,
+    "type": "seva"
+  },
+  {
+    "id": 242,
+    "name": "Thaipoosam - $101",
+    "priceUsd": 101,
+    "type": "seva"
+  },
+  {
+    "id": 243,
+    "name": "Thaipoosam - $251",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 244,
+    "name": "Thaipoosam - $3001",
+    "priceUsd": 3001,
+    "type": "seva"
+  },
+  {
+    "id": 245,
+    "name": "Thaipoosam - $501",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 246,
+    "name": "Tornado Relief Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 247,
+    "name": "Ugadi Gudipadava Telugu Kannada Marathi Kashmiri New Year Dinner Sponsorship ($51)",
+    "priceUsd": 51,
+    "type": "donation"
+  },
+  {
+    "id": 248,
+    "name": "Ugadi Prayuktha Srinivasa Kalyana Utsavam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 249,
+    "name": "Ukraine Relief Fund",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 250,
+    "name": "Upanayanam",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 251,
+    "name": "Varalakshmi Pooja - Other Day",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 252,
+    "name": "Vendor Booth on Special Events",
+    "priceUsd": null,
+    "type": "event"
+  },
+  {
+    "id": 253,
+    "name": "Venkateshwara Kalyana Utsavam 1116 (Main Temple Expansion Project)",
+    "priceUsd": 1116,
+    "type": "seva"
+  },
+  {
+    "id": 254,
+    "name": "Venkateshwara Kalyana Utsavam 251 (Main Temple Expansion Project)",
+    "priceUsd": 251,
+    "type": "seva"
+  },
+  {
+    "id": 255,
+    "name": "Venkateshwara Kalyana Utsavam 501 (Main Temple Expansion Project)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 256,
+    "name": "Venkateswara Kalyana Utsavam Donation",
+    "priceUsd": null,
+    "type": "donation"
+  },
+  {
+    "id": 257,
+    "name": "Vidya Ganapati Pooja ($5)",
+    "priceUsd": 5,
+    "type": "seva"
+  },
+  {
+    "id": 258,
+    "name": "Vidyashankar Violin Concert (Sep 8)",
+    "priceUsd": null,
+    "type": "event"
+  },
+  {
+    "id": 259,
+    "name": "Vishnu Sahasranama Homam ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 260,
+    "name": "Vishnu Sahasranama Parayanam ($11)",
+    "priceUsd": 11,
+    "type": "seva"
+  },
+  {
+    "id": 261,
+    "name": "Walk-In Facilities Services",
+    "priceUsd": null,
+    "type": "other"
+  },
+  {
+    "id": 262,
+    "name": "Wedding",
+    "priceUsd": null,
+    "type": "seva"
+  },
+  {
+    "id": 263,
+    "name": "Wedding - All Day ($501)",
+    "priceUsd": 501,
+    "type": "seva"
+  },
+  {
+    "id": 264,
+    "name": "Yagashala - 12 hours ($1000)",
+    "priceUsd": 1000,
+    "type": "rental"
+  },
+  {
+    "id": 265,
+    "name": "Yagashala - 6 hours ($675)",
+    "priceUsd": 675,
+    "type": "rental"
+  },
+  {
+    "id": 266,
+    "name": "Yagashala Full (Above 50 people) ($501)",
+    "priceUsd": 501,
+    "type": "rental"
+  },
+  {
+    "id": 267,
+    "name": "Yagashala Full (Up to 50 people) ($125)",
+    "priceUsd": 125,
+    "type": "rental"
+  },
+  {
+    "id": 268,
+    "name": "Yagashala Only Center portion (Returned Unclean) ($101)",
+    "priceUsd": 101,
+    "type": "rental"
+  },
+  {
+    "id": 269,
+    "name": "Yearly One Day Sponsor ($251)",
+    "priceUsd": 251,
+    "type": "donation"
+  }
+]

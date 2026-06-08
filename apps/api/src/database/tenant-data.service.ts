@@ -56,7 +56,9 @@ export class TenantDataService {
 
   async ensureSeeded(): Promise<void> {
     if (!this.enabled) return;
-    await this.seed?.seedIfEmpty(TenantContextStorage.get());
+    const ctx = TenantContextStorage.get();
+    await this.seed?.seedIfEmpty(ctx);
+    await this.seed?.syncGaneshaCatalogIfNeeded(ctx);
   }
 
   async devotees() {

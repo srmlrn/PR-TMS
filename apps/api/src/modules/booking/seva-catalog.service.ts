@@ -3,6 +3,7 @@ import {
   CreateSevaServiceInput,
   Currency,
   DEMO_TENANT_IDS,
+  ganeshaSevaSeedRows,
   getTenantBranding,
   GANESHA_TEMPLE_ID,
   SevaService,
@@ -243,55 +244,70 @@ export class SevaCatalogService
     const now = new Date();
     const deity = getTenantBranding(tenantId).deity;
     const prefix = tenantId === GANESHA_TEMPLE_ID ? 'sgt-' : '';
-    const services: Array<Omit<SevaServiceRecord, 'createdAt' | 'updatedAt'>> = [
-      {
-        id: `${prefix}svc-archana`,
-        tenantId,
-        name: 'Archana',
-        deity,
-        description: 'Daily archana with sankalpa name, gotram, and nakshatra',
-        price: 25,
-        priceOffSite: 51,
-        currency: Currency.USD,
-        durationMinutes: 30,
-        isActive: true,
-      },
-      {
-        id: `${prefix}svc-abhishekam`,
-        tenantId,
-        name: 'Abhishekam',
-        deity,
-        description: 'Special abhishekam ritual bathing of the deity',
-        price: 101,
-        priceOffSite: 151,
-        currency: Currency.USD,
-        durationMinutes: 60,
-        isActive: true,
-      },
-      {
-        id: `${prefix}svc-homam`,
-        tenantId,
-        name: 'Homam',
-        deity,
-        description: 'Sacred fire ritual with priest-led homam',
-        price: 251,
-        priceOffSite: 401,
-        currency: Currency.USD,
-        durationMinutes: 90,
-        isActive: true,
-      },
-      {
-        id: `${prefix}svc-vip-darshan`,
-        tenantId,
-        name: 'VIP Darshan',
-        deity,
-        description: 'Priority darshan with shorter queue wait (on-site only)',
-        price: 51,
-        currency: Currency.USD,
-        durationMinutes: 15,
-        isActive: true,
-      },
-    ];
+
+    const services: Array<Omit<SevaServiceRecord, 'createdAt' | 'updatedAt'>> =
+      tenantId === GANESHA_TEMPLE_ID
+        ? ganeshaSevaSeedRows(deity).map((row, index) => ({
+            id: `${prefix}svc-${index + 1}`,
+            tenantId,
+            name: row.name,
+            deity: row.deity,
+            description: row.description,
+            price: row.price,
+            priceOffSite: row.priceOffSite,
+            currency: Currency.USD,
+            durationMinutes: row.durationMinutes,
+            isActive: true,
+          }))
+        : [
+            {
+              id: `${prefix}svc-archana`,
+              tenantId,
+              name: 'Archana',
+              deity,
+              description: 'Daily archana with sankalpa name, gotram, and nakshatra',
+              price: 25,
+              priceOffSite: 51,
+              currency: Currency.USD,
+              durationMinutes: 30,
+              isActive: true,
+            },
+            {
+              id: `${prefix}svc-abhishekam`,
+              tenantId,
+              name: 'Abhishekam',
+              deity,
+              description: 'Special abhishekam ritual bathing of the deity',
+              price: 101,
+              priceOffSite: 151,
+              currency: Currency.USD,
+              durationMinutes: 60,
+              isActive: true,
+            },
+            {
+              id: `${prefix}svc-homam`,
+              tenantId,
+              name: 'Homam',
+              deity,
+              description: 'Sacred fire ritual with priest-led homam',
+              price: 251,
+              priceOffSite: 401,
+              currency: Currency.USD,
+              durationMinutes: 90,
+              isActive: true,
+            },
+            {
+              id: `${prefix}svc-vip-darshan`,
+              tenantId,
+              name: 'VIP Darshan',
+              deity,
+              description: 'Priority darshan with shorter queue wait (on-site only)',
+              price: 51,
+              currency: Currency.USD,
+              durationMinutes: 15,
+              isActive: true,
+            },
+          ];
 
     for (const service of services) {
       const existing = this.store.get(service.id);

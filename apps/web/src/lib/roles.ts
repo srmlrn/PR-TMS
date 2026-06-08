@@ -238,6 +238,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/settings/branding': 'Branding & Labels',
   '/admin/settings/schedules': 'Schedules & Hours',
   '/admin/settings/catalog/services': 'Seva Catalog',
+  '/admin/settings/catalog/reference': 'SGT Category Reference',
   '/admin/settings/catalog/products': 'Counter Products',
   '/frontdesk/console': 'Reception Console',
   '/frontdesk/devotees': 'Devotee Management',

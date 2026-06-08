@@ -6,7 +6,7 @@ import { Button } from '@tms/ui';
 import {
   Currency,
   deitySelectOptions,
-  DONATION_FUND_OPTIONS,
+  donationFundOptionsForTenant,
   type CounterPaymentMethod,
   type PosProduct,
   type DevoteeLookupResult,
@@ -20,6 +20,8 @@ import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney } from '@/lib/api/endpoints';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay } from '@/lib/payment-flow';
+import { resolvePosQuickLinkProducts, resolvePosQuickLinkServices } from '@/lib/pos-quick-links';
+import { useTenant } from '@/lib/tenant-context';
 import styles from './CounterPosForm.module.css';
 
 type PosTab = 'services' | 'sales' | 'donations';
@@ -72,8 +74,13 @@ function catalogUnitCost(svc: SevaService, location: ServiceLocation): number {
 
 export function CounterPosForm({ ep, devotee, services, products, onSuccess, onError }: Props) {
   const router = useRouter();
+  const { tenantId } = useTenant();
   const today = new Date().toISOString().slice(0, 10);
   const currency = (services[0]?.currency as Currency) ?? Currency.USD;
+  const donationFunds = useMemo(
+    () => donationFundOptionsForTenant(tenantId),
+    [tenantId],
+  );
 
   const [tab, setTab] = useState<PosTab>('services');
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>(() =>
@@ -183,7 +190,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   function addDonationLine() {
     setDonationLines((rows) => [
       ...rows,
-      { key: nextKey(), purpose: DONATION_FUND_OPTIONS[0], amount: 51 },
+      { key: nextKey(), purpose: donationFunds[0] ?? 'General Hundi', amount: 51 },
     ]);
     setTab('donations');
   }
@@ -320,7 +327,14 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
     }
   }
 
-  const quickLinks = services.slice(0, 6);
+  const quickLinkServices = useMemo(
+    () => resolvePosQuickLinkServices(tenantId, services),
+    [tenantId, services],
+  );
+  const quickLinkProducts = useMemo(
+    () => resolvePosQuickLinkProducts(products),
+    [products],
+  );
 
   return (
     <>
@@ -328,7 +342,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
         <div className={styles.quickLinksBar}>
           <p className={styles.quickLinksTitle}>Quick links</p>
           <div className={styles.quickLinksScroll}>
-            {quickLinks.map((svc) => (
+            {quickLinkServices.map((svc) => (
               <button
                 key={svc.id}
                 type="button"
@@ -350,7 +364,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
                 </span>
               </button>
             ))}
-            {products.slice(0, 3).map((item) => (
+            {quickLinkProducts.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -606,7 +620,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
                             updateDonationLine(line.key, { purpose: e.target.value })
                           }
                         >
-                          {DONATION_FUND_OPTIONS.map((p) => (
+                          {donationFunds.map((p) => (
                             <option key={p} value={p}>
                               {p}
                             </option>

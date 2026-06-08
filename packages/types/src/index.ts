@@ -25,3 +25,4 @@ export * from './tenants';
 export * from './ritual';
 export * from './geo';
 export * from './settings';
+export * from './ganesha-catalog';

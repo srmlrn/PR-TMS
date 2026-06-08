@@ -1,6 +1,8 @@
 import { Currency } from './enums';
 import { Booking } from './booking';
 import { Donation } from './donation';
+import { GANESHA_TEMPLE_ID } from './tenants';
+import { ganeshaDonationFundNames } from './ganesha-catalog';
 
 export type ServiceLocation = 'on_site' | 'off_site';
 
@@ -16,6 +18,14 @@ export const DONATION_FUND_OPTIONS = [
 ] as const;
 
 export type DonationFundOption = (typeof DONATION_FUND_OPTIONS)[number];
+
+/** Donation / membership purposes for counter POS (tenant-aware). */
+export function donationFundOptionsForTenant(tenantId?: string): readonly string[] {
+  if (tenantId === GANESHA_TEMPLE_ID) {
+    return ['General Hundi', ...ganeshaDonationFundNames(), 'Other'];
+  }
+  return DONATION_FUND_OPTIONS;
+}
 
 export interface PosSalesItem {
   id: string;

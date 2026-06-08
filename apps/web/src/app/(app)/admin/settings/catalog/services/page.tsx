@@ -105,9 +105,16 @@ export default function SevaCatalogSettingsPage() {
       <PageIntro
         subtitle="Poojas and services — prices flow to devotee booking, counter POS, and priest schedule"
         actions={
-          <Link href="/admin/settings">
-            <Button variant="glass">← Settings</Button>
-          </Link>
+          <div className="flexRow">
+            <Link href="/admin/settings/catalog/reference">
+              <Button variant="outline" size="sm">
+                SGT category reference
+              </Button>
+            </Link>
+            <Link href="/admin/settings">
+              <Button variant="glass">← Settings</Button>
+            </Link>
+          </div>
         }
         showTenantContext={false}
       />
