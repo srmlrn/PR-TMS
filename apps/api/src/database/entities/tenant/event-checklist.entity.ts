@@ -5,7 +5,7 @@ export class EventChecklistEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'event_id', type: 'uuid' })
+  @Column({ name: 'event_id', length: 64 })
   eventId!: string;
 
   @Column({ length: 255 })

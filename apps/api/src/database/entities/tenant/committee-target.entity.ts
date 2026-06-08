@@ -2,17 +2,17 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import type { CommitteeTargetPeriod } from '@tms/types';
 
 @Entity('committee_targets')
 export class CommitteeTargetEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id!: string;
 
-  @Column({ name: 'committee_id', type: 'uuid' })
+  @Column({ name: 'committee_id', length: 64 })
   committeeId!: string;
 
   @Column({ length: 256 })

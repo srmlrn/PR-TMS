@@ -2,17 +2,17 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import type { CommitteeRequestStatus, CommitteeRequestType } from '@tms/types';
 
 @Entity('committee_requests')
 export class CommitteeRequestEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id!: string;
 
-  @Column({ name: 'committee_id', type: 'uuid' })
+  @Column({ name: 'committee_id', length: 64 })
   committeeId!: string;
 
   @Column({
@@ -34,13 +34,13 @@ export class CommitteeRequestEntity {
   })
   status!: CommitteeRequestStatus;
 
-  @Column({ name: 'requested_by_user_id', type: 'uuid' })
+  @Column({ name: 'requested_by_user_id', length: 128 })
   requestedByUserId!: string;
 
   @Column({ name: 'requested_by_name', length: 128, nullable: true })
   requestedByName?: string;
 
-  @Column({ name: 'reviewed_by_user_id', type: 'uuid', nullable: true })
+  @Column({ name: 'reviewed_by_user_id', length: 128, nullable: true })
   reviewedByUserId?: string;
 
   @Column({ name: 'reviewed_by_name', length: 128, nullable: true })

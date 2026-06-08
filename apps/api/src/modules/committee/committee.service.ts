@@ -51,6 +51,17 @@ import { lookupGaneshaCommitteePhoto } from '../../data/committee-photo-map';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantDataService } from '../../database/tenant-data.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  CommitteePostgresRepository,
+  PgBlockRecord,
+  PgLeadershipRecord,
+  PgMemberRecord,
+  PgMessageRecord,
+  PgReportRecord,
+  PgRequestRecord,
+  PgTargetRecord,
+  PgTaskRecord,
+} from './committee-postgres.repository';
 
 type CommitteeRecord = TenantEntity & {
   name: string;
@@ -113,6 +124,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
 
   constructor(
     private readonly tenantData: TenantDataService,
+    private readonly pgRepo: CommitteePostgresRepository,
     private readonly notifications: NotificationsService,
   ) {
     super();
@@ -133,19 +145,111 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     return d.toISOString();
   }
 
-  private toCommittee(record: CommitteeRecord, viewerUserId?: string): Committee {
-    const memberCount = [...this.memberStore.values()].filter(
-      (m) => m.tenantId === record.tenantId && m.committeeId === record.id && m.isActive,
-    ).length;
-    const viewerMember = viewerUserId
-      ? [...this.memberStore.values()].find(
-          (m) =>
-            m.tenantId === record.tenantId &&
-            m.committeeId === record.id &&
-            m.userId === viewerUserId &&
-            m.isActive,
-        )
-      : undefined;
+  private async ensureData(tenantId: string): Promise<void> {
+    if (this.usePostgres) {
+      await this.pgRepo.ensureSeeded(tenantId);
+    } else {
+      this.seedDemoCommittees(tenantId);
+    }
+  }
+
+  private pgMemberToRecord(m: PgMemberRecord): MemberRecord {
+    return {
+      id: m.id,
+      tenantId: m.tenantId,
+      committeeId: m.committeeId,
+      userId: m.userId,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      displayTitle: m.displayTitle,
+      photoUrl: m.photoUrl,
+      joinedAt: m.joinedAtIso,
+      isActive: m.isActive,
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+    };
+  }
+
+  private pgBlockToRecord(b: PgBlockRecord): BlockRecord {
+    return { ...b };
+  }
+
+  private pgTaskToRecord(t: PgTaskRecord): TaskRecord {
+    return { ...t };
+  }
+
+  private pgTargetToRecord(t: PgTargetRecord): TargetRecord {
+    return { ...t, targetValue: Number(t.targetValue), currentValue: Number(t.currentValue) };
+  }
+
+  private pgRequestToRecord(r: PgRequestRecord): RequestRecord {
+    return { ...r };
+  }
+
+  private pgMessageToRecord(m: PgMessageRecord): MessageRecord {
+    return { ...m };
+  }
+
+  private pgReportToRecord(r: PgReportRecord): ReportRecord {
+    return {
+      id: r.id,
+      tenantId: r.tenantId,
+      committeeId: r.committeeId,
+      period: r.period,
+      title: r.title,
+      meetingDate: r.meetingDate,
+      minutesSummary: r.minutesSummary ?? '',
+      attendanceCount: r.attendanceCount ?? 0,
+      expectedAttendance: r.expectedAttendance,
+      createdByUserId: r.createdByUserId,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    };
+  }
+
+  private pgLeadershipToRecord(l: PgLeadershipRecord): LeadershipRecord {
+    return {
+      id: l.id,
+      tenantId: l.tenantId,
+      committeeId: l.committeeId,
+      name: l.name,
+      role: l.role,
+      displayTitle: l.displayTitle,
+      startDate: l.startDate ?? '',
+      endDate: l.endDate,
+      createdAt: l.createdAt,
+      updatedAt: l.updatedAt,
+    };
+  }
+
+  private async toCommittee(record: CommitteeRecord, viewerUserId?: string): Promise<Committee> {
+    let memberCount: number;
+    let viewerMember: MemberRecord | undefined;
+    if (this.usePostgres) {
+      memberCount = await this.pgRepo.countActiveMembers(record.tenantId, record.id);
+      if (viewerUserId) {
+        const pg = await this.pgRepo.findActiveMemberForUser(
+          record.tenantId,
+          record.id,
+          viewerUserId,
+        );
+        viewerMember = pg ? this.pgMemberToRecord(pg) : undefined;
+      }
+    } else {
+      memberCount = [...this.memberStore.values()].filter(
+        (m) => m.tenantId === record.tenantId && m.committeeId === record.id && m.isActive,
+      ).length;
+      viewerMember = viewerUserId
+        ? [...this.memberStore.values()].find(
+            (m) =>
+              m.tenantId === record.tenantId &&
+              m.committeeId === record.id &&
+              m.userId === viewerUserId &&
+              m.isActive,
+          )
+        : undefined;
+    }
     return {
       id: record.id,
       name: record.name,
@@ -770,11 +874,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
   }
 
-  private getMemberRecord(
+  private async getMemberRecord(
     tenantId: string,
     committeeId: string,
     userId: string,
-  ): MemberRecord | undefined {
+  ): Promise<MemberRecord | undefined> {
+    if (this.usePostgres) {
+      const pg = await this.pgRepo.findActiveMemberForUser(tenantId, committeeId, userId);
+      return pg ? this.pgMemberToRecord(pg) : undefined;
+    }
     return [...this.memberStore.values()].find(
       (m) =>
         m.tenantId === tenantId &&
@@ -784,20 +892,26 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     );
   }
 
-  private isChair(tenantId: string, committeeId: string, userId: string): boolean {
-    const member = this.getMemberRecord(tenantId, committeeId, userId);
+  private async isChair(tenantId: string, committeeId: string, userId: string): Promise<boolean> {
+    const member = await this.getMemberRecord(tenantId, committeeId, userId);
     return member?.role === 'chair' || member?.role === 'vice_chair';
   }
 
-  private isMember(tenantId: string, committeeId: string, userId: string): boolean {
-    return !!this.getMemberRecord(tenantId, committeeId, userId);
+  private async isMember(tenantId: string, committeeId: string, userId: string): Promise<boolean> {
+    return !!(await this.getMemberRecord(tenantId, committeeId, userId));
   }
 
   /** Auth user id plus roster userIds linked by email (for task assignment matching). */
-  private getUserAssigneeIds(tenantId: string, user: AuthUser): Set<string> {
+  private async getUserAssigneeIds(tenantId: string, user: AuthUser): Promise<Set<string>> {
     const ids = new Set<string>([user.id]);
     const email = user.email?.toLowerCase();
     if (!email) return ids;
+    if (this.usePostgres) {
+      for (const m of await this.pgRepo.findMembersByEmail(tenantId, email)) {
+        ids.add(m.userId);
+      }
+      return ids;
+    }
     for (const m of this.memberStore.values()) {
       if (
         m.tenantId === tenantId &&
@@ -810,38 +924,49 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     return ids;
   }
 
-  private isTaskAssignedToUser(
+  private async isTaskAssignedToUser(
     task: Pick<CommitteeTask, 'assigneeUserId'>,
     tenantId: string,
     user: AuthUser,
-  ): boolean {
+  ): Promise<boolean> {
     if (!task.assigneeUserId) return false;
-    return this.getUserAssigneeIds(tenantId, user).has(task.assigneeUserId);
+    return (await this.getUserAssigneeIds(tenantId, user)).has(task.assigneeUserId);
   }
 
-  assertCommitteeAccess(
+  async assertCommitteeAccess(
     tenantId: string,
     committeeId: string,
     user: AuthUser,
     requireChair = false,
-  ): void {
+  ): Promise<void> {
     if (this.isAdmin(user)) return;
     if (user.role !== UserRole.COMMITTEE) {
       throw new ForbiddenException('Committee access required');
     }
-    if (!this.isMember(tenantId, committeeId, user.id)) {
+    if (!(await this.isMember(tenantId, committeeId, user.id))) {
       throw new ForbiddenException('Not a member of this committee');
     }
-    if (requireChair && !this.isChair(tenantId, committeeId, user.id)) {
+    if (requireChair && !(await this.isChair(tenantId, committeeId, user.id))) {
       throw new ForbiddenException('Chair or vice-chair access required');
     }
   }
 
-  private assertManageAccess(tenantId: string, committeeId: string, user: AuthUser): void {
-    this.assertCommitteeAccess(tenantId, committeeId, user, true);
+  private async assertManageAccess(
+    tenantId: string,
+    committeeId: string,
+    user: AuthUser,
+  ): Promise<void> {
+    await this.assertCommitteeAccess(tenantId, committeeId, user, true);
   }
 
-  private ensureCommittee(tenantId: string, committeeId: string): CommitteeRecord {
+  private async ensureCommittee(tenantId: string, committeeId: string): Promise<CommitteeRecord> {
+    if (this.usePostgres) {
+      const committee = await this.pgRepo.findCommittee(tenantId, committeeId);
+      if (!committee) {
+        throw new NotFoundException(`Committee ${committeeId} not found`);
+      }
+      return committee;
+    }
     const committee = this.findOneScoped(tenantId, committeeId);
     if (!committee) {
       throw new NotFoundException(`Committee ${committeeId} not found`);
@@ -854,33 +979,49 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     user: AuthUser,
     options?: { mine?: boolean },
   ): Promise<Committee[]> {
-    this.seedDemoCommittees(tenantId);
-    let records = this.scoped(tenantId);
+    await this.ensureData(tenantId);
+    let records: CommitteeRecord[];
+    if (this.usePostgres) {
+      records = await this.pgRepo.findAllCommittees(tenantId);
+    } else {
+      records = this.scoped(tenantId);
+    }
 
     if (!this.isAdmin(user) || options?.mine) {
       const myCommitteeIds = new Set(
-        [...this.memberStore.values()]
-          .filter((m) => m.tenantId === tenantId && m.userId === user.id && m.isActive)
-          .map((m) => m.committeeId),
+        this.usePostgres
+          ? (await this.pgRepo.findMembersForUser(tenantId, user.id)).map((m) => m.committeeId)
+          : [...this.memberStore.values()]
+              .filter((m) => m.tenantId === tenantId && m.userId === user.id && m.isActive)
+              .map((m) => m.committeeId),
       );
       records = records.filter((c) => myCommitteeIds.has(c.id));
     }
 
     const attachMembership = options?.mine || !this.isAdmin(user);
-    return records
-      .filter((c) => c.isActive || this.isAdmin(user))
-      .map((c) => this.toCommittee(c, attachMembership ? user.id : undefined));
+    const filtered = records.filter((c) => c.isActive || this.isAdmin(user));
+    return Promise.all(
+      filtered.map((c) => this.toCommittee(c, attachMembership ? user.id : undefined)),
+    );
   }
 
   async findOne(tenantId: string, id: string, user: AuthUser): Promise<Committee> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, id, user);
-    return this.toCommittee(this.ensureCommittee(tenantId, id), user.id);
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, id, user);
+    return this.toCommittee(await this.ensureCommittee(tenantId, id), user.id);
   }
 
   async create(tenantId: string, input: CreateCommitteeInput, user: AuthUser): Promise<Committee> {
     if (!this.isAdmin(user)) {
       throw new ForbiddenException('Admin access required');
+    }
+    if (this.usePostgres) {
+      const record = await this.pgRepo.createCommittee(
+        tenantId,
+        input,
+        input.slug ?? this.slugify(input.name),
+      );
+      return this.toCommittee(record);
     }
     const record = this.createEntity(tenantId, {
       name: input.name,
@@ -902,11 +1043,13 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: UpdateCommitteeInput,
     user: AuthUser,
   ): Promise<Committee> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, id, user);
+      await this.assertManageAccess(tenantId, id, user);
     }
-    const record = this.updateEntity(tenantId, id, input);
+    const record = this.usePostgres
+      ? await this.pgRepo.updateCommittee(tenantId, id, input)
+      : this.updateEntity(tenantId, id, input);
     return this.toCommittee(record);
   }
 
@@ -915,11 +1058,14 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     committeeId: string,
     user: AuthUser,
   ): Promise<CommitteeMember[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    return [...this.memberStore.values()]
-      .filter((m) => m.tenantId === tenantId && m.committeeId === committeeId)
-      .map((m) => this.toMember(m));
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const records = this.usePostgres
+      ? (await this.pgRepo.findMembers(tenantId, committeeId)).map((m) => this.pgMemberToRecord(m))
+      : [...this.memberStore.values()].filter(
+          (m) => m.tenantId === tenantId && m.committeeId === committeeId,
+        );
+    return records.map((m) => this.toMember(m));
   }
 
   async addMember(
@@ -928,10 +1074,16 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: CreateCommitteeMemberInput,
     user: AuthUser,
   ): Promise<CommitteeMember> {
-    this.seedDemoCommittees(tenantId);
-    this.ensureCommittee(tenantId, committeeId);
+    await this.ensureData(tenantId);
+    await this.ensureCommittee(tenantId, committeeId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      const record = this.pgMemberToRecord(
+        await this.pgRepo.createMember(tenantId, committeeId, input),
+      );
+      return this.toMember(record);
     }
     const now = new Date();
     const record: MemberRecord = {
@@ -960,9 +1112,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: UpdateCommitteeMemberInput,
     user: AuthUser,
   ): Promise<CommitteeMember> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      const updated = this.pgMemberToRecord(
+        await this.pgRepo.updateMember(tenantId, committeeId, memberId, input),
+      );
+      return this.toMember(updated);
     }
     const existing = this.memberStore.get(memberId);
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
@@ -979,9 +1137,13 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     memberId: string,
     user: AuthUser,
   ): Promise<{ deleted: boolean }> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      await this.pgRepo.deleteMember(committeeId, memberId);
+      return { deleted: true };
     }
     const existing = this.memberStore.get(memberId);
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
@@ -996,11 +1158,14 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     committeeId: string,
     user: AuthUser,
   ): Promise<CommitteeCalendarBlock[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    return [...this.blockStore.values()]
-      .filter((b) => b.tenantId === tenantId && b.committeeId === committeeId)
-      .map((b) => this.toBlock(b));
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const records = this.usePostgres
+      ? (await this.pgRepo.findBlocks(tenantId, committeeId)).map((b) => this.pgBlockToRecord(b))
+      : [...this.blockStore.values()].filter(
+          (b) => b.tenantId === tenantId && b.committeeId === committeeId,
+        );
+    return records.map((b) => this.toBlock(b));
   }
 
   async createBlock(
@@ -1010,8 +1175,14 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     user: AuthUser,
     requestId?: string,
   ): Promise<CommitteeCalendarBlock> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    if (this.usePostgres) {
+      const record = this.pgBlockToRecord(
+        await this.pgRepo.createBlock(tenantId, committeeId, input, user.id, requestId),
+      );
+      return this.toBlock(record);
+    }
     const now = new Date();
     const blockType: CommitteeCalendarBlockType = input.blockType ?? 'committee';
     const blocksTempleCalendar =
@@ -1043,9 +1214,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: UpdateCommitteeCalendarBlockInput,
     user: AuthUser,
   ): Promise<CommitteeCalendarBlock> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      const updated = this.pgBlockToRecord(
+        await this.pgRepo.updateBlock(tenantId, committeeId, blockId, input),
+      );
+      return this.toBlock(updated);
     }
     const existing = this.blockStore.get(blockId);
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
@@ -1062,9 +1239,13 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     blockId: string,
     user: AuthUser,
   ): Promise<{ deleted: boolean }> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      await this.pgRepo.deleteBlock(committeeId, blockId);
+      return { deleted: true };
     }
     const existing = this.blockStore.get(blockId);
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
@@ -1080,14 +1261,17 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     user: AuthUser,
     options?: { assigneeUserId?: string },
   ): Promise<CommitteeTask[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    let tasks = [...this.taskStore.values()].filter(
-      (t) => t.tenantId === tenantId && t.committeeId === committeeId,
-    );
-    if (options?.assigneeUserId) {
-      tasks = tasks.filter((t) => t.assigneeUserId === options.assigneeUserId);
-    }
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const tasks = this.usePostgres
+      ? (await this.pgRepo.findTasks(tenantId, committeeId, options)).map((t) =>
+          this.pgTaskToRecord(t),
+        )
+      : [...this.taskStore.values()].filter((t) => {
+          if (t.tenantId !== tenantId || t.committeeId !== committeeId) return false;
+          if (options?.assigneeUserId) return t.assigneeUserId === options.assigneeUserId;
+          return true;
+        });
     return tasks.map((t) => this.toTask(t));
   }
 
@@ -1097,9 +1281,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: CreateCommitteeTaskInput,
     user: AuthUser,
   ): Promise<CommitteeTask> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      const record = this.pgTaskToRecord(
+        await this.pgRepo.createTask(tenantId, committeeId, input, user.id),
+      );
+      return this.toTask(record);
     }
     const now = new Date();
     const record: TaskRecord = {
@@ -1129,19 +1319,26 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: UpdateCommitteeTaskInput,
     user: AuthUser,
   ): Promise<CommitteeTask> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    const existing = this.taskStore.get(taskId);
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    let existing: TaskRecord | undefined;
+    if (this.usePostgres) {
+      const pgTask = await this.pgRepo.findTask(tenantId, committeeId, taskId);
+      existing = pgTask ? this.pgTaskToRecord(pgTask) : undefined;
+    } else {
+      existing = this.taskStore.get(taskId);
+    }
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
       throw new NotFoundException(`Task ${taskId} not found`);
     }
-    const isAssignee = this.isTaskAssignedToUser(existing, tenantId, user);
+    const isAssignee = await this.isTaskAssignedToUser(existing, tenantId, user);
     const isUnassigned = !existing.assigneeUserId;
     const isClaiming =
       isUnassigned &&
       input.assigneeUserId != null &&
-      this.getUserAssigneeIds(tenantId, user).has(input.assigneeUserId);
-    const canManage = this.isAdmin(user) || this.isChair(tenantId, committeeId, user.id);
+      (await this.getUserAssigneeIds(tenantId, user)).has(input.assigneeUserId);
+    const canManage =
+      this.isAdmin(user) || (await this.isChair(tenantId, committeeId, user.id));
     if (!canManage && !isAssignee && !isClaiming) {
       throw new ForbiddenException('Cannot update this task');
     }
@@ -1154,6 +1351,12 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       };
     } else if (!canManage && isAssignee) {
       patch = input.status !== undefined ? { status: input.status } : {};
+    }
+    if (this.usePostgres) {
+      const updated = this.pgTaskToRecord(
+        await this.pgRepo.updateTask(tenantId, committeeId, taskId, patch),
+      );
+      return this.toTask(updated);
     }
     const updated: TaskRecord = {
       ...existing,
@@ -1173,11 +1376,14 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     committeeId: string,
     user: AuthUser,
   ): Promise<CommitteeTarget[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    return [...this.targetStore.values()]
-      .filter((t) => t.tenantId === tenantId && t.committeeId === committeeId)
-      .map((t) => this.toTarget(t));
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const records = this.usePostgres
+      ? (await this.pgRepo.findTargets(tenantId, committeeId)).map((t) => this.pgTargetToRecord(t))
+      : [...this.targetStore.values()].filter(
+          (t) => t.tenantId === tenantId && t.committeeId === committeeId,
+        );
+    return records.map((t) => this.toTarget(t));
   }
 
   async createTarget(
@@ -1186,9 +1392,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: CreateCommitteeTargetInput,
     user: AuthUser,
   ): Promise<CommitteeTarget> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      const record = this.pgTargetToRecord(
+        await this.pgRepo.createTarget(tenantId, committeeId, input),
+      );
+      return this.toTarget(record);
     }
     const now = new Date();
     const record: TargetRecord = {
@@ -1216,9 +1428,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: UpdateCommitteeTargetInput,
     user: AuthUser,
   ): Promise<CommitteeTarget> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
+    }
+    if (this.usePostgres) {
+      const updated = this.pgTargetToRecord(
+        await this.pgRepo.updateTarget(tenantId, committeeId, targetId, input),
+      );
+      return this.toTarget(updated);
     }
     const existing = this.targetStore.get(targetId);
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
@@ -1240,17 +1458,20 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     user: AuthUser,
     options?: { status?: string; requestedByUserId?: string },
   ): Promise<CommitteeRequest[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    let requests = [...this.requestStore.values()].filter(
-      (r) => r.tenantId === tenantId && r.committeeId === committeeId,
-    );
-    if (options?.status) {
-      requests = requests.filter((r) => r.status === options.status);
-    }
-    if (options?.requestedByUserId) {
-      requests = requests.filter((r) => r.requestedByUserId === options.requestedByUserId);
-    }
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const requests = this.usePostgres
+      ? (await this.pgRepo.findRequests(tenantId, committeeId, options)).map((r) =>
+          this.pgRequestToRecord(r),
+        )
+      : [...this.requestStore.values()].filter((r) => {
+          if (r.tenantId !== tenantId || r.committeeId !== committeeId) return false;
+          if (options?.status && r.status !== options.status) return false;
+          if (options?.requestedByUserId && r.requestedByUserId !== options.requestedByUserId) {
+            return false;
+          }
+          return true;
+        });
     return requests.map((r) => this.toRequest(r));
   }
 
@@ -1260,8 +1481,14 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: CreateCommitteeRequestInput,
     user: AuthUser,
   ): Promise<CommitteeRequest> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    if (this.usePostgres) {
+      const record = this.pgRequestToRecord(
+        await this.pgRepo.createRequest(tenantId, committeeId, input, user.id, user.name),
+      );
+      return this.toRequest(record);
+    }
     const now = new Date();
     const record: RequestRecord = {
       id: uuidv4(),
@@ -1291,17 +1518,23 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: UpdateCommitteeRequestInput,
     user: AuthUser,
   ): Promise<CommitteeRequest> {
-    this.seedDemoCommittees(tenantId);
-    const existing = this.requestStore.get(requestId);
+    await this.ensureData(tenantId);
+    let existing: RequestRecord | undefined;
+    if (this.usePostgres) {
+      const pg = await this.pgRepo.findRequest(tenantId, committeeId, requestId);
+      existing = pg ? this.pgRequestToRecord(pg) : undefined;
+    } else {
+      existing = this.requestStore.get(requestId);
+    }
     if (!existing || existing.tenantId !== tenantId || existing.committeeId !== committeeId) {
       throw new NotFoundException(`Request ${requestId} not found`);
     }
 
-    const isRequester = this.getUserAssigneeIds(tenantId, user).has(
+    const isRequester = (await this.getUserAssigneeIds(tenantId, user)).has(
       existing.requestedByUserId,
     );
     const canReview =
-      this.isAdmin(user) || this.isChair(tenantId, committeeId, user.id);
+      this.isAdmin(user) || (await this.isChair(tenantId, committeeId, user.id));
 
     if (!(input.status === 'cancelled' && isRequester && existing.status === 'pending') && !canReview) {
       throw new ForbiddenException('Only chair or admin can approve/reject requests');
@@ -1309,16 +1542,29 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
 
     const now = new Date();
     const reviewed = canReview && (input.status === 'approved' || input.status === 'rejected');
-    const updated: RequestRecord = {
-      ...existing,
-      status: input.status,
-      reviewNote: input.reviewNote,
-      reviewedByUserId: reviewed ? user.id : existing.reviewedByUserId,
-      reviewedByName: reviewed ? user.name : existing.reviewedByName,
-      reviewedAt: reviewed ? now : existing.reviewedAt,
-      updatedAt: now,
-    };
-    this.requestStore.set(requestId, updated);
+    let updated: RequestRecord;
+    if (this.usePostgres) {
+      updated = this.pgRequestToRecord(
+        await this.pgRepo.updateRequest(tenantId, committeeId, requestId, {
+          status: input.status,
+          reviewNote: input.reviewNote,
+          reviewedByUserId: reviewed ? user.id : existing.reviewedByUserId,
+          reviewedByName: reviewed ? user.name : existing.reviewedByName,
+          reviewedAt: reviewed ? now : existing.reviewedAt,
+        }),
+      );
+    } else {
+      updated = {
+        ...existing,
+        status: input.status,
+        reviewNote: input.reviewNote,
+        reviewedByUserId: reviewed ? user.id : existing.reviewedByUserId,
+        reviewedByName: reviewed ? user.name : existing.reviewedByName,
+        reviewedAt: reviewed ? now : existing.reviewedAt,
+        updatedAt: now,
+      };
+      this.requestStore.set(requestId, updated);
+    }
 
     if (input.status === 'approved' && existing.blockStartDate && existing.blockEndDate) {
       if (existing.type === 'calendar_block') {
@@ -1351,10 +1597,14 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
           user,
           requestId,
         );
-        const leaveRecord = this.blockStore.get(block.id);
-        if (leaveRecord) {
-          leaveRecord.createdByUserId = existing.requestedByUserId;
-          this.blockStore.set(block.id, leaveRecord);
+        if (this.usePostgres) {
+          await this.pgRepo.updateBlockCreatedBy(block.id, existing.requestedByUserId);
+        } else {
+          const leaveRecord = this.blockStore.get(block.id);
+          if (leaveRecord) {
+            leaveRecord.createdByUserId = existing.requestedByUserId;
+            this.blockStore.set(block.id, leaveRecord);
+          }
         }
       }
     }
@@ -1379,12 +1629,16 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     committeeId: string,
     user: AuthUser,
   ): Promise<CommitteeMessage[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    return [...this.messageStore.values()]
-      .filter((m) => m.tenantId === tenantId && m.committeeId === committeeId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .map((m) => this.toMessage(m));
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const records = this.usePostgres
+      ? (await this.pgRepo.findMessages(tenantId, committeeId)).map((m) =>
+          this.pgMessageToRecord(m),
+        )
+      : [...this.messageStore.values()]
+          .filter((m) => m.tenantId === tenantId && m.committeeId === committeeId)
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return records.map((m) => this.toMessage(m));
   }
 
   async createMessage(
@@ -1393,8 +1647,14 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: CreateCommitteeMessageInput,
     user: AuthUser,
   ): Promise<CommitteeMessage> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    if (this.usePostgres) {
+      const record = this.pgMessageToRecord(
+        await this.pgRepo.createMessage(tenantId, committeeId, input, user.id, user.name),
+      );
+      return this.toMessage(record);
+    }
     const now = new Date();
     const record: MessageRecord = {
       id: uuidv4(),
@@ -1433,9 +1693,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       allBlocks.push(...(await this.findBlocks(tenantId, cid, user)));
     }
 
-    const myTasks = allTasks.filter(
-      (t) => this.isTaskAssignedToUser(t, tenantId, user) && t.status !== 'done',
+    const assigneeChecks = await Promise.all(
+      allTasks.map(async (t) => ({
+        t,
+        assigned: await this.isTaskAssignedToUser(t, tenantId, user),
+      })),
     );
+    const myTasks = assigneeChecks
+      .filter(({ t, assigned }) => assigned && t.status !== 'done')
+      .map(({ t }) => t);
     const isAvailable = (t: CommitteeTask) =>
       !t.assigneeUserId && t.status !== 'done' && t.status !== 'blocked';
     const taskBoard = {
@@ -1448,10 +1714,15 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       },
       openPool: allTasks.filter(isAvailable).slice(0, 5),
     };
-    const pendingApprovals = allRequests.filter((r) => {
-      if (r.status !== 'pending') return false;
-      return this.isAdmin(user) || this.isChair(tenantId, r.committeeId, user.id);
-    });
+    const approvalChecks = await Promise.all(
+      allRequests.map(async (r) => ({
+        r,
+        canApprove:
+          r.status === 'pending' &&
+          (this.isAdmin(user) || (await this.isChair(tenantId, r.committeeId, user.id))),
+      })),
+    );
+    const pendingApprovals = approvalChecks.filter((c) => c.canApprove).map((c) => c.r);
 
     const today = new Date().toISOString().slice(0, 10);
     const upcomingBlocks = allBlocks
@@ -1481,7 +1752,13 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     options?: { committeeId?: string },
   ): Promise<CommitteeTask[]> {
     const board = await this.findBoardTasks(tenantId, user, options);
-    return board.filter((t) => this.isTaskAssignedToUser(t, tenantId, user));
+    const checks = await Promise.all(
+      board.map(async (t) => ({
+        t,
+        assigned: await this.isTaskAssignedToUser(t, tenantId, user),
+      })),
+    );
+    return checks.filter((c) => c.assigned).map((c) => c.t);
   }
 
   async findBoardTasks(
@@ -1522,7 +1799,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     options?: { committeeId?: string },
   ): Promise<CommitteeRequest[]> {
     const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
-    const assigneeIds = this.getUserAssigneeIds(tenantId, user);
+    const assigneeIds = await this.getUserAssigneeIds(tenantId, user);
     const requests: CommitteeRequest[] = [];
     for (const cid of committeeIds) {
       const all = await this.findRequests(tenantId, cid, user);
@@ -1566,28 +1843,39 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     const requests: CommitteeRequest[] = [];
     for (const cid of committeeIds) {
       const all = await this.findRequests(tenantId, cid, user);
-      requests.push(
-        ...all.filter((r) => {
-          if (r.status !== 'pending') return false;
-          return this.isAdmin(user) || this.isChair(tenantId, cid, user.id);
-        }),
-      );
+      for (const r of all) {
+        if (
+          r.status === 'pending' &&
+          (this.isAdmin(user) || (await this.isChair(tenantId, cid, user.id)))
+        ) {
+          requests.push(r);
+        }
+      }
     }
     return requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async getRoster(tenantId: string, user: AuthUser): Promise<CommitteeRoster> {
-    this.seedDemoCommittees(tenantId);
-    let records = this.scoped(tenantId).filter((c) => c.isActive);
+    await this.ensureData(tenantId);
+    let records: CommitteeRecord[];
+    if (this.usePostgres) {
+      records = (await this.pgRepo.findAllCommittees(tenantId)).filter((c) => c.isActive);
+    } else {
+      records = this.scoped(tenantId).filter((c) => c.isActive);
+    }
 
     if (!this.isAdmin(user)) {
       records = records.filter((c) => c.publicRoster);
     }
 
+    const allMembers = this.usePostgres
+      ? (await this.pgRepo.findAllMembers(tenantId)).map((m) => this.pgMemberToRecord(m))
+      : [...this.memberStore.values()];
+
     const byCategory = new Map<CommitteeCategory, CommitteeRoster['categories'][0]['committees']>();
 
     for (const record of records) {
-      const members = [...this.memberStore.values()]
+      const members = allMembers
         .filter((m) => m.tenantId === tenantId && m.committeeId === record.id && m.isActive)
         .sort((a, b) => {
           const roleOrder = { chair: 0, vice_chair: 1, secretary: 2, member: 3 };
@@ -1595,7 +1883,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
         })
         .map((m) => this.toMember(m));
 
-      const entry = { committee: this.toCommittee(record), members };
+      const entry = { committee: await this.toCommittee(record), members };
       const list = byCategory.get(record.category) ?? [];
       list.push(entry);
       byCategory.set(record.category, list);
@@ -1619,30 +1907,42 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     committeeId: string,
     user: AuthUser,
   ): Promise<CommitteeReport[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    return [...this.reportStore.values()]
-      .filter((r) => r.tenantId === tenantId && r.committeeId === committeeId)
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const records = this.usePostgres
+      ? (await this.pgRepo.findReports(tenantId, committeeId)).map((r) => this.pgReportToRecord(r))
+      : [...this.reportStore.values()].filter(
+          (r) => r.tenantId === tenantId && r.committeeId === committeeId,
+        );
+    return records
       .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
       .map((r) => this.toReport(r));
   }
 
   async findAllReports(tenantId: string, user: AuthUser): Promise<CommitteeReport[]> {
-    this.seedDemoCommittees(tenantId);
-    let committeeIds: Set<string>;
+    await this.ensureData(tenantId);
+    let committeeIds: string[];
 
     if (this.isAdmin(user)) {
-      committeeIds = new Set(this.scoped(tenantId).map((c) => c.id));
+      committeeIds = this.usePostgres
+        ? (await this.pgRepo.findAllCommittees(tenantId)).map((c) => c.id)
+        : this.scoped(tenantId).map((c) => c.id);
     } else {
-      committeeIds = new Set(
-        [...this.memberStore.values()]
-          .filter((m) => m.tenantId === tenantId && m.userId === user.id && m.isActive)
-          .map((m) => m.committeeId),
-      );
+      committeeIds = this.usePostgres
+        ? (await this.pgRepo.findMembersForUser(tenantId, user.id)).map((m) => m.committeeId)
+        : [...this.memberStore.values()]
+            .filter((m) => m.tenantId === tenantId && m.userId === user.id && m.isActive)
+            .map((m) => m.committeeId);
     }
 
-    return [...this.reportStore.values()]
-      .filter((r) => r.tenantId === tenantId && committeeIds.has(r.committeeId))
+    const records: ReportRecord[] = this.usePostgres
+      ? (await this.pgRepo.findReportsForCommittees(tenantId, committeeIds)).map((r) =>
+          this.pgReportToRecord(r),
+        )
+      : [...this.reportStore.values()].filter(
+          (r) => r.tenantId === tenantId && committeeIds.includes(r.committeeId),
+        );
+    return records
       .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
       .map((r) => this.toReport(r));
   }
@@ -1653,11 +1953,17 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     input: CreateCommitteeReportInput,
     user: AuthUser,
   ): Promise<CommitteeReport> {
-    this.seedDemoCommittees(tenantId);
+    await this.ensureData(tenantId);
     if (!this.isAdmin(user)) {
-      this.assertManageAccess(tenantId, committeeId, user);
+      await this.assertManageAccess(tenantId, committeeId, user);
     }
-    this.ensureCommittee(tenantId, committeeId);
+    await this.ensureCommittee(tenantId, committeeId);
+    if (this.usePostgres) {
+      const record = this.pgReportToRecord(
+        await this.pgRepo.createReport(tenantId, committeeId, input, user.id),
+      );
+      return this.toReport(record);
+    }
     const now = new Date();
     const record: ReportRecord = {
       id: uuidv4(),
@@ -1682,10 +1988,16 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     committeeId: string,
     user: AuthUser,
   ): Promise<CommitteeLeadershipRecord[]> {
-    this.seedDemoCommittees(tenantId);
-    this.assertCommitteeAccess(tenantId, committeeId, user);
-    return [...this.leadershipStore.values()]
-      .filter((l) => l.tenantId === tenantId && l.committeeId === committeeId)
+    await this.ensureData(tenantId);
+    await this.assertCommitteeAccess(tenantId, committeeId, user);
+    const records = this.usePostgres
+      ? (await this.pgRepo.findLeadershipHistory(tenantId, committeeId)).map((l) =>
+          this.pgLeadershipToRecord(l),
+        )
+      : [...this.leadershipStore.values()].filter(
+          (l) => l.tenantId === tenantId && l.committeeId === committeeId,
+        );
+    return records
       .sort((a, b) => (b.startDate ?? '').localeCompare(a.startDate ?? ''))
       .map((l) => this.toLeadership(l));
   }

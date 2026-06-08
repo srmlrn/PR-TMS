@@ -2,16 +2,16 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('committee_calendar_blocks')
 export class CommitteeCalendarBlockEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id!: string;
 
-  @Column({ name: 'committee_id', type: 'uuid' })
+  @Column({ name: 'committee_id', length: 64 })
   committeeId!: string;
 
   @Column({ length: 128 })
@@ -32,10 +32,10 @@ export class CommitteeCalendarBlockEntity {
   @Column({ name: 'blocks_temple_calendar', default: true })
   blocksTempleCalendar!: boolean;
 
-  @Column({ name: 'request_id', type: 'uuid', nullable: true })
+  @Column({ name: 'request_id', length: 64, nullable: true })
   requestId?: string;
 
-  @Column({ name: 'created_by_user_id', type: 'uuid', nullable: true })
+  @Column({ name: 'created_by_user_id', length: 128, nullable: true })
   createdByUserId?: string;
 
   @CreateDateColumn({ name: 'created_at' })

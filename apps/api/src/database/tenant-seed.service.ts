@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { GANESHA_TEMPLE_ID, TenantContext } from '@tms/types';
+import { GANESHA_TEMPLE_ID, POS_SALES_CATALOG, TenantContext } from '@tms/types';
 import { TenantConnectionService } from './tenant-connection.service';
+import { seedCommitteesToPostgres } from '../modules/committee/committee-postgres.seed';
 import {
   DevoteeEntity,
   SevaServiceEntity,
@@ -13,10 +14,12 @@ import {
   RecognitionItemEntity,
   PrasadamSponsorshipEntity,
   DonationCampaignEntity,
+  DonationEntity,
   VendorPaymentEntity,
   QueueTokenEntity,
   StaffEntity,
   VolunteerShiftEntity,
+  PosProductEntity,
 } from './entities/tenant';
 
 @Injectable()
@@ -343,6 +346,7 @@ export class TenantSeedService {
       }),
     ]);
 
+    await seedCommitteesToPostgres(ds, ctx.tenantId);
     this.seeded.add(k);
   }
 
@@ -350,7 +354,8 @@ export class TenantSeedService {
     const ds = await this.connections.getDataSource(ctx);
     const devoteeRepo = ds.getRepository(DevoteeEntity);
 
-    const [amit] = await devoteeRepo.save([
+    const familyId = crypto.randomUUID();
+    const [amit, priya, raj, swetha] = await devoteeRepo.save([
       devoteeRepo.create({
         firstName: 'Amit',
         lastName: 'Reddy',
@@ -371,6 +376,37 @@ export class TenantSeedService {
         membershipTier: 'Annual',
         status: 'active',
       }),
+      devoteeRepo.create({
+        firstName: 'Raj',
+        lastName: 'Natarajan',
+        email: 'raj@ex.com',
+        phone: '+1 615-555-0211',
+        country: 'US',
+        gotram: 'Atri',
+        nakshatra: 'Rohini',
+        gender: 'male',
+        dateOfBirth: '1978-07-27',
+        familyId,
+        membershipTier: 'Annual',
+        status: 'active',
+        address: {
+          line1: '865 Bellevue Rd, J13',
+          city: 'Nashville',
+          state: 'TN',
+          postalCode: '37221',
+          country: 'US',
+        },
+      }),
+      devoteeRepo.create({
+        firstName: 'Swetha',
+        lastName: 'Natarajan',
+        phone: '+1 615-555-0212',
+        country: 'US',
+        gotram: 'Atri',
+        familyId,
+        membershipTier: 'Annual',
+        status: 'active',
+      }),
     ]);
 
     const sevaRepo = ds.getRepository(SevaServiceEntity);
@@ -378,32 +414,82 @@ export class TenantSeedService {
       sevaRepo.create({
         name: 'Archana',
         deity: 'Lord Ganesha',
+        description: 'Daily archana with sankalpa name, gotram, and nakshatra',
         price: 25,
+        priceOffSite: 51,
         currency: 'USD',
         durationMinutes: 30,
       }),
       sevaRepo.create({
         name: 'Abhishekam',
         deity: 'Lord Ganesha',
+        description: 'Special abhishekam ritual bathing of the deity',
         price: 101,
+        priceOffSite: 151,
         currency: 'USD',
         durationMinutes: 60,
       }),
       sevaRepo.create({
         name: 'Homam',
         deity: 'Lord Ganesha',
+        description: 'Sacred fire ritual with priest-led homam',
         price: 251,
+        priceOffSite: 401,
         currency: 'USD',
         durationMinutes: 90,
       }),
+      sevaRepo.create({
+        name: 'VIP Darshan',
+        deity: 'Lord Ganesha',
+        description: 'Priority darshan with shorter queue wait (on-site only)',
+        price: 51,
+        currency: 'USD',
+        durationMinutes: 15,
+      }),
     ]);
 
+    const archana = services[0];
+    const abhishekam = services[1];
+
     const bookingRepo = ds.getRepository(BookingEntity);
-    await bookingRepo.save(
+    const today = new Date().toISOString().slice(0, 10);
+    await bookingRepo.save([
+      bookingRepo.create({
+        devoteeId: raj.id,
+        serviceId: archana.id,
+        scheduledAt: new Date('2026-06-06T15:00:00Z'),
+        status: 'confirmed',
+        amount: 25,
+        currency: 'USD',
+        channel: 'counter',
+        sankalpa: { sponsorName: 'Raj Natarajan', gotram: 'Atri', occasion: '60th Birthday' },
+        receiptNumber: 'RCT-2026-3101',
+      }),
+      bookingRepo.create({
+        devoteeId: raj.id,
+        serviceId: abhishekam.id,
+        scheduledAt: new Date('2026-06-14T14:00:00.000Z'),
+        status: 'confirmed',
+        amount: 101,
+        currency: 'USD',
+        channel: 'app',
+        sankalpa: { sponsorName: 'Raj & Swetha Natarajan', gotram: 'Atri' },
+        receiptNumber: 'RCT-2026-3102',
+      }),
+      bookingRepo.create({
+        devoteeId: priya.id,
+        serviceId: archana.id,
+        scheduledAt: new Date('2026-05-20T16:00:00.000Z'),
+        status: 'completed',
+        amount: 25,
+        currency: 'USD',
+        channel: 'counter',
+        receiptNumber: 'RCT-2026-3100',
+      }),
       bookingRepo.create({
         devoteeId: amit.id,
-        serviceId: services[0].id,
-        scheduledAt: new Date('2026-06-07T10:00:00Z'),
+        serviceId: archana.id,
+        scheduledAt: new Date(`${today}T10:00:00.000Z`),
         status: 'confirmed',
         amount: 25,
         currency: 'USD',
@@ -411,7 +497,57 @@ export class TenantSeedService {
         sankalpa: { sponsorName: 'Amit R.', gotram: 'Kashyapa', nakshatra: 'Ashwini' },
         receiptNumber: 'SGT-2026-0101',
       }),
+    ]);
+
+    const donationRepo = ds.getRepository(DonationEntity);
+    await donationRepo.save([
+      donationRepo.create({
+        devoteeId: raj.id,
+        amount: 250,
+        currency: 'USD',
+        purpose: 'General Hundi',
+        receiptNumber: 'RCT-2026-3098',
+        taxCompliant: true,
+        paymentStatus: 'paid',
+      }),
+      donationRepo.create({
+        devoteeId: priya.id,
+        amount: 150,
+        currency: 'USD',
+        purpose: 'Annadanam',
+        receiptNumber: 'RCT-2026-3099',
+        taxCompliant: true,
+        paymentStatus: 'paid',
+      }),
+    ]);
+
+    const posRepo = ds.getRepository(PosProductEntity);
+    await posRepo.save(
+      POS_SALES_CATALOG.map((item) =>
+        posRepo.create({
+          name: item.name,
+          price: item.price,
+          currency: item.currency,
+          isActive: true,
+        }),
+      ),
     );
+
+    const tokenRepo = ds.getRepository(QueueTokenEntity);
+    for (let i = 1; i <= 53; i++) {
+      await tokenRepo.save(
+        tokenRepo.create({
+          token: `A-${String(i).padStart(3, '0')}`,
+          position: i,
+          estimatedWaitMinutes: 22,
+          status: 'waiting',
+          queueType: 'darshan',
+          priority: false,
+        }),
+      );
+    }
+
+    void swetha;
 
     const eventRepo = ds.getRepository(TempleEventEntity);
     const chaturthi = await eventRepo.save(
@@ -491,5 +627,7 @@ export class TenantSeedService {
         currency: 'USD',
       }),
     );
+
+    await seedCommitteesToPostgres(ds, ctx.tenantId);
   }
 }

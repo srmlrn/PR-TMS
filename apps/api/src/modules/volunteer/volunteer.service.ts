@@ -603,7 +603,11 @@ export class VolunteerService
     if (this.usePostgres) {
       const repo = await this.tenantData.volunteerShifts();
       const saved = await repo.save(
-        repo.create({ ...this.shiftInputToRowFields(input), signups: [] }),
+        repo.create({
+          id: crypto.randomUUID(),
+          ...this.shiftInputToRowFields(input),
+          signups: [],
+        }),
       );
       return this.toShift(saved);
     }
@@ -1113,15 +1117,15 @@ export class VolunteerService
       startTime: input.startTime,
       endTime: input.endTime,
       slots: input.slots,
-      description: input.description ?? null,
-      location: input.location ?? null,
-      role: input.role ?? null,
-      eventId: input.eventId ?? null,
-      eventName: input.eventName ?? null,
-      coordinator: input.coordinator ?? null,
-      category: input.category ?? null,
+      description: input.description,
+      location: input.location,
+      role: input.role,
+      eventId: input.eventId,
+      eventName: input.eventName,
+      coordinator: input.coordinator,
+      category: input.category,
       isRecurringTemplate: input.isRecurringTemplate ?? false,
-      templateKey: input.templateKey ?? null,
+      templateKey: input.templateKey,
     };
   }
 
@@ -1164,11 +1168,11 @@ export class VolunteerService
       signups: row.signups ?? [],
       ...(row.description ? { description: row.description } : {}),
       ...(row.location ? { location: row.location } : {}),
-      ...(row.role ? { role: row.role } : {}),
+      ...(row.role ? { role: row.role as VolunteerShift['role'] } : {}),
       ...(row.eventId ? { eventId: row.eventId } : {}),
       ...(row.eventName ? { eventName: row.eventName } : {}),
       ...(row.coordinator ? { coordinator: row.coordinator } : {}),
-      ...(row.category ? { category: row.category } : {}),
+      ...(row.category ? { category: row.category as VolunteerShift['category'] } : {}),
       ...(row.isRecurringTemplate ? { isRecurringTemplate: row.isRecurringTemplate } : {}),
       ...(row.templateKey ? { templateKey: row.templateKey } : {}),
     };

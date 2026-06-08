@@ -23,6 +23,10 @@ import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.s
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { BookingEntity } from '../../database/entities/tenant/booking.entity';
 import { TenantDataService } from '../../database/tenant-data.service';
+import {
+  formatReceiptNumber,
+  nextReceiptSequence,
+} from '../../common/utils/receipt-sequence.util';
 import { DevoteeService } from '../devotee/devotee.service';
 import { SevaCatalogService, TimeSlot } from './seva-catalog.service';
 
@@ -282,6 +286,37 @@ export class BookingService
     return this.updateEntity(tenantId, id, patch);
   }
 
+  /** Front desk check-in — persisted on booking sankalpa JSON. */
+  async markCheckedIn(tenantId: string, bookingId: string): Promise<BookingRecord> {
+    const booking = await this.findOne(tenantId, bookingId);
+    const sankalpa: Record<string, string | number> = {
+      ...(booking.sankalpa as Record<string, string | number> | undefined),
+      checkedIn: 1,
+      checkedInAt: new Date().toISOString(),
+    };
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.bookings();
+      const row = await repo.findOne({ where: { id: bookingId } });
+      if (!row) {
+        throw new NotFoundException(`Booking ${bookingId} not found`);
+      }
+      row.sankalpa = sankalpa;
+      const saved = await repo.save(row);
+      return this.toBooking(saved);
+    }
+
+    return this.updateEntity(tenantId, bookingId, {
+      sankalpa: sankalpa as unknown as Booking['sankalpa'],
+    });
+  }
+
+  static isCheckedIn(sankalpa?: Booking['sankalpa'] | Record<string, string | number>): boolean {
+    if (!sankalpa) return false;
+    const v = (sankalpa as Record<string, string | number>).checkedIn;
+    return v === 1 || v === '1';
+  }
+
   async findOne(tenantId: string, id: string): Promise<BookingRecord> {
     if (this.usePostgres) {
       const repo = await this.tenantData.bookings();
@@ -517,25 +552,31 @@ export class BookingService
     return `RCT-${year}-${String(next).padStart(4, '0')}`;
   }
 
-  private async generateReceiptNumber(tenantId: string): Promise<string> {
+  private async generateReceiptNumber(_tenantId: string): Promise<string> {
     const year = new Date().getFullYear();
-    const counterKey = `${tenantId}:${year}`;
-    const next = (this.receiptCounters.get(counterKey) ?? 1800) + 1;
-    this.receiptCounters.set(counterKey, next);
-
-    const repo = await this.tenantData.bookings();
-    const existing = await repo
-      .createQueryBuilder('b')
-      .where('b.receiptNumber LIKE :prefix', { prefix: `RCT-${year}-%` })
-      .getMany();
-
-    const existingMax = existing
-      .map((b) => parseInt(b.receiptNumber?.split('-')[2] ?? '0', 10))
-      .reduce((max, n) => Math.max(max, n), 0);
-
-    const sequence = Math.max(next, existingMax + 1);
-    this.receiptCounters.set(counterKey, sequence);
-    return `RCT-${year}-${String(sequence).padStart(4, '0')}`;
+    const prefix = `RCT-${year}-`;
+    const [bookingRepo, donationRepo] = await Promise.all([
+      this.tenantData.bookings(),
+      this.tenantData.donations(),
+    ]);
+    const [bookings, donations] = await Promise.all([
+      bookingRepo
+        .createQueryBuilder('b')
+        .select(['b.receiptNumber'])
+        .where('b.receiptNumber LIKE :prefix', { prefix: `${prefix}%` })
+        .getMany(),
+      donationRepo
+        .createQueryBuilder('d')
+        .select(['d.receiptNumber'])
+        .where('d.receiptNumber LIKE :prefix', { prefix: `${prefix}%` })
+        .getMany(),
+    ]);
+    const sequence = nextReceiptSequence(
+      [...bookings, ...donations].map((r) => r.receiptNumber),
+      year,
+      1800,
+    );
+    return formatReceiptNumber(year, sequence);
   }
 
   private seedDemoBookings(): void {

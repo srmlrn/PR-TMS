@@ -17,6 +17,9 @@ export class DevoteeReminderService implements OnModuleInit {
   onModuleInit(): void {
     const today = new Date().toISOString().slice(0, 10);
     this.logger.log(`Important-dates reminder job registered (daily check on ${today})`);
+    if (process.env.STORAGE_MODE === 'postgres') {
+      return;
+    }
     void this.queueNotificationsForDate(DEMO_TENANT, today);
   }
 

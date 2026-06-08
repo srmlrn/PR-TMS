@@ -32,6 +32,8 @@ import {
   CommitteeTargetEntity,
   CommitteeRequestEntity,
   CommitteeMessageEntity,
+  CommitteeReportEntity,
+  CommitteeLeadershipEntity,
 } from './entities/tenant';
 
 @Injectable()
@@ -223,5 +225,17 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(CommitteeMessageEntity);
+  }
+
+  async committeeReports() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeReportEntity);
+  }
+
+  async committeeLeadership() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeLeadershipEntity);
   }
 }

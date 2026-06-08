@@ -51,6 +51,7 @@ export class FrontDeskService
   private readonly devoteeDirectory = new Map<string, SeededDevotee>();
   private readonly tokenCounters = new Map<string, number>();
   private readonly servedTodayCounters = new Map<string, number>();
+  /** Memory mode only — postgres persists check-in on booking sankalpa. */
   private readonly checkedInBookings = new Map<string, Set<string>>();
 
   private static readonly AVG_MINUTES_PER_TOKEN = 22;
@@ -151,10 +152,25 @@ export class FrontDeskService
   }
 
   private checkedInSet(tenantId: string): Set<string> {
+    if (this.usePostgres) {
+      return new Set();
+    }
     if (!this.checkedInBookings.has(tenantId)) {
       this.checkedInBookings.set(tenantId, new Set());
     }
     return this.checkedInBookings.get(tenantId)!;
+  }
+
+  private bookingCheckedIn(
+    booking: { id: string; sankalpa?: unknown },
+    tenantId: string,
+  ): boolean {
+    if (this.usePostgres) {
+      return BookingService.isCheckedIn(
+        booking.sankalpa as Parameters<typeof BookingService.isCheckedIn>[0],
+      );
+    }
+    return this.checkedInSet(tenantId).has(booking.id);
   }
 
   private createTokenRecord(
@@ -169,7 +185,6 @@ export class FrontDeskService
     devotee: NonNullable<DevoteeLookupResult['devotee']>,
   ): Promise<NonNullable<DevoteeLookupResult['devotee']>> {
     const today = this.todayIso();
-    const checkedIn = this.checkedInSet(tenantId);
 
     const { data: bookings } = await this.bookingService.findAll(tenantId, 1, 20, {
       devoteeId: devotee.id,
@@ -185,7 +200,7 @@ export class FrontDeskService
         serviceId: b.serviceId,
         scheduledAt: b.scheduledAt.toISOString(),
         status: b.status,
-        checkedIn: checkedIn.has(b.id),
+        checkedIn: this.bookingCheckedIn(b, tenantId),
       })),
       ytdDonations: full.ytdDonations
         ? { amount: full.ytdDonations.amount, currency: full.ytdDonations.currency }
@@ -284,7 +299,6 @@ export class FrontDeskService
       : [];
 
     const today = this.todayIso();
-    const checkedIn = this.checkedInSet(tenantId);
     const now = new Date();
 
     const { data: allBookings } = await this.bookingService.findAll(tenantId, 1, 80, {
@@ -298,7 +312,7 @@ export class FrontDeskService
         serviceId: b.serviceId,
         scheduledAt: b.scheduledAt.toISOString(),
         status: b.status,
-        checkedIn: checkedIn.has(b.id),
+        checkedIn: this.bookingCheckedIn(b, tenantId),
       }));
 
     const toProfileBooking = (b: (typeof allBookings)[0]) => ({
@@ -309,7 +323,7 @@ export class FrontDeskService
       amount: b.amount,
       currency: b.currency,
       channel: b.channel,
-      checkedIn: checkedIn.has(b.id),
+      checkedIn: this.bookingCheckedIn(b, tenantId),
       receiptNumber: b.receiptNumber,
       paymentStatus: b.paymentStatus,
     });
@@ -395,8 +409,12 @@ export class FrontDeskService
   }
 
   async checkInBooking(tenantId: string, bookingId: string): Promise<{ checkedIn: true }> {
-    await this.bookingService.findOne(tenantId, bookingId);
-    this.checkedInSet(tenantId).add(bookingId);
+    if (this.usePostgres) {
+      await this.bookingService.markCheckedIn(tenantId, bookingId);
+    } else {
+      await this.bookingService.findOne(tenantId, bookingId);
+      this.checkedInSet(tenantId).add(bookingId);
+    }
     return { checkedIn: true };
   }
 

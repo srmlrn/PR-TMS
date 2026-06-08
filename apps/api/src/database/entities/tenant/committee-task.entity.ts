@@ -2,17 +2,17 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import type { CommitteeTaskPriority, CommitteeTaskStatus } from '@tms/types';
 
 @Entity('committee_tasks')
 export class CommitteeTaskEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id!: string;
 
-  @Column({ name: 'committee_id', type: 'uuid' })
+  @Column({ name: 'committee_id', length: 64 })
   committeeId!: string;
 
   @Column({ length: 256 })
@@ -21,7 +21,7 @@ export class CommitteeTaskEntity {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ name: 'assignee_user_id', type: 'uuid', nullable: true })
+  @Column({ name: 'assignee_user_id', length: 128, nullable: true })
   assigneeUserId?: string;
 
   @Column({ name: 'assignee_name', length: 128, nullable: true })
@@ -47,7 +47,7 @@ export class CommitteeTaskEntity {
   @Column({ name: 'event_id', type: 'uuid', nullable: true })
   eventId?: string;
 
-  @Column({ name: 'created_by_user_id', type: 'uuid', nullable: true })
+  @Column({ name: 'created_by_user_id', length: 128, nullable: true })
   createdByUserId?: string;
 
   @CreateDateColumn({ name: 'created_at' })

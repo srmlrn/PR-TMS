@@ -146,9 +146,9 @@ export class EventService
         revenueTarget: dto.revenueTarget,
         clientName: dto.clientName,
         clientContact: dto.clientContact,
-        volunteerCategory: dto.volunteerCategory ?? null,
-        volunteersNeeded: dto.volunteersNeeded ?? null,
-        volunteerRoles: dto.volunteerRoles ?? null,
+        volunteerCategory: dto.volunteerCategory,
+        volunteersNeeded: dto.volunteersNeeded,
+        volunteerRoles: dto.volunteerRoles,
         checklistProgress: { done: 0, total: 0 },
       });
       const saved = await repo.save(entity);

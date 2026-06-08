@@ -26,6 +26,8 @@ export { CommitteeTaskEntity } from './committee-task.entity';
 export { CommitteeTargetEntity } from './committee-target.entity';
 export { CommitteeRequestEntity } from './committee-request.entity';
 export { CommitteeMessageEntity } from './committee-message.entity';
+export { CommitteeReportEntity } from './committee-report.entity';
+export { CommitteeLeadershipEntity } from './committee-leadership.entity';
 
 import { DevoteeEntity } from './devotee.entity';
 import { SevaServiceEntity } from './seva-service.entity';
@@ -55,6 +57,8 @@ import { CommitteeTaskEntity } from './committee-task.entity';
 import { CommitteeTargetEntity } from './committee-target.entity';
 import { CommitteeRequestEntity } from './committee-request.entity';
 import { CommitteeMessageEntity } from './committee-message.entity';
+import { CommitteeReportEntity } from './committee-report.entity';
+import { CommitteeLeadershipEntity } from './committee-leadership.entity';
 
 export const TENANT_ENTITIES = [
   DevoteeEntity,
@@ -85,4 +89,6 @@ export const TENANT_ENTITIES = [
   CommitteeTargetEntity,
   CommitteeRequestEntity,
   CommitteeMessageEntity,
+  CommitteeReportEntity,
+  CommitteeLeadershipEntity,
 ];

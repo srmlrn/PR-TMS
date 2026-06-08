@@ -2,7 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import type {
@@ -13,7 +13,7 @@ import type {
 
 @Entity('volunteer_shifts')
 export class VolunteerShiftEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ length: 64 })
   id!: string;
 
   @Column({ length: 256 })
@@ -35,31 +35,31 @@ export class VolunteerShiftEntity {
   signups!: VolunteerSignup[];
 
   @Column({ type: 'text', nullable: true })
-  description?: string | null;
+  description?: string;
 
-  @Column({ length: 256, nullable: true })
-  location?: string | null;
+  @Column({ type: 'varchar', length: 256, nullable: true })
+  location?: string;
 
-  @Column({ length: 32, nullable: true })
-  role?: VolunteerShiftRole | null;
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  role?: string;
 
-  @Column({ name: 'event_id', type: 'uuid', nullable: true })
-  eventId?: string | null;
+  @Column({ name: 'event_id', type: 'varchar', length: 64, nullable: true })
+  eventId?: string;
 
-  @Column({ name: 'event_name', length: 256, nullable: true })
-  eventName?: string | null;
+  @Column({ name: 'event_name', type: 'varchar', length: 256, nullable: true })
+  eventName?: string;
 
-  @Column({ length: 256, nullable: true })
-  coordinator?: string | null;
+  @Column({ type: 'varchar', length: 256, nullable: true })
+  coordinator?: string;
 
-  @Column({ length: 32, nullable: true })
-  category?: VolunteerCategory | null;
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  category?: string;
 
   @Column({ name: 'is_recurring_template', default: false })
   isRecurringTemplate!: boolean;
 
-  @Column({ name: 'template_key', length: 64, nullable: true })
-  templateKey?: string | null;
+  @Column({ name: 'template_key', type: 'varchar', length: 64, nullable: true })
+  templateKey?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

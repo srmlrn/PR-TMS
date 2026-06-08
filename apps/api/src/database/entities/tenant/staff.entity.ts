@@ -2,14 +2,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import type { StaffRole } from '@tms/types';
 
 @Entity('staff')
 export class StaffEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ length: 64 })
   id!: string;
 
   @Column({ length: 128 })

@@ -41,6 +41,9 @@ export class DonationBillingService
 
   onModuleInit(): void {
     this.logger.log('Donation billing scheduler stub started (daily check on init)');
+    if (process.env.STORAGE_MODE === 'postgres') {
+      return;
+    }
     void this.runBillingCheck(new Date());
   }
 

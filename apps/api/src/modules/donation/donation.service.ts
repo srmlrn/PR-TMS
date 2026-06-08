@@ -26,6 +26,10 @@ import { TenantContextStorage } from '../../common/context/tenant-context.storag
 import { DonationCampaignEntity } from '../../database/entities/tenant/donation-campaign.entity';
 import { DonationEntity } from '../../database/entities/tenant/donation.entity';
 import { TenantDataService } from '../../database/tenant-data.service';
+import {
+  formatReceiptNumber,
+  nextReceiptSequence,
+} from '../../common/utils/receipt-sequence.util';
 
 type DonationRecord = Donation & TenantEntity;
 type CampaignRecord = DonationCampaign & TenantEntity;
@@ -130,25 +134,31 @@ export class DonationService
     return `RCT-${year}-${String(sequence).padStart(4, '0')}`;
   }
 
-  private async generateReceiptNumber(tenantId: string): Promise<string> {
+  private async generateReceiptNumber(_tenantId: string): Promise<string> {
     const year = new Date().getFullYear();
-    const counterKey = `${tenantId}:${year}`;
-    const next = (this.receiptCounters.get(counterKey) ?? 0) + 1;
-    this.receiptCounters.set(counterKey, next);
-
-    const repo = await this.tenantData.donations();
-    const existing = await repo
-      .createQueryBuilder('d')
-      .where('d.receiptNumber LIKE :prefix', { prefix: `RCT-${year}-%` })
-      .getMany();
-
-    const existingMax = existing
-      .map((d) => parseInt(d.receiptNumber.split('-')[2] ?? '0', 10))
-      .reduce((max, n) => Math.max(max, n), 0);
-
-    const sequence = Math.max(next, existingMax + 1);
-    this.receiptCounters.set(counterKey, sequence);
-    return `RCT-${year}-${String(sequence).padStart(4, '0')}`;
+    const prefix = `RCT-${year}-`;
+    const [donationRepo, bookingRepo] = await Promise.all([
+      this.tenantData.donations(),
+      this.tenantData.bookings(),
+    ]);
+    const [donations, bookings] = await Promise.all([
+      donationRepo
+        .createQueryBuilder('d')
+        .select(['d.receiptNumber'])
+        .where('d.receiptNumber LIKE :prefix', { prefix: `${prefix}%` })
+        .getMany(),
+      bookingRepo
+        .createQueryBuilder('b')
+        .select(['b.receiptNumber'])
+        .where('b.receiptNumber LIKE :prefix', { prefix: `${prefix}%` })
+        .getMany(),
+    ]);
+    const sequence = nextReceiptSequence(
+      [...donations, ...bookings].map((r) => r.receiptNumber),
+      year,
+      0,
+    );
+    return formatReceiptNumber(year, sequence);
   }
 
   private resolveTaxDoc(currency: Currency): {

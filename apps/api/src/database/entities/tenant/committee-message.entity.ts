@@ -2,18 +2,18 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
 } from 'typeorm';
 
 @Entity('committee_messages')
 export class CommitteeMessageEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id!: string;
 
-  @Column({ name: 'committee_id', type: 'uuid' })
+  @Column({ name: 'committee_id', length: 64 })
   committeeId!: string;
 
-  @Column({ name: 'author_user_id', type: 'uuid' })
+  @Column({ name: 'author_user_id', length: 128 })
   authorUserId!: string;
 
   @Column({ name: 'author_name', length: 128, nullable: true })
