@@ -47,6 +47,7 @@ import {
   getCommitteeSeedsForTenant,
   parseMember,
 } from '../../data/committee-seed-data';
+import { lookupGaneshaCommitteePhoto } from '../../data/committee-photo-map';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantDataService } from '../../database/tenant-data.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -331,6 +332,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
           email: isSvDemoMember ? 'committee@svtemple.org' : undefined,
           role: parsed.role,
           displayTitle: parsed.displayTitle,
+          photoUrl: isGanesha ? lookupGaneshaCommitteePhoto(parsed.name) : undefined,
           joinedAt: this.iso(now),
           isActive: true,
           createdAt: now,
