@@ -4,7 +4,10 @@ import type {
   CreateDonationInput,
   DashboardAnalytics,
   Donation,
+  DonationSubscription,
+  UpdateDonationSubscriptionInput,
   Devotee,
+  DevoteeReminderDue,
   DevoteeDuplicateCheck,
   DevoteeGender,
   DevoteeLookupResult,
@@ -60,6 +63,12 @@ import type {
   VolunteerPreferences,
   GenerateEventShiftsResult,
   InAppNotification,
+  NotificationTemplate,
+  SendNotificationInput,
+  SendNotificationResult,
+  SevaSubscription,
+  CreateSevaSubscriptionInput,
+  UpdateSevaSubscriptionInput,
 } from '@tms/types';
 import type { ApiClient } from './client';
 
@@ -185,6 +194,15 @@ export function createEndpoints(client: ApiClient) {
 
     createBooking: (body: CreateBookingInput) => client.post<Booking>('/bookings', body),
 
+    getSevaSubscriptions: (params?: { devoteeId?: string; status?: string }) =>
+      client.get<{ data: SevaSubscription[] }>('/bookings/subscriptions', { params }),
+
+    createSevaSubscription: (body: CreateSevaSubscriptionInput) =>
+      client.post<SevaSubscription>('/bookings/subscriptions', body),
+
+    updateSevaSubscription: (id: string, body: UpdateSevaSubscriptionInput) =>
+      client.patch<SevaSubscription>(`/bookings/subscriptions/${id}`, body),
+
     getServices: () => client.get<SevaService[]>('/services'),
 
     getPosProducts: () => client.get<PosProduct[]>('/catalog/products'),
@@ -193,6 +211,13 @@ export function createEndpoints(client: ApiClient) {
       client.get<ServiceSlotsResponse>(`/services/${serviceId}/slots`, {
         params: { date },
       }),
+
+    getRemindersDue: (date: string) =>
+      client.get<{
+        date: string;
+        data: DevoteeReminderDue[];
+        notificationsQueued: number;
+      }>('/devotees/reminders-due', { params: { date } }),
 
     getDevotees: (params?: Pick<ListParams, 'page' | 'limit' | 'name' | 'phone'>) =>
       client.get<PaginatedResponse<Devotee>>('/devotees', { params }),
@@ -354,6 +379,12 @@ export function createEndpoints(client: ApiClient) {
     getDonationReceipt: (id: string) =>
       client.get<TaxReceipt>(`/donations/${id}/receipt`),
 
+    getDonationSubscriptions: (params?: { devoteeId?: string; status?: string }) =>
+      client.get<{ data: DonationSubscription[] }>('/donations/subscriptions', { params }),
+
+    updateDonationSubscription: (id: string, body: UpdateDonationSubscriptionInput) =>
+      client.patch<DonationSubscription>(`/donations/subscriptions/${id}`, body),
+
     frontDeskLookup: (params: { phone?: string; name?: string }) =>
       client.get<DevoteeLookupResult>('/frontdesk/lookup', { params }),
 
@@ -477,6 +508,12 @@ export function createEndpoints(client: ApiClient) {
 
     checkoutVolunteerShift: (id: string) =>
       client.post<VolunteerShift>(`/volunteer/shifts/${id}/checkout`, {}),
+
+    getNotificationTemplates: () =>
+      client.get<NotificationTemplate[]>('/notifications/templates'),
+
+    sendNotification: (body: SendNotificationInput) =>
+      client.post<SendNotificationResult>('/notifications/send', body),
 
     getInAppNotifications: () =>
       client.get<{ data: InAppNotification[] }>('/notifications/in-app'),

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   Badge,
   BentoGrid,
@@ -112,11 +113,18 @@ function ApiBanner({ loading, error }: { loading: boolean; error: string | null 
 
 export default function AdminDashboardPage() {
   const site = useTenantSite();
+  const today = new Date().toISOString().slice(0, 10);
+
   const { data, loading, error } = useApi((ep) =>
     Promise.all([
       ep.getDashboardAnalytics(),
       ep.getBookings({ limit: 10 }),
-    ]).then(([analytics, bookings]) => ({ analytics, bookings })),
+      ep.getRemindersDue(today).catch(() => ({
+        date: today,
+        data: [],
+        notificationsQueued: 0,
+      })),
+    ]).then(([analytics, bookings, reminders]) => ({ analytics, bookings, reminders })),
   );
 
   const analytics = data?.analytics;
@@ -127,6 +135,7 @@ export default function AdminDashboardPage() {
   const bookingsCount = analytics?.bookingsToday ?? 52;
   const queueInLine = analytics?.queue.inQueue ?? 53;
   const queueServed = analytics?.queue.servedToday ?? 312;
+  const remindersToday = data?.reminders?.data.length ?? 0;
 
   const recentBookings: RecentBooking[] =
     data?.bookings?.data.length && !error
@@ -219,7 +228,23 @@ export default function AdminDashboardPage() {
       </BentoGrid>
 
       <BentoGrid className="mb2">
-        <BentoItem span={7}>
+        <BentoItem span={3}>
+          <Link href="/admin/reminders" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <StatTile
+              icon="🔔"
+              label="Reminders today"
+              value={String(remindersToday)}
+              change={
+                data?.reminders
+                  ? `${data.reminders.notificationsQueued} queued · View all`
+                  : 'Important dates due today'
+              }
+              changeTone="neutral"
+              accent="amber"
+            />
+          </Link>
+        </BentoItem>
+        <BentoItem span={9}>
           <GlassCard title="Weekly Collections" headerRight={<span className="tms-t3">Mon–Sun</span>}>
             <svg className={styles.barChart} viewBox="0 0 400 140" width="100%" height="140">
               <defs>
@@ -257,6 +282,9 @@ export default function AdminDashboardPage() {
             </svg>
           </GlassCard>
         </BentoItem>
+      </BentoGrid>
+
+      <BentoGrid className="mb2">
         <BentoItem span={5}>
           <GlassCard title="Collection Breakdown">
             <div className={styles.donutRow}>

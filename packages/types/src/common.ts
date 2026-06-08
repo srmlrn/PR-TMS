@@ -43,6 +43,10 @@ export interface Sankalpa {
   location?: 'on_site' | 'off_site';
   quantity?: number;
   notes?: string;
+  /** Participating remotely (live stream / proxy ritual). */
+  remoteParticipation?: boolean;
+  /** Comma-separated names of additional beneficiaries. */
+  additionalBeneficiaries?: string;
 }
 
 export interface Address {

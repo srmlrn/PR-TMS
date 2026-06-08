@@ -4,6 +4,7 @@ export * from './platform';
 export * from './common';
 export * from './devotee';
 export * from './booking';
+export * from './seva-subscription';
 export * from './event';
 export * from './rental';
 export * from './sponsor';

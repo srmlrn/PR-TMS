@@ -1,10 +1,11 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import {
   CreateDonationInput,
   Currency,
   Donation,
   DonationFrequency,
   DonationSubscription,
+  UpdateDonationSubscriptionInput,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
@@ -41,6 +42,81 @@ export class DonationBillingService
   onModuleInit(): void {
     this.logger.log('Donation billing scheduler stub started (daily check on init)');
     void this.runBillingCheck(new Date());
+  }
+
+  async findAll(
+    tenantId: string,
+    filters?: { devoteeId?: string; status?: string },
+  ): Promise<{ data: SubscriptionRecord[] }> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.donationSubscriptions();
+      const qb = repo.createQueryBuilder('s').orderBy('s.nextBillingAt', 'ASC');
+
+      if (filters?.devoteeId) {
+        qb.andWhere('s.devoteeId = :devoteeId', { devoteeId: filters.devoteeId });
+      }
+      if (filters?.status) {
+        qb.andWhere('s.status = :status', { status: filters.status });
+      }
+
+      const rows = await qb.getMany();
+      return { data: rows.map((r) => this.toSubscription(r)) };
+    }
+
+    let items = this.scoped(tenantId);
+    if (filters?.devoteeId) {
+      items = items.filter((s) => s.devoteeId === filters.devoteeId);
+    }
+    if (filters?.status) {
+      items = items.filter((s) => s.status === filters.status);
+    }
+    items.sort((a, b) => a.nextBillingAt.getTime() - b.nextBillingAt.getTime());
+    return { data: items };
+  }
+
+  async updateSubscription(
+    tenantId: string,
+    id: string,
+    input: UpdateDonationSubscriptionInput,
+  ): Promise<SubscriptionRecord> {
+    await this.findOneSubscription(tenantId, id);
+
+    if (this.usePostgres) {
+      const repo = await this.tenantData.donationSubscriptions();
+      if (input.status !== undefined) {
+        await repo.update(id, { status: input.status });
+      }
+      const row = await repo.findOneByOrFail({ id });
+      return this.toSubscription(row);
+    }
+
+    return this.updateEntity(tenantId, id, {
+      ...(input.status !== undefined ? { status: input.status } : {}),
+    });
+  }
+
+  private async findOneSubscription(
+    tenantId: string,
+    id: string,
+  ): Promise<SubscriptionRecord> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.donationSubscriptions();
+      const row = await repo.findOneBy({ id });
+      if (!row) {
+        throw new NotFoundException(`Donation subscription ${id} not found`);
+      }
+      const record = this.toSubscription(row);
+      if (record.tenantId !== tenantId) {
+        throw new NotFoundException(`Donation subscription ${id} not found`);
+      }
+      return record;
+    }
+
+    const record = this.findOneScoped(tenantId, id);
+    if (!record) {
+      throw new NotFoundException(`Donation subscription ${id} not found`);
+    }
+    return record;
   }
 
   async createFromDonation(

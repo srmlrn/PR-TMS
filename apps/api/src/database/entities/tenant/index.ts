@@ -11,6 +11,7 @@ export { PrasadamSponsorshipEntity } from './prasadam-sponsorship.entity';
 export { DonationEntity } from './donation.entity';
 export { DonationCampaignEntity } from './donation-campaign.entity';
 export { DonationSubscriptionEntity } from './donation-subscription.entity';
+export { SevaSubscriptionEntity } from './seva-subscription.entity';
 export { VendorPaymentEntity } from './vendor-payment.entity';
 export { QueueTokenEntity } from './queue-token.entity';
 export { StaffEntity } from './staff.entity';
@@ -32,6 +33,7 @@ import { PrasadamSponsorshipEntity } from './prasadam-sponsorship.entity';
 import { DonationEntity } from './donation.entity';
 import { DonationCampaignEntity } from './donation-campaign.entity';
 import { DonationSubscriptionEntity } from './donation-subscription.entity';
+import { SevaSubscriptionEntity } from './seva-subscription.entity';
 import { VendorPaymentEntity } from './vendor-payment.entity';
 import { QueueTokenEntity } from './queue-token.entity';
 import { StaffEntity } from './staff.entity';
@@ -54,6 +56,7 @@ export const TENANT_ENTITIES = [
   DonationEntity,
   DonationCampaignEntity,
   DonationSubscriptionEntity,
+  SevaSubscriptionEntity,
   VendorPaymentEntity,
   QueueTokenEntity,
   StaffEntity,

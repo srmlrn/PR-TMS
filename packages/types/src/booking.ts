@@ -41,4 +41,8 @@ export interface CreateBookingInput {
   quantity?: number;
   /** Counter POS ritual location. */
   location?: 'on_site' | 'off_site';
+  /** Participating remotely — merged into sankalpa. */
+  remoteParticipation?: boolean;
+  /** Comma-separated additional beneficiary names — merged into sankalpa. */
+  additionalBeneficiaries?: string;
 }

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
@@ -44,6 +45,16 @@ class BookingSankalpaDto {
   @IsOptional()
   @IsString()
   beneficiaryName?: string;
+
+  @ApiPropertyOptional({ example: 'Priya, Arjun' })
+  @IsOptional()
+  @IsString()
+  additionalBeneficiaries?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  remoteParticipation?: boolean;
 }
 
 export class CreateBookingDto {
@@ -95,4 +106,14 @@ export class CreateBookingDto {
   @IsOptional()
   @IsEnum(['on_site', 'off_site'])
   location?: 'on_site' | 'off_site';
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  remoteParticipation?: boolean;
+
+  @ApiPropertyOptional({ example: 'Priya, Arjun' })
+  @IsOptional()
+  @IsString()
+  additionalBeneficiaries?: string;
 }

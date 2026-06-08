@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import {
   ApiBearerAuth,
@@ -19,13 +19,18 @@ import {
   PaginatedDonationsDto,
 } from './dto/donation-response.dto';
 import { generateReceiptPdf } from '../../common/utils/receipt-pdf.util';
+import { DonationBillingService } from './donation-billing.service';
+import { UpdateDonationSubscriptionDto } from './dto/update-donation-subscription.dto';
 import { DonationService } from './donation.service';
 
 @ApiTags('Donations')
 @ApiBearerAuth()
 @Controller()
 export class DonationController {
-  constructor(private readonly donationService: DonationService) {}
+  constructor(
+    private readonly donationService: DonationService,
+    private readonly donationBillingService: DonationBillingService,
+  ) {}
 
   @Post('donations')
   @Roles(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.ACCOUNTANT, UserRole.DEVOTEE)
@@ -60,6 +65,28 @@ export class DonationController {
   @ApiOkResponse({ type: [CampaignResponseDto] })
   async findCampaigns(@TenantId() tenantId: string): Promise<CampaignResponseDto[]> {
     return this.donationService.findCampaigns(tenantId);
+  }
+
+  @Get('donations/subscriptions')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.DEVOTEE)
+  @ApiOperation({ summary: 'List recurring donation subscriptions' })
+  async listSubscriptions(
+    @TenantId() tenantId: string,
+    @Query('devoteeId') devoteeId?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.donationBillingService.findAll(tenantId, { devoteeId, status });
+  }
+
+  @Patch('donations/subscriptions/:id')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Pause or cancel a recurring donation subscription' })
+  async updateSubscription(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateDonationSubscriptionDto,
+  ) {
+    return this.donationBillingService.updateSubscription(tenantId, id, dto);
   }
 
   @Get('donations/:id/receipt')

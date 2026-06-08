@@ -41,6 +41,10 @@ export interface DonationCampaign extends TenantScoped, Timestamps {
   isActive: boolean;
 }
 
+export interface UpdateDonationSubscriptionInput {
+  status?: DonationSubscription['status'];
+}
+
 export interface CreateDonationInput {
   devoteeId: string;
   amount: number;

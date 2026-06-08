@@ -33,6 +33,8 @@ export default function BookSevaPage() {
   const [rashi, setRashi] = useState('');
   const [occasion, setOccasion] = useState('');
   const [beneficiaryName, setBeneficiaryName] = useState('');
+  const [additionalBeneficiaries, setAdditionalBeneficiaries] = useState('');
+  const [remoteParticipation, setRemoteParticipation] = useState(false);
   const [priestPreference, setPriestPreference] = useState('');
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(() =>
     defaultPaymentProvider(Currency.USD, channel),
@@ -102,6 +104,8 @@ export default function BookSevaPage() {
         channel,
         paymentSessionId,
         priestPreference: priestPreference || undefined,
+        remoteParticipation: remoteParticipation || undefined,
+        additionalBeneficiaries: additionalBeneficiaries || undefined,
         sankalpa: sponsorName
           ? {
               sponsorName,
@@ -110,6 +114,8 @@ export default function BookSevaPage() {
               rashi: rashi || undefined,
               occasion: occasion || undefined,
               beneficiaryName: beneficiaryName || undefined,
+              additionalBeneficiaries: additionalBeneficiaries || undefined,
+              remoteParticipation: remoteParticipation || undefined,
             }
           : undefined,
       });
@@ -227,6 +233,15 @@ export default function BookSevaPage() {
               />
             </div>
             <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <label htmlFor="additionalBeneficiaries">Additional beneficiaries</label>
+              <input
+                id="additionalBeneficiaries"
+                value={additionalBeneficiaries}
+                onChange={(e) => setAdditionalBeneficiaries(e.target.value)}
+                placeholder="Comma-separated names, e.g. Priya, Arjun"
+              />
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
               <label htmlFor="priestPreference">Priest preference</label>
               <input
                 id="priestPreference"
@@ -234,6 +249,16 @@ export default function BookSevaPage() {
                 onChange={(e) => setPriestPreference(e.target.value)}
                 placeholder="Preferred priest name or language, if any"
               />
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={remoteParticipation}
+                  onChange={(e) => setRemoteParticipation(e.target.checked)}
+                />
+                Participating remotely (live stream / proxy ritual)
+              </label>
             </div>
           </div>
           {selectedService && (

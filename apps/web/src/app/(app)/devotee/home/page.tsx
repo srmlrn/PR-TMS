@@ -12,7 +12,7 @@ import {
   PageHeader,
   StatTile,
 } from '@tms/ui';
-import type { Booking, Devotee, Donation } from '@tms/types';
+import type { Booking, Devotee, Donation, SevaSubscription } from '@tms/types';
 import { BookingStatus } from '@tms/types';
 import { formatMoney, formatShortDate, formatTime } from '@/lib/api/endpoints';
 import { useAuth } from '@/lib/auth-context';
@@ -46,6 +46,7 @@ export default function DevoteeHomePage() {
     bookings: { data: Booking[] };
     recentDonations: Donation[];
     donationsUnavailable: boolean;
+    sevaSubscriptions: SevaSubscription[];
   };
 
   const emptyHome: HomeData = {
@@ -53,6 +54,7 @@ export default function DevoteeHomePage() {
     bookings: { data: [] },
     recentDonations: [],
     donationsUnavailable: false,
+    sevaSubscriptions: [],
   };
 
   const { data, loading, error } = useApi<HomeData>(
@@ -60,11 +62,14 @@ export default function DevoteeHomePage() {
       if (!user?.devoteeId) {
         return emptyHome;
       }
-      const [devotee, bookings, donations] = await Promise.all([
+      const [devotee, bookings, donations, sevaSubscriptions] = await Promise.all([
         ep.getDevotee(user.devoteeId),
         ep.getBookings({ devoteeId: user.devoteeId, limit: 5 }),
         ep.getDonations({ devoteeId: user.devoteeId, limit: 5 }).catch(
           () => ({ data: [] as Donation[], meta: { total: 0, page: 1, limit: 5, totalPages: 0 } }),
+        ),
+        ep.getSevaSubscriptions({ devoteeId: user.devoteeId, status: 'active' }).catch(
+          () => ({ data: [] as SevaSubscription[] }),
         ),
       ]);
       return {
@@ -72,6 +77,7 @@ export default function DevoteeHomePage() {
         bookings,
         recentDonations: donations.data,
         donationsUnavailable: donations.data.length === 0,
+        sevaSubscriptions: sevaSubscriptions.data,
       };
     },
     [user?.devoteeId],
@@ -79,6 +85,7 @@ export default function DevoteeHomePage() {
 
   const devotee = data?.devotee;
   const recentBookings = data?.bookings?.data ?? [];
+  const activeSevaSubs = data?.sevaSubscriptions ?? [];
   const nextBooking = recentBookings.find(
     (b: Booking) => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING,
   );
@@ -245,6 +252,33 @@ export default function DevoteeHomePage() {
                     {data?.donationsUnavailable && (
                       <span className="tms-t3"> (full history requires devotee donations API)</span>
                     )}
+                  </p>
+                )}
+              </GlassCard>
+            </BentoItem>
+          </BentoGrid>
+
+          <BentoGrid className="mb2">
+            <BentoItem span={12}>
+              <GlassCard title="My recurring sevas">
+                {activeSevaSubs.length > 0 ? (
+                  <ul className={styles.recentList}>
+                    {activeSevaSubs.map((sub) => (
+                      <li key={sub.id} className={styles.recentItem}>
+                        <span>
+                          {SERVICE_LABELS[sub.serviceId] ?? sub.serviceId.replace('svc-', '')}
+                          {' · '}
+                          {sub.frequency} · next {formatShortDate(sub.nextDate)}
+                          {sub.sankalpa?.sponsorName ? ` · ${sub.sankalpa.sponsorName}` : ''}
+                        </span>
+                        <Chip>{sub.status}</Chip>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="tms-t2">
+                    No active recurring sevas.{' '}
+                    <Link href="/devotee/book">Book seva</Link> or ask temple admin to set one up.
                   </p>
                 )}
               </GlassCard>

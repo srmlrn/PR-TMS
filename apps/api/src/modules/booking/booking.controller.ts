@@ -15,8 +15,12 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { generateReceiptPdf } from '../../common/utils/receipt-pdf.util';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
+import { CreateSevaSubscriptionDto } from './dto/create-seva-subscription.dto';
+import { SevaSubscriptionQueryDto } from './dto/seva-subscription-query.dto';
+import { UpdateSevaSubscriptionDto } from './dto/update-seva-subscription.dto';
 import { BookingService } from './booking.service';
 import { SevaCatalogService, TimeSlot } from './seva-catalog.service';
+import { SevaSubscriptionService } from './seva-subscription.service';
 
 @ApiTags('bookings')
 @ApiBearerAuth()
@@ -32,6 +36,7 @@ export class BookingController {
   constructor(
     private readonly bookingService: BookingService,
     private readonly sevaCatalogService: SevaCatalogService,
+    private readonly sevaSubscriptionService: SevaSubscriptionService,
   ) {}
 
   @Get('bookings')
@@ -62,6 +67,39 @@ export class BookingController {
     const target = date ?? new Date().toISOString().slice(0, 10);
     const total = await this.bookingService.getHonorariumTotal(tenantId, target);
     return { date: target, total, currency: 'USD' };
+  }
+
+  @Get('bookings/subscriptions')
+  @ApiOperation({ summary: 'List recurring seva subscriptions' })
+  async listSubscriptions(
+    @TenantId() tenantId: string,
+    @Query() query: SevaSubscriptionQueryDto,
+  ) {
+    return this.sevaSubscriptionService.findAll(tenantId, {
+      devoteeId: query.devoteeId,
+      status: query.status,
+    });
+  }
+
+  @Post('bookings/subscriptions')
+  @Roles(UserRole.ADMIN, UserRole.DEVOTEE)
+  @ApiOperation({ summary: 'Create a recurring seva subscription' })
+  async createSubscription(
+    @TenantId() tenantId: string,
+    @Body() dto: CreateSevaSubscriptionDto,
+  ) {
+    return this.sevaSubscriptionService.create(tenantId, dto);
+  }
+
+  @Patch('bookings/subscriptions/:id')
+  @Roles(UserRole.ADMIN, UserRole.DEVOTEE)
+  @ApiOperation({ summary: 'Update a recurring seva subscription' })
+  async updateSubscription(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateSevaSubscriptionDto,
+  ) {
+    return this.sevaSubscriptionService.update(tenantId, id, dto);
   }
 
   @Get('bookings/:id/receipt')

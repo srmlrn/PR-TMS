@@ -17,6 +17,7 @@ import {
   DonationEntity,
   DonationCampaignEntity,
   DonationSubscriptionEntity,
+  SevaSubscriptionEntity,
   VendorPaymentEntity,
   QueueTokenEntity,
   StaffEntity,
@@ -125,6 +126,12 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(DonationSubscriptionEntity);
+  }
+
+  async sevaSubscriptions() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(SevaSubscriptionEntity);
   }
 
   async vendorPayments() {

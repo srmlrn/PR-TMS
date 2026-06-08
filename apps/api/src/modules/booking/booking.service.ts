@@ -442,16 +442,42 @@ export class BookingService
     input: CreateBookingInput,
     quantity = 1,
   ): Booking['sankalpa'] | undefined {
-    const { sankalpa, priestPreference, location } = input;
-    if (!sankalpa && !priestPreference && !location && quantity <= 1) {
+    const {
+      sankalpa,
+      priestPreference,
+      location,
+      remoteParticipation,
+      additionalBeneficiaries,
+    } = input;
+    const remote =
+      remoteParticipation ?? sankalpa?.remoteParticipation;
+    const beneficiaries =
+      additionalBeneficiaries ?? sankalpa?.additionalBeneficiaries;
+    if (
+      !sankalpa &&
+      !priestPreference &&
+      !location &&
+      quantity <= 1 &&
+      remote === undefined &&
+      !beneficiaries
+    ) {
       return undefined;
     }
+    const notes = [
+      sankalpa?.notes,
+      remote ? 'Remote participation' : undefined,
+    ]
+      .filter(Boolean)
+      .join('; ') || undefined;
     return {
       ...sankalpa,
       sponsorName: sankalpa?.sponsorName ?? '',
       ...(priestPreference ? { priestPreference } : {}),
       ...(location ? { location } : {}),
       ...(quantity > 1 ? { quantity } : {}),
+      ...(remote !== undefined ? { remoteParticipation: remote } : {}),
+      ...(beneficiaries ? { additionalBeneficiaries: beneficiaries } : {}),
+      ...(notes ? { notes } : {}),
     };
   }
 

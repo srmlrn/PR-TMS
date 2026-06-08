@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Badge,
   Button,
@@ -14,6 +14,7 @@ import type {
   InAppNotification,
   VolunteerCategory,
   VolunteerOpportunity,
+  VolunteerPreferences,
   VolunteerShift,
   VolunteerShiftRole,
   VolunteerSignup,
@@ -148,6 +149,14 @@ export default function VolunteerShiftsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [prefsMsg, setPrefsMsg] = useState<string | null>(null);
+  const [prefsForm, setPrefsForm] = useState<Pick<VolunteerPreferences, 'categories' | 'roles' | 'notifyNewOpportunities'>>({
+    categories: [],
+    roles: [],
+    notifyNewOpportunities: true,
+  });
 
   const {
     data: opportunitiesData,
@@ -186,6 +195,22 @@ export default function VolunteerShiftsPage() {
     data: templatesData,
     loading: templatesLoading,
   } = useApi((ep) => ep.getVolunteerRecurringTemplates());
+
+  const {
+    data: preferences,
+    loading: prefsLoading,
+    refetch: refetchPrefs,
+  } = useApi((ep) => ep.getVolunteerPreferences());
+
+  useEffect(() => {
+    if (preferences) {
+      setPrefsForm({
+        categories: preferences.categories ?? [],
+        roles: preferences.roles ?? [],
+        notifyNewOpportunities: preferences.notifyNewOpportunities ?? true,
+      });
+    }
+  }, [preferences]);
 
   const shifts = shiftsData?.data ?? [];
   const opportunities = opportunitiesData?.data ?? [];
@@ -279,6 +304,39 @@ export default function VolunteerShiftsPage() {
       await refetchNotifications();
     } catch {
       /* non-blocking */
+    }
+  }
+
+  function toggleCategory(cat: VolunteerCategory) {
+    setPrefsForm((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(cat)
+        ? prev.categories.filter((c) => c !== cat)
+        : [...prev.categories, cat],
+    }));
+  }
+
+  function toggleRole(role: VolunteerShiftRole) {
+    setPrefsForm((prev) => ({
+      ...prev,
+      roles: prev.roles.includes(role)
+        ? prev.roles.filter((r) => r !== role)
+        : [...prev.roles, role],
+    }));
+  }
+
+  async function handleSavePreferences() {
+    setPrefsSaving(true);
+    setPrefsMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      await ep.updateVolunteerPreferences(prefsForm);
+      setPrefsMsg('Preferences saved.');
+      await refetchPrefs();
+    } catch (err) {
+      setPrefsMsg(err instanceof Error ? err.message : 'Could not save preferences');
+    } finally {
+      setPrefsSaving(false);
     }
   }
 
@@ -467,7 +525,8 @@ export default function VolunteerShiftsPage() {
     );
   }
 
-  const loading = oppLoading || shiftsLoading || statsLoading || notifLoading || templatesLoading;
+  const loading =
+    oppLoading || shiftsLoading || statsLoading || notifLoading || templatesLoading || prefsLoading;
   const error = oppError ?? shiftsError ?? statsError ?? notifError;
 
   const badgeLabel = stats ? BADGE_LABELS[stats.badgeTier] : '—';
@@ -530,6 +589,64 @@ export default function VolunteerShiftsPage() {
           </Button>
         ))}
       </div>
+
+      <GlassCard title="My preferences" className="mb2">
+        <Button size="sm" variant="outline" onClick={() => setShowPreferences((v) => !v)}>
+          {showPreferences ? 'Hide preferences' : 'Show preferences'}
+        </Button>
+        {showPreferences && (
+          <div className={`${styles.formGrid} mt1`}>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <label>Seva categories</label>
+              <div className={styles.roleChips}>
+                {(Object.keys(CATEGORY_LABELS) as VolunteerCategory[]).map((cat) => (
+                  <label key={cat} className="flexRow" style={{ gap: '0.35rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={prefsForm.categories.includes(cat)}
+                      onChange={() => toggleCategory(cat)}
+                    />
+                    {CATEGORY_LABELS[cat]}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <label>Preferred roles</label>
+              <div className={styles.roleChips}>
+                {(Object.keys(ROLE_LABELS) as VolunteerShiftRole[]).map((role) => (
+                  <label key={role} className="flexRow" style={{ gap: '0.35rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={prefsForm.roles.includes(role)}
+                      onChange={() => toggleRole(role)}
+                    />
+                    {ROLE_LABELS[role]}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={prefsForm.notifyNewOpportunities}
+                  onChange={(e) =>
+                    setPrefsForm({ ...prefsForm, notifyNewOpportunities: e.target.checked })
+                  }
+                />
+                Notify me about new volunteer opportunities
+              </label>
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <Button onClick={handleSavePreferences} disabled={prefsSaving}>
+                {prefsSaving ? 'Saving…' : 'Save preferences'}
+              </Button>
+              {prefsMsg && <p className="tms-t3 mt1">{prefsMsg}</p>}
+            </div>
+          </div>
+        )}
+      </GlassCard>
 
       <div className={styles.grid}>
         <GlassCard title="Shifts">
