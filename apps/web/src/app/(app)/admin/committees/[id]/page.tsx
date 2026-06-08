@@ -13,14 +13,17 @@ import {
 import type {
   Committee,
   CommitteeCalendarBlock,
+  CommitteeLeadershipRecord,
   CommitteeMember,
   CommitteeMessage,
+  CommitteeReport,
   CommitteeRequest,
   CommitteeTarget,
   CommitteeTask,
   CreateCommitteeCalendarBlockInput,
   CreateCommitteeMemberInput,
   CreateCommitteeMessageInput,
+  CreateCommitteeReportInput,
   CreateCommitteeRequestInput,
   CreateCommitteeTargetInput,
   CreateCommitteeTaskInput,
@@ -37,11 +40,13 @@ type Tab =
   | 'tasks'
   | 'targets'
   | 'requests'
-  | 'messages';
+  | 'messages'
+  | 'reports';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'members', label: 'Members' },
+  { id: 'reports', label: 'Reports' },
   { id: 'calendar', label: 'Calendar blocks' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'targets', label: 'Targets' },
@@ -60,6 +65,8 @@ export default function AdminCommitteeDetailPage() {
   const [targets, setTargets] = useState<CommitteeTarget[]>([]);
   const [requests, setRequests] = useState<CommitteeRequest[]>([]);
   const [messages, setMessages] = useState<CommitteeMessage[]>([]);
+  const [reports, setReports] = useState<CommitteeReport[]>([]);
+  const [leadership, setLeadership] = useState<CommitteeLeadershipRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -93,6 +100,14 @@ export default function AdminCommitteeDetailPage() {
     body: '',
     isAnnouncement: true,
   });
+  const [reportForm, setReportForm] = useState<CreateCommitteeReportInput>({
+    period: 'monthly',
+    title: '',
+    meetingDate: new Date().toISOString().slice(0, 10),
+    minutesSummary: '',
+    attendanceCount: 0,
+    expectedAttendance: undefined,
+  });
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -100,7 +115,7 @@ export default function AdminCommitteeDetailPage() {
     setError(null);
     try {
       const ep = createEndpoints(api);
-      const [c, m, b, t, tg, r, ms] = await Promise.all([
+      const [c, m, b, t, tg, r, ms, rp, lh] = await Promise.all([
         ep.getCommittee(id),
         ep.getCommitteeMembers(id),
         ep.getCommitteeCalendarBlocks(id),
@@ -108,6 +123,8 @@ export default function AdminCommitteeDetailPage() {
         ep.getCommitteeTargets(id),
         ep.getCommitteeRequests(id),
         ep.getCommitteeMessages(id),
+        ep.getCommitteeReports(id),
+        ep.getCommitteeLeadershipHistory(id),
       ]);
       setCommittee(c);
       setMembers(m.data);
@@ -116,6 +133,8 @@ export default function AdminCommitteeDetailPage() {
       setTargets(tg.data);
       setRequests(r.data);
       setMessages(ms.data);
+      setReports(rp.data);
+      setLeadership(lh.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load committee');
     } finally {
@@ -171,12 +190,40 @@ export default function AdminCommitteeDetailPage() {
       {msg && <p className="hint mb1">{msg}</p>}
 
       {tab === 'overview' && committee && (
-        <GlassCard title="Overview" compact>
-          <p>{committee.description ?? 'No description.'}</p>
-          <p className="hint mt1">
-            {committee.memberCount ?? 0} members · {tasks.length} tasks · {requests.filter((r) => r.status === 'pending').length} pending requests
-          </p>
-        </GlassCard>
+        <div className="grid2">
+          <GlassCard title="Overview" compact>
+            <p>{committee.description ?? 'No description.'}</p>
+            <p className="hint mt1">
+              {committee.category} · {committee.committeeType?.replace('_', ' ')}
+              {committee.meetingCadence && ` · ${committee.meetingCadence.replace('_', ' ')}`}
+            </p>
+            <p className="hint mt1">
+              {committee.memberCount ?? 0} members · {tasks.length} tasks ·{' '}
+              {requests.filter((r) => r.status === 'pending').length} pending requests ·{' '}
+              {reports.length} reports
+            </p>
+          </GlassCard>
+          <GlassCard title="Past leadership" compact>
+            {leadership.length === 0 ? (
+              <p className="hint">No leadership history recorded.</p>
+            ) : (
+              leadership.map((l) => (
+                <div key={l.id} className="listRow">
+                  <div className="listRowMain">
+                    <div className="listRowTitle">
+                      {l.name}
+                      {l.displayTitle ? ` — ${l.displayTitle}` : ''}
+                    </div>
+                    <p className="hint">
+                      {formatShortDate(l.startDate)}
+                      {l.endDate ? ` – ${formatShortDate(l.endDate)}` : ' – present'}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </GlassCard>
+        </div>
       )}
 
       {tab === 'members' && (
@@ -242,12 +289,131 @@ export default function AdminCommitteeDetailPage() {
               getRowKey={(m) => m.id}
               columns={[
                 { key: 'name', header: 'Name', render: (m) => m.name },
-                { key: 'role', header: 'Role', render: (m) => m.role },
+                {
+                  key: 'title',
+                  header: 'Title',
+                  render: (m) => m.displayTitle ?? m.role,
+                },
                 { key: 'email', header: 'Email', render: (m) => m.email ?? '—' },
               ]}
               data={members}
             />
             {members.length === 0 && <p className="hint mt1">No members</p>}
+          </GlassCard>
+        </div>
+      )}
+
+      {tab === 'reports' && (
+        <div className="grid2">
+          <GlassCard title="Add report" compact>
+            <div className="formStack">
+              <label>
+                Title
+                <input
+                  value={reportForm.title}
+                  onChange={(e) => setReportForm({ ...reportForm, title: e.target.value })}
+                />
+              </label>
+              <label>
+                Period
+                <select
+                  value={reportForm.period}
+                  onChange={(e) =>
+                    setReportForm({
+                      ...reportForm,
+                      period: e.target.value as CreateCommitteeReportInput['period'],
+                    })
+                  }
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </label>
+              <label>
+                Meeting date
+                <input
+                  type="date"
+                  value={reportForm.meetingDate}
+                  onChange={(e) => setReportForm({ ...reportForm, meetingDate: e.target.value })}
+                />
+              </label>
+              <label>
+                Attendance
+                <input
+                  type="number"
+                  min={0}
+                  value={reportForm.attendanceCount}
+                  onChange={(e) =>
+                    setReportForm({ ...reportForm, attendanceCount: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Expected attendance
+                <input
+                  type="number"
+                  min={0}
+                  value={reportForm.expectedAttendance ?? ''}
+                  onChange={(e) =>
+                    setReportForm({
+                      ...reportForm,
+                      expectedAttendance: e.target.value ? Number(e.target.value) : undefined,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Minutes summary
+                <textarea
+                  value={reportForm.minutesSummary}
+                  onChange={(e) => setReportForm({ ...reportForm, minutesSummary: e.target.value })}
+                  rows={4}
+                />
+              </label>
+              <Button
+                size="sm"
+                disabled={saving}
+                onClick={() =>
+                  void runAction(async () => {
+                    await createEndpoints(api).createCommitteeReport(id, reportForm);
+                    setReportForm({
+                      period: 'monthly',
+                      title: '',
+                      meetingDate: new Date().toISOString().slice(0, 10),
+                      minutesSummary: '',
+                      attendanceCount: 0,
+                    });
+                    setMsg('Report created.');
+                  })
+                }
+              >
+                Add report
+              </Button>
+            </div>
+          </GlassCard>
+          <GlassCard title="Meeting reports" compact>
+            <DataTable<CommitteeReport>
+              getRowKey={(r) => r.id}
+              columns={[
+                { key: 'title', header: 'Title', render: (r) => r.title },
+                { key: 'period', header: 'Period', render: (r) => r.period },
+                {
+                  key: 'date',
+                  header: 'Date',
+                  render: (r) => formatShortDate(r.meetingDate),
+                },
+                {
+                  key: 'attendance',
+                  header: 'Attendance',
+                  render: (r) =>
+                    r.expectedAttendance != null
+                      ? `${r.attendanceCount}/${r.expectedAttendance}`
+                      : String(r.attendanceCount),
+                },
+              ]}
+              data={reports}
+            />
+            {reports.length === 0 && <p className="hint mt1">No reports yet</p>}
           </GlassCard>
         </div>
       )}

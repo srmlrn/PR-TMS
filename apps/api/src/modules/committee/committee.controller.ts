@@ -14,9 +14,12 @@ import {
   Committee,
   CommitteeCalendarBlock,
   CommitteeDashboard,
+  CommitteeLeadershipRecord,
   CommitteeMember,
   CommitteeMessage,
+  CommitteeReport,
   CommitteeRequest,
+  CommitteeRoster,
   CommitteeTarget,
   CommitteeTask,
   UserRole,
@@ -50,6 +53,7 @@ import {
   CreateCommitteeDto,
   UpdateCommitteeDto,
 } from './dto/create-committee.dto';
+import { CreateCommitteeReportDto } from './dto/committee-report.dto';
 import { CommitteeService } from './committee.service';
 
 @ApiTags('committees')
@@ -119,6 +123,25 @@ export class CommitteeController {
     @CurrentUser() user: AuthUser,
   ): Promise<{ data: CommitteeRequest[] }> {
     const data = await this.committeeService.findMyRequests(tenantId, user);
+    return { data };
+  }
+
+  @Get('roster')
+  @ApiOperation({ summary: 'Public committee roster grouped by category' })
+  async roster(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<CommitteeRoster> {
+    return this.committeeService.getRoster(tenantId, user);
+  }
+
+  @Get('reports')
+  @ApiOperation({ summary: 'Committee reports across accessible committees' })
+  async allReports(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ data: CommitteeReport[] }> {
+    const data = await this.committeeService.findAllReports(tenantId, user);
     return { data };
   }
 
@@ -346,5 +369,38 @@ export class CommitteeController {
     @CurrentUser() user: AuthUser,
   ): Promise<CommitteeMessage> {
     return this.committeeService.createMessage(tenantId, id, dto, user);
+  }
+
+  @Get(':id/reports')
+  @ApiOperation({ summary: 'Committee meeting reports' })
+  async findReports(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ data: CommitteeReport[] }> {
+    const data = await this.committeeService.findReports(tenantId, id, user);
+    return { data };
+  }
+
+  @Post(':id/reports')
+  @ApiOperation({ summary: 'Create committee meeting report' })
+  async createReport(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateCommitteeReportDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<CommitteeReport> {
+    return this.committeeService.createReport(tenantId, id, dto, user);
+  }
+
+  @Get(':id/leadership-history')
+  @ApiOperation({ summary: 'Past committee leadership' })
+  async leadershipHistory(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ data: CommitteeLeadershipRecord[] }> {
+    const data = await this.committeeService.findLeadershipHistory(tenantId, id, user);
+    return { data };
   }
 }

@@ -1,5 +1,20 @@
 export type CommitteeMemberRole = 'chair' | 'vice_chair' | 'secretary' | 'member';
 
+export type CommitteeCategory =
+  | 'governance'
+  | 'religious'
+  | 'cultural'
+  | 'education'
+  | 'operations'
+  | 'outreach'
+  | 'staff';
+
+export type CommitteeType = 'standing' | 'ad_hoc' | 'staff';
+
+export type MeetingCadence = 'weekly' | 'monthly' | 'quarterly' | 'annual' | 'as_needed';
+
+export type CommitteeReportPeriod = 'monthly' | 'quarterly';
+
 export type CommitteeRequestType =
   | 'calendar_block'
   | 'budget'
@@ -19,8 +34,13 @@ export type CommitteeTargetPeriod = 'monthly' | 'quarterly' | 'annual';
 export interface Committee {
   id: string;
   name: string;
+  slug: string;
   description?: string;
   purpose?: string;
+  category: CommitteeCategory;
+  committeeType: CommitteeType;
+  meetingCadence?: MeetingCadence;
+  publicRoster: boolean;
   isActive: boolean;
   memberCount?: number;
   createdAt: string;
@@ -34,6 +54,7 @@ export interface CommitteeMember {
   name: string;
   email?: string;
   role: CommitteeMemberRole;
+  displayTitle?: string;
   joinedAt: string;
   isActive: boolean;
 }
@@ -115,6 +136,45 @@ export interface CommitteeMessage {
   createdAt: string;
 }
 
+export interface CommitteeReport {
+  id: string;
+  committeeId: string;
+  period: CommitteeReportPeriod;
+  title: string;
+  meetingDate: string;
+  minutesSummary: string;
+  attendanceCount: number;
+  expectedAttendance?: number;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommitteeLeadershipRecord {
+  id: string;
+  committeeId: string;
+  name: string;
+  role: CommitteeMemberRole;
+  displayTitle?: string;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface CommitteeRosterEntry {
+  committee: Committee;
+  members: CommitteeMember[];
+}
+
+export interface CommitteeRosterCategory {
+  category: CommitteeCategory;
+  label: string;
+  committees: CommitteeRosterEntry[];
+}
+
+export interface CommitteeRoster {
+  categories: CommitteeRosterCategory[];
+}
+
 export interface CommitteeDashboard {
   committees: Committee[];
   pendingApprovals: CommitteeRequest[];
@@ -130,14 +190,24 @@ export interface CommitteeDashboard {
 
 export interface CreateCommitteeInput {
   name: string;
+  slug?: string;
   description?: string;
   purpose?: string;
+  category?: CommitteeCategory;
+  committeeType?: CommitteeType;
+  meetingCadence?: MeetingCadence;
+  publicRoster?: boolean;
 }
 
 export interface UpdateCommitteeInput {
   name?: string;
+  slug?: string;
   description?: string;
   purpose?: string;
+  category?: CommitteeCategory;
+  committeeType?: CommitteeType;
+  meetingCadence?: MeetingCadence;
+  publicRoster?: boolean;
   isActive?: boolean;
 }
 
@@ -146,13 +216,24 @@ export interface CreateCommitteeMemberInput {
   name: string;
   email?: string;
   role: CommitteeMemberRole;
+  displayTitle?: string;
 }
 
 export interface UpdateCommitteeMemberInput {
   name?: string;
   email?: string;
   role?: CommitteeMemberRole;
+  displayTitle?: string;
   isActive?: boolean;
+}
+
+export interface CreateCommitteeReportInput {
+  period: CommitteeReportPeriod;
+  title: string;
+  meetingDate: string;
+  minutesSummary: string;
+  attendanceCount: number;
+  expectedAttendance?: number;
 }
 
 export interface CreateCommitteeCalendarBlockInput {

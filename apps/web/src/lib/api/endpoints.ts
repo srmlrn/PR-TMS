@@ -77,6 +77,10 @@ import type {
   CommitteeRequest,
   CommitteeMessage,
   CommitteeDashboard,
+  CommitteeRoster,
+  CommitteeReport,
+  CommitteeLeadershipRecord,
+  CreateCommitteeReportInput,
   CreateCommitteeInput,
   UpdateCommitteeInput,
   CreateCommitteeMemberInput,
@@ -655,6 +659,22 @@ export function createEndpoints(client: ApiClient) {
 
     getMyCommitteeRequests: () =>
       client.get<{ data: CommitteeRequest[] }>('/committees/my/requests'),
+
+    getCommitteeRoster: () => client.get<CommitteeRoster>('/committees/roster'),
+
+    getAllCommitteeReports: () =>
+      client.get<{ data: CommitteeReport[] }>('/committees/reports'),
+
+    getCommitteeReports: (committeeId: string) =>
+      client.get<{ data: CommitteeReport[] }>(`/committees/${committeeId}/reports`),
+
+    createCommitteeReport: (committeeId: string, body: CreateCommitteeReportInput) =>
+      client.post<CommitteeReport>(`/committees/${committeeId}/reports`, body),
+
+    getCommitteeLeadershipHistory: (committeeId: string) =>
+      client.get<{ data: CommitteeLeadershipRecord[] }>(
+        `/committees/${committeeId}/leadership-history`,
+      ),
   };
 }
 

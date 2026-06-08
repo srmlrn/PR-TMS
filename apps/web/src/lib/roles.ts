@@ -103,6 +103,8 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     defaultHref: '/committee/dashboard',
     nav: [
       { id: 'cm-dash', emoji: '📊', label: 'Dashboard', href: '/committee/dashboard' },
+      { id: 'cm-dir', emoji: '📖', label: 'Directory', href: '/committee/directory' },
+      { id: 'cm-reports', emoji: '📝', label: 'Reports', href: '/committee/reports' },
       { id: 'cm-tasks', emoji: '✅', label: 'My Tasks', href: '/committee/tasks' },
       { id: 'cm-req', emoji: '📋', label: 'Requests', href: '/committee/requests' },
       { id: 'cm-cal', emoji: '📅', label: 'Calendar', href: '/committee/calendar' },
@@ -243,6 +245,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/accountant/finance': 'Finance Dashboard',
   '/volunteer/shifts': 'Volunteering',
   '/committee/dashboard': 'Committee Dashboard',
+  '/committee/directory': 'Committee Directory',
+  '/committee/reports': 'Committee Reports',
   '/committee/tasks': 'My Tasks',
   '/committee/requests': 'Requests',
   '/committee/calendar': 'Calendar Blocks',

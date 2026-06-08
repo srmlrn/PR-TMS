@@ -35,7 +35,11 @@ export function canAccessPath(role: AppRole, pathname: string): boolean {
   }
 
   if (role === UserRole.ADMIN) {
-    return pathname.startsWith('/admin');
+    return (
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/committee/directory') ||
+      pathname.startsWith('/committee/reports')
+    );
   }
 
   if (role === UserRole.DEVOTEE) {

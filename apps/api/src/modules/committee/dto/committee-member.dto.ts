@@ -20,6 +20,12 @@ export class CreateCommitteeMemberDto {
   @ApiProperty({ enum: ['chair', 'vice_chair', 'secretary', 'member'] })
   @IsEnum(['chair', 'vice_chair', 'secretary', 'member'])
   role!: CommitteeMemberRole;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  displayTitle?: string;
 }
 
 export class UpdateCommitteeMemberDto {
@@ -38,6 +44,12 @@ export class UpdateCommitteeMemberDto {
   @IsOptional()
   @IsEnum(['chair', 'vice_chair', 'secretary', 'member'])
   role?: CommitteeMemberRole;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  displayTitle?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

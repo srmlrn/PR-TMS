@@ -55,8 +55,13 @@ export function demoCommitteeDashboard(templeName: string): CommitteeDashboard {
   const committee: Committee = {
     id: 'demo-committee',
     name: `${templeName} Governance Committee`,
+    slug: 'governance',
     description: 'Finance, events, and facilities oversight',
     purpose: 'Temple governance and approvals',
+    category: 'governance',
+    committeeType: 'standing',
+    meetingCadence: 'monthly',
+    publicRoster: true,
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

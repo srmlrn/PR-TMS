@@ -103,6 +103,9 @@ export default function AdminCommitteesPage() {
             Committees manage calendar blocks, KPI targets, task assignments, and approval
             workflows. Committee members log in with the <strong>committee</strong> role.
           </p>
+          <p className="hint mb1">
+            <Link href="/committee/directory">View public committee directory →</Link>
+          </p>
           <p className="hint">
             Demo login: <code>{committeeEmail}</code> / demo123
           </p>
@@ -119,6 +122,16 @@ export default function AdminCommitteesPage() {
               render: (c) => (
                 <Link href={`/admin/committees/${c.id}`}>{c.name}</Link>
               ),
+            },
+            {
+              key: 'category',
+              header: 'Category',
+              render: (c) => c.category ?? '—',
+            },
+            {
+              key: 'type',
+              header: 'Type',
+              render: (c) => c.committeeType?.replace('_', ' ') ?? '—',
             },
             {
               key: 'purpose',

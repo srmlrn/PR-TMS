@@ -8,16 +8,21 @@ import {
   AuthUser,
   Committee,
   CommitteeCalendarBlock,
+  CommitteeCategory,
   CommitteeDashboard,
+  CommitteeLeadershipRecord,
   CommitteeMember,
   CommitteeMessage,
+  CommitteeReport,
   CommitteeRequest,
+  CommitteeRoster,
   CommitteeTarget,
   CommitteeTask,
   CreateCommitteeCalendarBlockInput,
   CreateCommitteeInput,
   CreateCommitteeMemberInput,
   CreateCommitteeMessageInput,
+  CreateCommitteeReportInput,
   CreateCommitteeRequestInput,
   CreateCommitteeTargetInput,
   CreateCommitteeTaskInput,
@@ -32,15 +37,29 @@ import {
   UserRole,
 } from '@tms/types';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  COMMITTEE_CATEGORY_LABELS,
+  COMMITTEE_CATEGORY_ORDER,
+  COMMITTEE_SEED_VERSION,
+  committeeIdFor,
+  getCommitteeSeedsForTenant,
+  parseMember,
+} from '../../data/committee-seed-data';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantDataService } from '../../database/tenant-data.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 type CommitteeRecord = TenantEntity & {
   name: string;
+  slug: string;
   description?: string;
   purpose?: string;
+  category: CommitteeCategory;
+  committeeType: Committee['committeeType'];
+  meetingCadence?: Committee['meetingCadence'];
+  publicRoster: boolean;
   isActive: boolean;
+  seedVersion?: string;
 };
 
 type MemberRecord = TenantEntity & {
@@ -49,9 +68,15 @@ type MemberRecord = TenantEntity & {
   name: string;
   email?: string;
   role: CommitteeMember['role'];
+  displayTitle?: string;
   joinedAt: string;
   isActive: boolean;
 };
+
+type ReportRecord = TenantEntity &
+  Omit<CommitteeReport, 'createdAt' | 'updatedAt'>;
+
+type LeadershipRecord = TenantEntity & CommitteeLeadershipRecord;
 
 type BlockRecord = TenantEntity & Omit<CommitteeCalendarBlock, 'createdAt' | 'updatedAt'>;
 type TaskRecord = TenantEntity & Omit<CommitteeTask, 'createdAt' | 'updatedAt'>;
@@ -69,9 +94,6 @@ type MessageRecord = TenantEntity & {
   isAnnouncement: boolean;
 };
 
-const DEMO_COMMITTEE_SV = 'committee-sv-governance';
-const DEMO_COMMITTEE_GANESHA = 'committee-ganesha-governance';
-
 @Injectable()
 export class CommitteeService extends BaseTenantService<CommitteeRecord> implements OnModuleInit {
   protected store = new Map<string, CommitteeRecord>();
@@ -81,6 +103,9 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
   private targetStore = new Map<string, TargetRecord>();
   private requestStore = new Map<string, RequestRecord>();
   private messageStore = new Map<string, MessageRecord>();
+  private reportStore = new Map<string, ReportRecord>();
+  private leadershipStore = new Map<string, LeadershipRecord>();
+  private tenantSeedVersions = new Map<string, string>();
 
   constructor(
     private readonly tenantData: TenantDataService,
@@ -111,13 +136,35 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     return {
       id: record.id,
       name: record.name,
+      slug: record.slug,
       description: record.description,
       purpose: record.purpose,
+      category: record.category,
+      committeeType: record.committeeType,
+      meetingCadence: record.meetingCadence,
+      publicRoster: record.publicRoster,
       isActive: record.isActive,
       memberCount,
       createdAt: this.iso(record.createdAt),
       updatedAt: this.iso(record.updatedAt),
     };
+  }
+
+  private toReport(record: ReportRecord): CommitteeReport {
+    const { tenantId: _t, createdAt, updatedAt, ...r } = record;
+    return { ...r, createdAt: this.iso(createdAt), updatedAt: this.iso(updatedAt) };
+  }
+
+  private toLeadership(record: LeadershipRecord): CommitteeLeadershipRecord {
+    const { tenantId: _t, createdAt: _c, updatedAt: _u, ...l } = record;
+    return l;
+  }
+
+  private slugify(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   private toMember(record: MemberRecord): CommitteeMember {
@@ -155,62 +202,124 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     return { ...m, createdAt: this.iso(createdAt) };
   }
 
+  private clearTenantCommitteeData(tenantId: string): void {
+    const committeeIds = new Set(
+      [...this.store.values()].filter((c) => c.tenantId === tenantId).map((c) => c.id),
+    );
+    for (const id of committeeIds) {
+      this.store.delete(id);
+    }
+    for (const [key, value] of this.memberStore) {
+      if (value.tenantId === tenantId) this.memberStore.delete(key);
+    }
+    for (const [key, value] of this.blockStore) {
+      if (value.tenantId === tenantId) this.blockStore.delete(key);
+    }
+    for (const [key, value] of this.taskStore) {
+      if (value.tenantId === tenantId) this.taskStore.delete(key);
+    }
+    for (const [key, value] of this.targetStore) {
+      if (value.tenantId === tenantId) this.targetStore.delete(key);
+    }
+    for (const [key, value] of this.requestStore) {
+      if (value.tenantId === tenantId) this.requestStore.delete(key);
+    }
+    for (const [key, value] of this.messageStore) {
+      if (value.tenantId === tenantId) this.messageStore.delete(key);
+    }
+    for (const [key, value] of this.reportStore) {
+      if (value.tenantId === tenantId) this.reportStore.delete(key);
+    }
+    for (const [key, value] of this.leadershipStore) {
+      if (value.tenantId === tenantId) this.leadershipStore.delete(key);
+    }
+  }
+
   private seedDemoCommittees(tenantId: string): void {
-    if (this.scoped(tenantId).length > 0) return;
+    const seeds = getCommitteeSeedsForTenant(tenantId);
+    if (seeds.length === 0) return;
+
+    if (this.tenantSeedVersions.get(tenantId) === COMMITTEE_SEED_VERSION) {
+      return;
+    }
+
+    this.clearTenantCommitteeData(tenantId);
 
     const now = new Date();
     const isSv = tenantId === SV_TEMPLE_ID;
-    const committeeId = isSv ? DEMO_COMMITTEE_SV : DEMO_COMMITTEE_GANESHA;
+    const isGanesha = tenantId === GANESHA_TEMPLE_ID;
     const committeeUserId = isSv ? 'user-committee-001' : 'user-ganesha-committee-001';
     const adminUserId = isSv ? 'user-admin-001' : 'user-ganesha-admin-001';
+    const primarySlug = isGanesha ? 'executive' : 'governance';
+    const primaryCommitteeId = committeeIdFor(tenantId, primarySlug);
 
-    this.store.set(committeeId, {
-      id: committeeId,
-      tenantId,
-      name: isSv ? 'Temple Governance Committee' : 'HCC Governance Committee',
-      description: 'Oversees temple operations, events, and community initiatives.',
-      purpose: 'Governance, planning, and oversight',
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    const members: MemberRecord[] = [
-      {
-        id: `${committeeId}-member-chair`,
+    for (const def of seeds) {
+      const committeeId = committeeIdFor(tenantId, def.slug);
+      this.store.set(committeeId, {
+        id: committeeId,
         tenantId,
-        committeeId,
-        userId: adminUserId,
-        name: isSv ? 'Temple Admin' : 'HCC Admin',
-        email: isSv ? 'admin@svtemple.org' : 'admin@sgtemple.org',
-        role: 'chair',
-        joinedAt: this.iso(now),
+        name: def.name,
+        slug: def.slug,
+        description: def.description,
+        purpose: def.purpose,
+        category: def.category,
+        committeeType: def.committeeType,
+        meetingCadence: def.meetingCadence,
+        publicRoster: def.publicRoster,
         isActive: true,
+        seedVersion: COMMITTEE_SEED_VERSION,
         createdAt: now,
         updatedAt: now,
-      },
-      {
-        id: `${committeeId}-member-001`,
-        tenantId,
-        committeeId,
-        userId: committeeUserId,
-        name: isSv ? 'Committee Member Raj' : 'Committee Member Priya',
-        email: isSv ? 'committee@svtemple.org' : 'committee@sgtemple.org',
-        role: 'member',
-        joinedAt: this.iso(now),
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ];
-    for (const m of members) {
-      this.memberStore.set(m.id, m);
+      });
+
+      const nameCounts = new Map<string, number>();
+      def.members.forEach((raw, index) => {
+        const parsed = parseMember(raw);
+        const count = (nameCounts.get(parsed.name) ?? 0) + 1;
+        nameCounts.set(parsed.name, count);
+        const suffix = count > 1 ? `-${count}` : '';
+        const isSvDemoMember = isSv && def.slug === primarySlug && parsed.name === 'Committee Member Raj';
+
+        const memberId = `${committeeId}-member-${index}`;
+        this.memberStore.set(memberId, {
+          id: memberId,
+          tenantId,
+          committeeId,
+          userId: isSvDemoMember
+            ? committeeUserId
+            : `roster-${def.slug}-${this.slugify(parsed.name)}${suffix}`,
+          name: parsed.name,
+          email: isSvDemoMember ? 'committee@svtemple.org' : undefined,
+          role: parsed.role,
+          displayTitle: parsed.displayTitle,
+          joinedAt: this.iso(now),
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      if (def.slug === primarySlug && isGanesha) {
+        this.memberStore.set(`${committeeId}-member-demo-user`, {
+          id: `${committeeId}-member-demo-user`,
+          tenantId,
+          committeeId,
+          userId: committeeUserId,
+          name: 'Committee Member Priya',
+          email: 'committee@sgtemple.org',
+          role: 'member',
+          joinedAt: this.iso(now),
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
     }
 
-    this.taskStore.set(`${committeeId}-task-001`, {
-      id: `${committeeId}-task-001`,
+    this.taskStore.set(`${primaryCommitteeId}-task-001`, {
+      id: `${primaryCommitteeId}-task-001`,
       tenantId,
-      committeeId,
+      committeeId: primaryCommitteeId,
       title: 'Review annual budget proposal',
       description: 'Prepare recommendations for the upcoming fiscal year budget.',
       assigneeUserId: committeeUserId,
@@ -223,10 +332,10 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       updatedAt: now,
     });
 
-    this.targetStore.set(`${committeeId}-target-001`, {
-      id: `${committeeId}-target-001`,
+    this.targetStore.set(`${primaryCommitteeId}-target-001`, {
+      id: `${primaryCommitteeId}-target-001`,
       tenantId,
-      committeeId,
+      committeeId: primaryCommitteeId,
       title: 'Community outreach events',
       description: 'Number of outreach events hosted per quarter',
       period: 'quarterly',
@@ -238,10 +347,10 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       updatedAt: now,
     });
 
-    this.blockStore.set(`${committeeId}-block-001`, {
-      id: `${committeeId}-block-001`,
+    this.blockStore.set(`${primaryCommitteeId}-block-001`, {
+      id: `${primaryCommitteeId}-block-001`,
       tenantId,
-      committeeId,
+      committeeId: primaryCommitteeId,
       title: 'Annual General Meeting',
       startDate: new Date(now.getFullYear(), now.getMonth() + 2, 1).toISOString().slice(0, 10),
       endDate: new Date(now.getFullYear(), now.getMonth() + 2, 1).toISOString().slice(0, 10),
@@ -252,18 +361,68 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       updatedAt: now,
     });
 
-    this.messageStore.set(`${committeeId}-msg-001`, {
-      id: `${committeeId}-msg-001`,
+    this.messageStore.set(`${primaryCommitteeId}-msg-001`, {
+      id: `${primaryCommitteeId}-msg-001`,
       tenantId,
-      committeeId,
+      committeeId: primaryCommitteeId,
       authorUserId: adminUserId,
       authorName: isSv ? 'Temple Admin' : 'HCC Admin',
-      subject: 'Welcome to the governance committee',
+      subject: isGanesha
+        ? 'Welcome to the Executive Committee'
+        : 'Welcome to the governance committee',
       body: 'Please review the quarterly targets and submit any calendar block requests before month end.',
       isAnnouncement: true,
       createdAt: now,
       updatedAt: now,
     });
+
+    const lastYear = now.getFullYear() - 1;
+    this.leadershipStore.set(`${primaryCommitteeId}-lead-001`, {
+      id: `${primaryCommitteeId}-lead-001`,
+      tenantId,
+      committeeId: primaryCommitteeId,
+      name: isGanesha ? 'Arul Nayagadurai' : 'Former Chair Patel',
+      role: 'chair',
+      displayTitle: 'Chair',
+      startDate: `${lastYear}-01-01`,
+      endDate: `${lastYear}-12-31`,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    this.reportStore.set(`${primaryCommitteeId}-report-001`, {
+      id: `${primaryCommitteeId}-report-001`,
+      tenantId,
+      committeeId: primaryCommitteeId,
+      period: 'monthly',
+      title: 'March Executive Meeting',
+      meetingDate: new Date(now.getFullYear(), now.getMonth() - 1, 15).toISOString().slice(0, 10),
+      minutesSummary:
+        'Reviewed Q1 financials, approved campus maintenance budget, and discussed upcoming festival planning.',
+      attendanceCount: 7,
+      expectedAttendance: 9,
+      createdByUserId: adminUserId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    this.reportStore.set(`${primaryCommitteeId}-report-002`, {
+      id: `${primaryCommitteeId}-report-002`,
+      tenantId,
+      committeeId: primaryCommitteeId,
+      period: 'quarterly',
+      title: 'Q1 Quarterly Review',
+      meetingDate: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().slice(0, 10),
+      minutesSummary:
+        'Quarterly KPI review: outreach events on track, IT migration timeline confirmed, nomination committee convened.',
+      attendanceCount: 8,
+      expectedAttendance: 9,
+      createdByUserId: adminUserId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    this.tenantSeedVersions.set(tenantId, COMMITTEE_SEED_VERSION);
   }
 
   private isAdmin(user: AuthUser): boolean {
@@ -357,8 +516,13 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     }
     const record = this.createEntity(tenantId, {
       name: input.name,
+      slug: input.slug ?? this.slugify(input.name),
       description: input.description,
       purpose: input.purpose,
+      category: input.category ?? 'governance',
+      committeeType: input.committeeType ?? 'standing',
+      meetingCadence: input.meetingCadence,
+      publicRoster: input.publicRoster ?? false,
       isActive: true,
     });
     return this.toCommittee(record);
@@ -410,6 +574,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       name: input.name,
       email: input.email,
       role: input.role,
+      displayTitle: input.displayTitle,
       joinedAt: this.iso(now),
       isActive: true,
       createdAt: now,
@@ -915,5 +1080,119 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       );
     }
     return requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async getRoster(tenantId: string, user: AuthUser): Promise<CommitteeRoster> {
+    this.seedDemoCommittees(tenantId);
+    let records = this.scoped(tenantId).filter((c) => c.isActive);
+
+    if (!this.isAdmin(user)) {
+      records = records.filter((c) => c.publicRoster);
+    }
+
+    const byCategory = new Map<CommitteeCategory, CommitteeRoster['categories'][0]['committees']>();
+
+    for (const record of records) {
+      const members = [...this.memberStore.values()]
+        .filter((m) => m.tenantId === tenantId && m.committeeId === record.id && m.isActive)
+        .sort((a, b) => {
+          const roleOrder = { chair: 0, vice_chair: 1, secretary: 2, member: 3 };
+          return roleOrder[a.role] - roleOrder[b.role] || a.name.localeCompare(b.name);
+        })
+        .map((m) => this.toMember(m));
+
+      const entry = { committee: this.toCommittee(record), members };
+      const list = byCategory.get(record.category) ?? [];
+      list.push(entry);
+      byCategory.set(record.category, list);
+    }
+
+    const categories = COMMITTEE_CATEGORY_ORDER.filter((cat) => byCategory.has(cat)).map(
+      (category) => ({
+        category,
+        label: COMMITTEE_CATEGORY_LABELS[category],
+        committees: (byCategory.get(category) ?? []).sort((a, b) =>
+          a.committee.name.localeCompare(b.committee.name),
+        ),
+      }),
+    );
+
+    return { categories };
+  }
+
+  async findReports(
+    tenantId: string,
+    committeeId: string,
+    user: AuthUser,
+  ): Promise<CommitteeReport[]> {
+    this.seedDemoCommittees(tenantId);
+    this.assertCommitteeAccess(tenantId, committeeId, user);
+    return [...this.reportStore.values()]
+      .filter((r) => r.tenantId === tenantId && r.committeeId === committeeId)
+      .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
+      .map((r) => this.toReport(r));
+  }
+
+  async findAllReports(tenantId: string, user: AuthUser): Promise<CommitteeReport[]> {
+    this.seedDemoCommittees(tenantId);
+    let committeeIds: Set<string>;
+
+    if (this.isAdmin(user)) {
+      committeeIds = new Set(this.scoped(tenantId).map((c) => c.id));
+    } else {
+      committeeIds = new Set(
+        [...this.memberStore.values()]
+          .filter((m) => m.tenantId === tenantId && m.userId === user.id && m.isActive)
+          .map((m) => m.committeeId),
+      );
+    }
+
+    return [...this.reportStore.values()]
+      .filter((r) => r.tenantId === tenantId && committeeIds.has(r.committeeId))
+      .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
+      .map((r) => this.toReport(r));
+  }
+
+  async createReport(
+    tenantId: string,
+    committeeId: string,
+    input: CreateCommitteeReportInput,
+    user: AuthUser,
+  ): Promise<CommitteeReport> {
+    this.seedDemoCommittees(tenantId);
+    if (!this.isAdmin(user)) {
+      this.assertManageAccess(tenantId, committeeId, user);
+    }
+    this.ensureCommittee(tenantId, committeeId);
+    const now = new Date();
+    const record: ReportRecord = {
+      id: uuidv4(),
+      tenantId,
+      committeeId,
+      period: input.period,
+      title: input.title,
+      meetingDate: input.meetingDate,
+      minutesSummary: input.minutesSummary,
+      attendanceCount: input.attendanceCount,
+      expectedAttendance: input.expectedAttendance,
+      createdByUserId: user.id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.reportStore.set(record.id, record);
+    return this.toReport(record);
+  }
+
+  async findLeadershipHistory(
+    tenantId: string,
+    committeeId: string,
+    user: AuthUser,
+  ): Promise<CommitteeLeadershipRecord[]> {
+    this.seedDemoCommittees(tenantId);
+    this.assertCommitteeAccess(tenantId, committeeId, user);
+    return [...this.leadershipStore.values()]
+      .filter((l) => l.tenantId === tenantId && l.committeeId === committeeId)
+      .sort((a, b) => (b.startDate ?? '').localeCompare(a.startDate ?? ''))
+      .map((l) => this.toLeadership(l));
   }
 }
