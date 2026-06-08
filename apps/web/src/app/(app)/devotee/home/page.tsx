@@ -113,7 +113,7 @@ export default function DevoteeHomePage() {
     nextBooking?.status === BookingStatus.CONFIRMED ? 'Confirmed' : 'Pending';
 
   return (
-    <>
+    <div className="pageShell">
       <PageIntro
         subtitle={`${site.name} · ${site.deity} · ⭐ ${nakshatra} Nakshatra today`}
         actions={
@@ -382,6 +382,6 @@ export default function DevoteeHomePage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

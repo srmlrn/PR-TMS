@@ -355,6 +355,48 @@
   align-self: center;
 }
 
+.messageListItem {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--b);
+}
+
+.messageListItem:first-child {
+  padding-top: 0;
+}
+
+.messageListItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+}
+
+.tableActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.statusMsgOk {
+  color: var(--gr);
+}
+
+.statusMsgError {
+  color: var(--red);
+}
+
+.statusMsgWarn {
+  color: var(--amber);
+}
+
 .formStack {
   display: flex;
   flex-direction: column;
@@ -613,6 +655,26 @@
 @media (max-width: 1100px) {
   .statGrid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --dock-width: 4.25rem;
+    --content-padding-x: 1rem;
+  }
+
+  .pageIntro {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pageIntroActions {
+    justify-content: flex-start;
+  }
+
+  .topBarRoleSwitcher .tms-t3 {
+    display: none;
   }
 }
 

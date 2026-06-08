@@ -296,7 +296,7 @@ export default function AdminSponsorsPage() {
   }, [selectedSponsor]);
 
   return (
-    <>
+    <div className="pageShell">
       <PageIntro
         subtitle="Ubayam, event sponsors, corporate partners — CRM for sponsors"
         actions={
@@ -631,6 +631,6 @@ export default function AdminSponsorsPage() {
           </div>
         </div>
       </GlassCard>
-    </>
+    </div>
   );
 }

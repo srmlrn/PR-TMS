@@ -94,7 +94,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   const shell = (
     <div className={isKiosk ? 'kioskMode' : 'appShell'}>
-      {!isKiosk && !isFullscreenPage && (
+      {!isKiosk && (
         <DockNav
           items={config.nav}
           variant="sidebar"
@@ -102,16 +102,18 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           brandIcon={site.icon}
         />
       )}
-      {!isKiosk && !isFullscreenPage ? (
+      {!isKiosk ? (
         <div className="appMainColumn">
-          <TopBar
-            title={title}
-            envLabel={environment.toUpperCase()}
-            envVariant={envVariant}
-            avatarInitials={config.avatarInitials}
-            themeToggle={<ThemeToggle />}
-            roleSwitcher={roleSwitcher}
-          />
+          {!isFullscreenPage && (
+            <TopBar
+              title={title}
+              envLabel={environment.toUpperCase()}
+              envVariant={envVariant}
+              avatarInitials={config.avatarInitials}
+              themeToggle={<ThemeToggle />}
+              roleSwitcher={roleSwitcher}
+            />
+          )}
           <main className="appPageBody compactUi">{children}</main>
         </div>
       ) : (

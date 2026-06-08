@@ -118,11 +118,7 @@ export default function CommitteeMessagesPage() {
             <p className="hint">No messages yet.</p>
           ) : (
             messages.map((m) => (
-              <div
-                key={m.id}
-                className="listRow"
-                style={{ flexDirection: 'column', alignItems: 'stretch' }}
-              >
+              <div key={m.id} className="messageListItem">
                 <div className="flexBetween" style={{ width: '100%' }}>
                   <div className="listRowTitle">{m.subject ?? 'Message'}</div>
                   {m.isAnnouncement && <Badge variant="info">Announcement</Badge>}

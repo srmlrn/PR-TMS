@@ -56,6 +56,13 @@
   .span9 {
     grid-column: span 12;
   }
+
+  /* Avoid a narrow tile beside empty space when paired with a wide sibling */
+  .grid:has(.span9) > .span3,
+  .grid:has(.span8) > .span4,
+  .grid:has(.span7) > .span5 {
+    grid-column: span 12;
+  }
 }
 
 @media (max-width: 680px) {

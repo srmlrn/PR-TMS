@@ -160,3 +160,21 @@
   background: var(--b);
   margin: 0.2rem 0;
 }
+
+@media (max-width: 900px) {
+  .sidebar .brandText,
+  .sidebar .sectionLabel,
+  .sidebar .itemLabel {
+    display: none;
+  }
+
+  .sidebar .brand {
+    justify-content: center;
+    padding: 0.5rem 0.35rem 0.75rem;
+  }
+
+  .sidebar .sidebarItem {
+    justify-content: center;
+    padding-inline: 0.5rem;
+  }
+}

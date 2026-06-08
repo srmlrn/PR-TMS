@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
       : FALLBACK_BOOKINGS;
 
   return (
-    <>
+    <div className="pageShell">
       <PageIntro
         subtitle={`${site.deity} · ${site.location} · Real-time`}
         actions={
@@ -380,6 +380,6 @@ export default function AdminDashboardPage() {
           getRowKey={(r) => r.id}
         />
       </GlassCard>
-    </>
+    </div>
   );
 }

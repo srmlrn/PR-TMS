@@ -210,7 +210,7 @@ export default function AdminRentalsPage() {
     data?.assets?.data.filter((a) => a.status === 'under_repair').length ?? 3;
 
   return (
-    <>
+    <div className="pageShell">
       <PageIntro
         subtitle="Halls, mandapams, PA systems, furniture, kitchen gear"
         actions={<Button variant="primary">+ New Rental Order</Button>}
@@ -359,6 +359,6 @@ export default function AdminRentalsPage() {
           <Button>Cancel</Button>
         </div>
       </GlassCard>
-    </>
+    </div>
   );
 }

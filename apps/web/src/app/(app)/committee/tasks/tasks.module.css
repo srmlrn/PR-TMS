@@ -109,6 +109,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
+  justify-content: flex-end;
+  margin-top: 0.15rem;
 }
 
 .priorityHigh {

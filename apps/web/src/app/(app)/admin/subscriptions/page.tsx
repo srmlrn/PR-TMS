@@ -261,7 +261,7 @@ export default function AdminSubscriptionsPage() {
                   align: 'right',
                   render: (r) =>
                     r.status === 'active' ? (
-                      <div className="flexRow" style={{ gap: '0.35rem', justifyContent: 'flex-end' }}>
+                      <div className="tableActions">
                         <Button
                           size="sm"
                           variant="outline"
@@ -330,7 +330,7 @@ export default function AdminSubscriptionsPage() {
                   align: 'right',
                   render: (r) =>
                     r.status === 'active' ? (
-                      <div className="flexRow" style={{ gap: '0.35rem', justifyContent: 'flex-end' }}>
+                      <div className="tableActions">
                         <Button
                           size="sm"
                           variant="outline"

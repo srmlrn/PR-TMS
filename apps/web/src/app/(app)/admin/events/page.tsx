@@ -387,7 +387,7 @@ export default function AdminEventsPage() {
   }
 
   return (
-    <>
+    <div className="pageShell">
       <PageIntro
         subtitle="Full lifecycle — Enquiry → Contract → Live → Report"
         actions={
@@ -686,6 +686,6 @@ export default function AdminEventsPage() {
           </GlassCard>
         </BentoItem>
       </BentoGrid>
-    </>
+    </div>
   );
 }
