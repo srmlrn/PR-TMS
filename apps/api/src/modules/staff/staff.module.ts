@@ -7,8 +7,12 @@ import { StaffService } from './staff.service';
 import { TenantUsersService } from './tenant-users.service';
 import { UsersController } from './users.controller';
 
+const usePostgres = process.env.STORAGE_MODE === 'postgres';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([TenantUserEntity])],
+  imports: [
+    ...(usePostgres ? [TypeOrmModule.forFeature([TenantUserEntity])] : []),
+  ],
   controllers: [StaffController, UsersController],
   providers: [StaffService, StaffLeaveService, TenantUsersService],
   exports: [StaffService, StaffLeaveService, TenantUsersService],
