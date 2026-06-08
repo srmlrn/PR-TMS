@@ -1,0 +1,55 @@
+---
+description: Full-stack delivery — UI, API, DB, verify, commit, push, restart
+alwaysApply: true
+---
+
+# Full-Stack Delivery Workflow
+
+For **every change or feature request** in this repo, deliver a complete working slice — not a partial implementation.
+
+## 1. Update all three layers
+
+| Layer | Location | Check |
+|-------|----------|-------|
+| **DB** | `apps/api/src/database/entities/`, `tenant-seed.service.ts`, TypeORM entities | Schema/seed matches new fields; `STORAGE_MODE=postgres` paths persist correctly |
+| **API** | `apps/api/src/modules/`, DTOs, `packages/types/` | Endpoints save and retrieve from DB (no in-memory-only business data) |
+| **UI** | `apps/web/src/`, `apps/web/src/lib/api/endpoints.ts` | Pages/components call API; types from `@tms/types` stay in sync |
+
+Shared types live in `packages/types/` — update there when API and UI share a shape.
+
+## 2. Verify before finishing
+
+- Build API: `cd apps/api && npm run build`
+- Smoke-test the affected flow (create → read → update if applicable)
+- Confirm data survives an API restart when persistence is involved
+- Fix linter/type errors in touched files
+
+## 3. Commit and push
+
+After the feature works end-to-end:
+
+1. `git status` + `git diff` — review all changed files
+2. Stage relevant files (never `.env` secrets)
+3. Commit with a clear message (why, not just what)
+4. `git push` to remote
+
+Do not leave completed feature work uncommitted.
+
+## 4. Restart the app
+
+```bash
+# Kill old processes, rebuild API, start both
+lsof -ti :3000 | xargs kill -9 2>/dev/null
+lsof -ti :3001 | xargs kill -9 2>/dev/null
+cd apps/api && rm -f tsconfig.tsbuildinfo && npm run build && npm run start
+# In another terminal:
+npm run dev:web
+```
+
+- API: http://localhost:3000
+- Web: http://localhost:3001
+- Postgres must be running when `STORAGE_MODE=postgres` (`npm run db:up` in `apps/api`)
+
+## Ephemeral exceptions
+
+Only these may stay in-memory: notification delivery queue, queue `servedToday` display counter. Everything else (devotees, bookings, donations, committees, check-ins, receipts) must use PostgreSQL.
