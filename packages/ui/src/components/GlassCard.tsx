@@ -31,7 +31,9 @@ export function GlassCard({
       {hasHeader && (
         <div className={styles.header}>
           {title !== undefined && <h4 className={styles.headerTitle}>{title}</h4>}
-          {headerRight}
+          {headerRight !== undefined && (
+            <div className={styles.headerActions}>{headerRight}</div>
+          )}
         </div>
       )}
       <div

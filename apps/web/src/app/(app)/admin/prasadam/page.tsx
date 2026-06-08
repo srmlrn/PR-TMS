@@ -295,7 +295,7 @@ export default function AdminPrasadamPage() {
   const courierCount = data?.data.filter((s) => s.courierTrackingId).length ?? 12;
 
   return (
-    <>
+    <div className="pageShell">
       <PageIntro
         subtitle="Sponsor deity prasadam, annadanam, festival kits — online & NRI"
         actions={
@@ -347,7 +347,7 @@ export default function AdminPrasadamPage() {
           <GlassCard
             title={`📅 Availability Calendar — ${monthLabel(calendarMonth)}`}
             headerRight={
-              <div className="flexRow">
+              <div className={styles.calToolbar}>
                 <Button size="sm" onClick={() => setCalendarMonth((m) => shiftMonth(m, -1))}>‹</Button>
                 <input
                   type="month"
@@ -557,6 +557,6 @@ export default function AdminPrasadamPage() {
         />
       </GlassCard>
       {livePaymentModal}
-    </>
+    </div>
   );
 }

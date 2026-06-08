@@ -148,6 +148,34 @@
   line-height: 1.4;
 }
 
+.appShell {
+  min-height: 100vh;
+}
+
+.appMainColumn {
+  margin-left: var(--dock-width);
+  min-height: 100vh;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.appPageBody {
+  flex: 1;
+  padding: 0.85rem var(--content-padding-x) 1.5rem;
+  position: relative;
+  z-index: 1;
+  animation: fadeUp 0.25s ease both;
+}
+
+.topBarRoleSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
 .appContent {
   min-height: 100vh;
   padding: calc(var(--topbar-height) + 0.85rem) var(--content-padding-x) 1.5rem

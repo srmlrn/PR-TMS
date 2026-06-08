@@ -46,6 +46,11 @@
     grid-column: span 6;
   }
 
+  .span5,
+  .span6 {
+    grid-column: span 12;
+  }
+
   .span7,
   .span8,
   .span9 {

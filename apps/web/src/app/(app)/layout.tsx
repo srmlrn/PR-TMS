@@ -82,35 +82,41 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     environment === 'prod' ? 'prod' : environment === 'uat' ? 'uat' : 'dev';
   const isCommitteeRole = role === UserRole.COMMITTEE;
 
+  const roleSwitcher = (
+    <div className="topBarRoleSwitcher">
+      {isCommitteeRole && <CommitteeSwitcher />}
+      <RoleBadge role={role} />
+      <Button size="sm" variant="outline" onClick={logout}>
+        Sign out
+      </Button>
+    </div>
+  );
+
   const shell = (
-    <div className={isKiosk ? 'kioskMode' : undefined}>
+    <div className={isKiosk ? 'kioskMode' : 'appShell'}>
       {!isKiosk && !isFullscreenPage && (
-        <>
-          <DockNav
-            items={config.nav}
-            variant="sidebar"
-            brandLabel={site.name}
-            brandIcon={site.icon}
-          />
+        <DockNav
+          items={config.nav}
+          variant="sidebar"
+          brandLabel={site.name}
+          brandIcon={site.icon}
+        />
+      )}
+      {!isKiosk && !isFullscreenPage ? (
+        <div className="appMainColumn">
           <TopBar
             title={title}
             envLabel={environment.toUpperCase()}
             envVariant={envVariant}
             avatarInitials={config.avatarInitials}
             themeToggle={<ThemeToggle />}
-            roleSwitcher={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {isCommitteeRole && <CommitteeSwitcher />}
-                <RoleBadge role={role} />
-                <Button size="sm" variant="outline" onClick={logout}>
-                  Sign out
-                </Button>
-              </div>
-            }
+            roleSwitcher={roleSwitcher}
           />
-        </>
+          <main className="appPageBody compactUi">{children}</main>
+        </div>
+      ) : (
+        <main className="appContent compactUi">{children}</main>
       )}
-      <main className="appContent compactUi">{children}</main>
     </div>
   );
 

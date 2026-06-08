@@ -1,3 +1,11 @@
+.calToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .select {
   background: var(--ink3);
   border: 1px solid var(--b);
