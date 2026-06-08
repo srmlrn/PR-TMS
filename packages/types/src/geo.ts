@@ -151,3 +151,17 @@ export function isValidRegionForCountry(country: string, state: string): boolean
   if (!state.trim()) return true;
   return getStatesForCountry(country).some((r) => r.code === state);
 }
+
+/** Languages offered in devotee profiles (India temple context). */
+export const IN_LANGUAGES: readonly RegionOption[] = [
+  { code: 'en', name: 'English' },
+  { code: 'ta', name: 'Tamil' },
+  { code: 'te', name: 'Telugu' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'kn', name: 'Kannada' },
+  { code: 'ml', name: 'Malayalam' },
+  { code: 'mr', name: 'Marathi' },
+  { code: 'gu', name: 'Gujarati' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'pa', name: 'Punjabi' },
+];

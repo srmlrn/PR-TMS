@@ -5,7 +5,13 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import type { Address, ImportantDate } from '@tms/types';
+import type {
+  Address,
+  DevoteeAddressEntry,
+  DevoteeEmail,
+  DevoteePhone,
+  ImportantDate,
+} from '@tms/types';
 
 @Entity('devotees')
 export class DevoteeEntity {
@@ -17,6 +23,9 @@ export class DevoteeEntity {
 
   @Column({ name: 'last_name', length: 128 })
   lastName!: string;
+
+  @Column({ length: 8, nullable: true })
+  title?: string;
 
   @Column({ length: 255, nullable: true })
   email?: string;
@@ -59,6 +68,18 @@ export class DevoteeEntity {
 
   @Column({ name: 'preferred_language', length: 16, nullable: true })
   preferredLanguage?: string;
+
+  @Column({ name: 'india_state', length: 8, nullable: true })
+  indiaState?: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  phones?: DevoteePhone[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  emails?: DevoteeEmail[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  addresses?: DevoteeAddressEntry[];
 
   @Column({ name: 'important_dates', type: 'jsonb', nullable: true })
   importantDates?: ImportantDate[];

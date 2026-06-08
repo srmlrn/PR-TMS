@@ -5,6 +5,8 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
+  collectEmailAddresses,
+  collectPhoneNumbers,
   CreateDevoteeInput,
   CreateDevoteeResponse,
   Currency,
@@ -12,8 +14,12 @@ import {
   Devotee,
   DevoteeDuplicateCheck,
   GANESHA_TEMPLE_ID,
+  hydrateDevoteeContacts,
+  normalizePhoneNumber,
   PaginatedResponse,
+  syncPrimaryContacts,
   SV_TEMPLE_ID,
+  UpdateDevoteeInput,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
@@ -161,29 +167,47 @@ export class DevoteeService
     tenantId: string,
     phone?: string,
     email?: string,
+    options?: { phones?: string[]; emails?: string[]; excludeId?: string },
   ): Promise<DevoteeDuplicateCheck> {
     const result: DevoteeDuplicateCheck = {};
+    const phoneTerms = new Set<string>();
+    const emailTerms = new Set<string>();
 
-    if (phone?.trim()) {
-      const normalized = this.normalizePhone(phone);
-      const { data } = await this.findAll(tenantId, 1, 5, { phone });
-      const match = data.find(
-        (d) => this.normalizePhone(d.phone) === normalized,
-      );
-      if (match) {
-        result.phoneMatch = this.duplicateSummary(match);
-      }
+    for (const p of options?.phones ?? []) {
+      if (p.trim()) phoneTerms.add(normalizePhoneNumber(p));
+    }
+    if (phone?.trim()) phoneTerms.add(normalizePhoneNumber(phone));
+
+    for (const e of options?.emails ?? []) {
+      if (e.trim()) emailTerms.add(e.trim().toLowerCase());
+    }
+    if (email?.trim()) emailTerms.add(email.trim().toLowerCase());
+
+    if (phoneTerms.size === 0 && emailTerms.size === 0) {
+      return result;
     }
 
-    if (email?.trim()) {
-      const term = email.trim().toLowerCase();
-      const items = this.usePostgres
-        ? (await this.findAll(tenantId, 1, 100)).data
-        : this.scoped(tenantId);
-      const match = items.find((d) => d.email?.toLowerCase() === term);
-      if (match) {
-        result.emailMatch = this.duplicateSummary(match);
+    const items = this.usePostgres
+      ? (await this.findAll(tenantId, 1, 500)).data
+      : this.scoped(tenantId);
+
+    for (const devotee of items) {
+      if (options?.excludeId && devotee.id === options.excludeId) continue;
+      const hydrated = hydrateDevoteeContacts(devotee);
+
+      if (!result.phoneMatch && phoneTerms.size > 0) {
+        const devoteePhones = collectPhoneNumbers(hydrated);
+        const hit = devoteePhones.some((p) => phoneTerms.has(p));
+        if (hit) result.phoneMatch = this.duplicateSummary(hydrated);
       }
+
+      if (!result.emailMatch && emailTerms.size > 0) {
+        const devoteeEmails = collectEmailAddresses(hydrated);
+        const hit = devoteeEmails.some((e) => emailTerms.has(e));
+        if (hit) result.emailMatch = this.duplicateSummary(hydrated);
+      }
+
+      if (result.phoneMatch && result.emailMatch) break;
     }
 
     return result;
@@ -194,10 +218,15 @@ export class DevoteeService
     input: CreateDevoteeInput,
     options?: { blockOnDuplicate?: boolean },
   ): Promise<CreateDevoteeResponse> {
+    const synced = syncPrimaryContacts(input);
     const duplicates = await this.checkDuplicates(
       tenantId,
-      input.phone,
-      input.email,
+      synced.phone,
+      synced.email,
+      {
+        phones: collectPhoneNumbers(synced),
+        emails: collectEmailAddresses(synced),
+      },
     );
 
     if (options?.blockOnDuplicate && duplicates.phoneMatch) {
@@ -234,99 +263,14 @@ export class DevoteeService
     id: string,
     dto: UpdateDevoteeDto,
   ): Promise<DevoteeRecord> {
+    const existing = await this.findOne(tenantId, id);
+    const patch = this.buildUpdatePatch(existing, dto);
+
     if (this.usePostgres) {
-      await this.findOne(tenantId, id);
       const repo = await this.tenantData.devotees();
-      await repo.update(id, {
-        ...(dto.firstName !== undefined && { firstName: dto.firstName }),
-        ...(dto.lastName !== undefined && { lastName: dto.lastName }),
-        ...(dto.email !== undefined && { email: dto.email }),
-        ...(dto.phone !== undefined && { phone: dto.phone }),
-        ...(dto.country !== undefined && { country: dto.country }),
-        ...(dto.gotram !== undefined && { gotram: dto.gotram }),
-        ...(dto.nakshatra !== undefined && { nakshatra: dto.nakshatra }),
-        ...(dto.rashi !== undefined && { rashi: dto.rashi }),
-        ...(dto.gender !== undefined && { gender: dto.gender }),
-        ...(dto.dateOfBirth !== undefined && { dateOfBirth: dto.dateOfBirth }),
-        ...(dto.photoUrl !== undefined && { photoUrl: dto.photoUrl }),
-        ...(dto.familyId !== undefined && { familyId: dto.familyId }),
-        ...(dto.taxId !== undefined && { taxId: dto.taxId }),
-        ...(dto.isNri !== undefined && { isNri: dto.isNri }),
-        ...(dto.communicationOptIn !== undefined && {
-          communicationOptIn: dto.communicationOptIn,
-        }),
-        ...(dto.preferredLanguage !== undefined && {
-          preferredLanguage: dto.preferredLanguage,
-        }),
-        ...(dto.importantDates !== undefined && {
-          importantDates: dto.importantDates,
-        }),
-        ...(dto.address !== undefined && {
-          address: dto.address.line1
-            ? {
-                line1: dto.address.line1,
-                line2: dto.address.line2,
-                city: dto.address.city ?? '',
-                state: dto.address.state,
-                postalCode: dto.address.postalCode,
-                country: dto.address.country ?? '',
-              }
-            : undefined,
-        }),
-        ...(dto.membershipTier !== undefined && { membershipTier: dto.membershipTier }),
-        ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.membershipExpiresAt !== undefined && {
-          membershipExpiresAt: new Date(dto.membershipExpiresAt),
-        }),
-      });
+      await repo.update(id, patch);
       const updated = await repo.findOneOrFail({ where: { id } });
       return this.toDevotee(updated);
-    }
-
-    const existing = this.findOneScoped(tenantId, id);
-    if (!existing) {
-      throw new NotFoundException(`Devotee ${id} not found`);
-    }
-
-    const patch: Partial<DevoteeRecord> = {};
-
-    if (dto.firstName !== undefined) patch.firstName = dto.firstName;
-    if (dto.lastName !== undefined) patch.lastName = dto.lastName;
-    if (dto.email !== undefined) patch.email = dto.email;
-    if (dto.phone !== undefined) patch.phone = dto.phone;
-    if (dto.country !== undefined) patch.country = dto.country;
-    if (dto.gotram !== undefined) patch.gotram = dto.gotram;
-    if (dto.nakshatra !== undefined) patch.nakshatra = dto.nakshatra;
-    if (dto.rashi !== undefined) patch.rashi = dto.rashi;
-    if (dto.gender !== undefined) patch.gender = dto.gender;
-    if (dto.dateOfBirth !== undefined) patch.dateOfBirth = dto.dateOfBirth;
-    if (dto.photoUrl !== undefined) patch.photoUrl = dto.photoUrl;
-    if (dto.familyId !== undefined) patch.familyId = dto.familyId;
-    if (dto.taxId !== undefined) patch.taxId = dto.taxId;
-    if (dto.isNri !== undefined) patch.isNri = dto.isNri;
-    if (dto.communicationOptIn !== undefined) {
-      patch.communicationOptIn = dto.communicationOptIn;
-    }
-    if (dto.preferredLanguage !== undefined) {
-      patch.preferredLanguage = dto.preferredLanguage;
-    }
-    if (dto.importantDates !== undefined) patch.importantDates = dto.importantDates;
-    if (dto.membershipTier !== undefined) patch.membershipTier = dto.membershipTier;
-    if (dto.status !== undefined) patch.status = dto.status;
-    if (dto.membershipExpiresAt !== undefined) {
-      patch.membershipExpiresAt = new Date(dto.membershipExpiresAt);
-    }
-    if (dto.address !== undefined) {
-      patch.address = dto.address.line1
-        ? {
-            line1: dto.address.line1,
-            line2: dto.address.line2,
-            city: dto.address.city ?? '',
-            state: dto.address.state,
-            postalCode: dto.address.postalCode,
-            country: dto.address.country ?? '',
-          }
-        : undefined;
     }
 
     return this.updateEntity(tenantId, id, patch);
@@ -354,11 +298,12 @@ export class DevoteeService
   }
 
   private toDevotee(row: DevoteeEntity): DevoteeRecord {
-    return {
+    return hydrateDevoteeContacts({
       id: row.id,
       tenantId: TenantContextStorage.get().tenantId,
       firstName: row.firstName,
       lastName: row.lastName,
+      title: row.title as Devotee['title'],
       email: row.email,
       phone: row.phone,
       country: row.country,
@@ -373,6 +318,10 @@ export class DevoteeService
       isNri: row.isNri,
       communicationOptIn: row.communicationOptIn,
       preferredLanguage: row.preferredLanguage,
+      indiaState: row.indiaState,
+      phones: row.phones,
+      emails: row.emails,
+      addresses: row.addresses,
       importantDates: row.importantDates,
       address: row.address,
       membershipTier: row.membershipTier,
@@ -380,15 +329,17 @@ export class DevoteeService
       status: row.status,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-    };
+    });
   }
 
   private buildDevoteePayload(input: CreateDevoteeInput) {
+    const synced = syncPrimaryContacts(input);
     return {
       firstName: input.firstName,
       lastName: input.lastName,
-      email: input.email,
-      phone: input.phone,
+      title: input.title,
+      email: synced.email,
+      phone: synced.phone,
       country: input.country,
       gotram: input.gotram,
       nakshatra: input.nakshatra,
@@ -401,27 +352,88 @@ export class DevoteeService
       isNri: input.isNri ?? false,
       communicationOptIn: input.communicationOptIn ?? true,
       preferredLanguage: input.preferredLanguage,
+      indiaState: input.indiaState,
+      phones: synced.phones.length > 0 ? synced.phones : undefined,
+      emails: synced.emails.length > 0 ? synced.emails : undefined,
+      addresses: synced.addresses.length > 0 ? synced.addresses : undefined,
       importantDates: input.importantDates,
-      address: this.normalizeAddress(input.address, input.country),
+      address: synced.address,
     };
   }
 
-  private normalizeAddress(
-    address: CreateDevoteeInput['address'],
-    fallbackCountry: string,
-  ): Devotee['address'] | undefined {
-    if (!address?.line1) {
-      return undefined;
+  private buildUpdatePatch(
+    existing: DevoteeRecord,
+    dto: UpdateDevoteeDto,
+  ): Partial<DevoteeRecord> {
+    const patch: Partial<DevoteeRecord> = {};
+    const contactInput: UpdateDevoteeInput = {
+      phone: dto.phone ?? existing.phone,
+      email: dto.email ?? existing.email,
+      address:
+        dto.address !== undefined
+          ? dto.address.line1
+            ? {
+                line1: dto.address.line1,
+                line2: dto.address.line2,
+                city: dto.address.city ?? '',
+                state: dto.address.state,
+                postalCode: dto.address.postalCode,
+                country: dto.address.country ?? existing.country,
+              }
+            : undefined
+          : existing.address,
+      phones: dto.phones ?? existing.phones,
+      emails: dto.emails ?? existing.emails,
+      addresses: dto.addresses ?? existing.addresses,
+      country: dto.country ?? existing.country,
+    };
+    const contactsTouched =
+      dto.phone !== undefined ||
+      dto.email !== undefined ||
+      dto.address !== undefined ||
+      dto.phones !== undefined ||
+      dto.emails !== undefined ||
+      dto.addresses !== undefined ||
+      dto.country !== undefined;
+
+    if (contactsTouched) {
+      const synced = syncPrimaryContacts(contactInput);
+      patch.phone = synced.phone;
+      patch.email = synced.email;
+      patch.address = synced.address;
+      patch.phones = synced.phones.length > 0 ? synced.phones : undefined;
+      patch.emails = synced.emails.length > 0 ? synced.emails : undefined;
+      patch.addresses = synced.addresses.length > 0 ? synced.addresses : undefined;
     }
 
-    return {
-      line1: address.line1,
-      line2: address.line2,
-      city: address.city ?? '',
-      state: address.state,
-      postalCode: address.postalCode,
-      country: address.country ?? fallbackCountry,
-    };
+    if (dto.firstName !== undefined) patch.firstName = dto.firstName;
+    if (dto.lastName !== undefined) patch.lastName = dto.lastName;
+    if (dto.title !== undefined) patch.title = dto.title;
+    if (dto.country !== undefined) patch.country = dto.country;
+    if (dto.gotram !== undefined) patch.gotram = dto.gotram;
+    if (dto.nakshatra !== undefined) patch.nakshatra = dto.nakshatra;
+    if (dto.rashi !== undefined) patch.rashi = dto.rashi;
+    if (dto.gender !== undefined) patch.gender = dto.gender;
+    if (dto.dateOfBirth !== undefined) patch.dateOfBirth = dto.dateOfBirth;
+    if (dto.photoUrl !== undefined) patch.photoUrl = dto.photoUrl;
+    if (dto.familyId !== undefined) patch.familyId = dto.familyId;
+    if (dto.taxId !== undefined) patch.taxId = dto.taxId;
+    if (dto.isNri !== undefined) patch.isNri = dto.isNri;
+    if (dto.communicationOptIn !== undefined) {
+      patch.communicationOptIn = dto.communicationOptIn;
+    }
+    if (dto.preferredLanguage !== undefined) {
+      patch.preferredLanguage = dto.preferredLanguage;
+    }
+    if (dto.indiaState !== undefined) patch.indiaState = dto.indiaState;
+    if (dto.importantDates !== undefined) patch.importantDates = dto.importantDates;
+    if (dto.membershipTier !== undefined) patch.membershipTier = dto.membershipTier;
+    if (dto.status !== undefined) patch.status = dto.status;
+    if (dto.membershipExpiresAt !== undefined) {
+      patch.membershipExpiresAt = new Date(dto.membershipExpiresAt);
+    }
+
+    return patch;
   }
 
   private duplicateSummary(
@@ -437,7 +449,7 @@ export class DevoteeService
   }
 
   private normalizePhone(phone: string): string {
-    return phone.replace(/\D/g, '');
+    return normalizePhoneNumber(phone);
   }
 
   private seedDemoData(tenantId: string): void {

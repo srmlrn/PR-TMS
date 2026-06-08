@@ -14,6 +14,13 @@ import { useApi } from '@/lib/api/use-api';
 import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PersonRow } from '@/components/PersonAvatar';
+import { DevoteeContactFields } from '@/components/DevoteeContactFields';
+import {
+  contactFormToApiFields,
+  devoteeToContactForm,
+  EMPTY_CONTACT_FORM,
+  type DevoteeContactFormValue,
+} from '@/lib/devotee-contacts';
 import styles from './devotees.module.css';
 
 const FALLBACK = [
@@ -31,8 +38,6 @@ const FALLBACK = [
 type DevoteeFormState = {
   firstName: string;
   lastName: string;
-  phone: string;
-  email: string;
   country: string;
   gotram: string;
   nakshatra: string;
@@ -42,23 +47,16 @@ type DevoteeFormState = {
   familyId: string;
   taxId: string;
   isNri: boolean;
-  communicationOptIn: boolean;
-  preferredLanguage: string;
-  addressLine1: string;
-  city: string;
-  state: string;
-  postalCode: string;
   photoUrl: string;
   status: 'active' | 'inactive' | 'renewal_due';
   membershipTier: string;
   membershipExpiresAt: string;
+  contacts: DevoteeContactFormValue;
 };
 
 const EMPTY_FORM: DevoteeFormState = {
   firstName: '',
   lastName: '',
-  phone: '',
-  email: '',
   country: 'US',
   gotram: '',
   nakshatra: '',
@@ -68,16 +66,11 @@ const EMPTY_FORM: DevoteeFormState = {
   familyId: '',
   taxId: '',
   isNri: false,
-  communicationOptIn: true,
-  preferredLanguage: 'en',
-  addressLine1: '',
-  city: '',
-  state: '',
-  postalCode: '',
   photoUrl: '',
   status: 'active',
   membershipTier: 'Member',
   membershipExpiresAt: '',
+  contacts: { ...EMPTY_CONTACT_FORM },
 };
 
 export default function DevoteesPage() {
@@ -112,11 +105,12 @@ export default function DevoteesPage() {
         }))
       : FALLBACK;
 
-  async function checkDuplicate(phone: string, email?: string) {
-    if (!phone && !email) return;
+  async function checkDuplicate(contacts: DevoteeContactFormValue) {
+    const fields = contactFormToApiFields(contacts);
+    if (!fields.phone && !fields.email) return;
     try {
       const ep = createEndpoints(api);
-      const dup = await ep.checkDevoteeDuplicate({ phone, email });
+      const dup = await ep.checkDevoteeDuplicate({ phone: fields.phone, email: fields.email });
       const parts: string[] = [];
       if (dup.phoneMatch) {
         parts.push(`Phone matches ${dup.phoneMatch.firstName} ${dup.phoneMatch.lastName}`);
@@ -137,11 +131,10 @@ export default function DevoteesPage() {
     try {
       const ep = createEndpoints(api);
       const d = await ep.getDevotee(id);
+      const contacts = devoteeToContactForm(d);
       setEditForm({
         firstName: d.firstName,
         lastName: d.lastName,
-        phone: d.phone,
-        email: d.email ?? '',
         country: d.country,
         gotram: d.gotram ?? '',
         nakshatra: d.nakshatra ?? '',
@@ -151,18 +144,13 @@ export default function DevoteesPage() {
         familyId: d.familyId ?? '',
         taxId: d.taxId ?? '',
         isNri: d.isNri ?? false,
-        communicationOptIn: d.communicationOptIn ?? true,
-        preferredLanguage: d.preferredLanguage ?? 'en',
-        addressLine1: d.address?.line1 ?? '',
-        city: d.address?.city ?? '',
-        state: d.address?.state ?? '',
-        postalCode: d.address?.postalCode ?? '',
         photoUrl: d.photoUrl ?? '',
         status: d.status,
         membershipTier: d.membershipTier ?? 'Member',
         membershipExpiresAt: d.membershipExpiresAt
           ? new Date(d.membershipExpiresAt).toISOString().slice(0, 10)
           : '',
+        contacts: { ...contacts, country: d.country },
       });
     } catch (err) {
       setEditMsg(err instanceof Error ? err.message : 'Failed to load devotee');
@@ -178,12 +166,14 @@ export default function DevoteesPage() {
     setEditMsg(null);
     try {
       const ep = createEndpoints(api);
+      const contactFields = contactFormToApiFields({
+        ...editForm.contacts,
+        country: editForm.country,
+      });
       await ep.updateDevotee(editingId, {
         firstName: editForm.firstName,
         lastName: editForm.lastName,
-        phone: editForm.phone,
         country: editForm.country,
-        email: editForm.email || undefined,
         gotram: editForm.gotram || undefined,
         nakshatra: editForm.nakshatra || undefined,
         rashi: editForm.rashi || undefined,
@@ -192,21 +182,11 @@ export default function DevoteesPage() {
         familyId: editForm.familyId || undefined,
         taxId: editForm.taxId || undefined,
         isNri: editForm.isNri,
-        communicationOptIn: editForm.communicationOptIn,
-        preferredLanguage: editForm.preferredLanguage,
         photoUrl: editForm.photoUrl || undefined,
         status: editForm.status,
         membershipTier: editForm.membershipTier,
         membershipExpiresAt: editForm.membershipExpiresAt || undefined,
-        address: editForm.addressLine1
-          ? {
-              line1: editForm.addressLine1,
-              city: editForm.city,
-              state: editForm.state,
-              postalCode: editForm.postalCode,
-              country: editForm.country,
-            }
-          : undefined,
+        ...contactFields,
       });
       setEditingId(null);
       refetch();
@@ -224,12 +204,14 @@ export default function DevoteesPage() {
     setFormMsg(null);
     try {
       const ep = createEndpoints(api);
+      const contactFields = contactFormToApiFields({
+        ...form.contacts,
+        country: form.country,
+      });
       await ep.createDevotee({
         firstName: form.firstName,
         lastName: form.lastName,
-        phone: form.phone,
         country: form.country,
-        email: form.email || undefined,
         gotram: form.gotram || undefined,
         nakshatra: form.nakshatra || undefined,
         rashi: form.rashi || undefined,
@@ -238,9 +220,7 @@ export default function DevoteesPage() {
         familyId: form.familyId || undefined,
         taxId: form.taxId || undefined,
         isNri: form.isNri,
-        address: form.addressLine1
-          ? { line1: form.addressLine1, city: form.city, country: form.country }
-          : undefined,
+        ...contactFields,
       });
       setForm(EMPTY_FORM);
       setShowForm(false);
@@ -294,17 +274,25 @@ export default function DevoteesPage() {
                 <input id="edit-lastName" required value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} />
               </div>
               <div className="formGroup">
-                <label htmlFor="edit-phone">Phone *</label>
-                <input id="edit-phone" required value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="edit-email">Email</label>
-                <input id="edit-email" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
-              </div>
-              <div className="formGroup">
                 <label htmlFor="edit-country">Country *</label>
-                <input id="edit-country" required value={editForm.country} onChange={(e) => setEditForm({ ...editForm, country: e.target.value })} />
+                <input
+                  id="edit-country"
+                  required
+                  value={editForm.country}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      country: e.target.value,
+                      contacts: { ...editForm.contacts, country: e.target.value },
+                    })
+                  }
+                />
               </div>
+              <DevoteeContactFields
+                idPrefix="edit"
+                value={editForm.contacts}
+                onChange={(contacts) => setEditForm({ ...editForm, contacts })}
+              />
               <div className="formGroup">
                 <label htmlFor="edit-gotram">Gotram</label>
                 <input id="edit-gotram" value={editForm.gotram} onChange={(e) => setEditForm({ ...editForm, gotram: e.target.value })} />
@@ -379,33 +367,8 @@ export default function DevoteesPage() {
                 />
               </div>
               <div className="formGroup">
-                <label htmlFor="edit-address">Address</label>
-                <input id="edit-address" value={editForm.addressLine1} onChange={(e) => setEditForm({ ...editForm, addressLine1: e.target.value })} />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="edit-city">City</label>
-                <input id="edit-city" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="edit-state">State</label>
-                <input id="edit-state" value={editForm.state} onChange={(e) => setEditForm({ ...editForm, state: e.target.value })} />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="edit-postal">Postal code</label>
-                <input id="edit-postal" value={editForm.postalCode} onChange={(e) => setEditForm({ ...editForm, postalCode: e.target.value })} />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="edit-lang">Preferred language</label>
-                <input id="edit-lang" value={editForm.preferredLanguage} onChange={(e) => setEditForm({ ...editForm, preferredLanguage: e.target.value })} />
-              </div>
-              <div className="formGroup">
                 <label>
                   <input type="checkbox" checked={editForm.isNri} onChange={(e) => setEditForm({ ...editForm, isNri: e.target.checked })} /> NRI
-                </label>
-              </div>
-              <div className="formGroup">
-                <label>
-                  <input type="checkbox" checked={editForm.communicationOptIn} onChange={(e) => setEditForm({ ...editForm, communicationOptIn: e.target.checked })} /> Communication opt-in
                 </label>
               </div>
               <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
@@ -441,33 +404,25 @@ export default function DevoteesPage() {
               />
             </div>
             <div className="formGroup">
-              <label htmlFor="phone">Phone *</label>
-              <input
-                id="phone"
-                required
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                onBlur={() => checkDuplicate(form.phone, form.email)}
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-            <div className="formGroup">
               <label htmlFor="country">Country *</label>
               <input
                 id="country"
                 required
                 value={form.country}
-                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    country: e.target.value,
+                    contacts: { ...form.contacts, country: e.target.value },
+                  })
+                }
               />
             </div>
+            <DevoteeContactFields
+              idPrefix="create"
+              value={form.contacts}
+              onChange={(contacts) => setForm({ ...form, contacts })}
+            />
             <div className="formGroup">
               <label htmlFor="gotram">Gotram</label>
               <input
@@ -508,14 +463,6 @@ export default function DevoteesPage() {
             <div className="formGroup">
               <label htmlFor="taxId">Tax ID</label>
               <input id="taxId" value={form.taxId} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="address">Address</label>
-              <input id="address" value={form.addressLine1} onChange={(e) => setForm({ ...form, addressLine1: e.target.value })} />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="city">City</label>
-              <input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
             </div>
             <div className="formGroup">
               <label>

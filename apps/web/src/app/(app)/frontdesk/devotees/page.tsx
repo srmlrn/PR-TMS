@@ -4,15 +4,22 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Badge, Button, GlassCard } from '@tms/ui';
 import type { Devotee, DevoteeGender } from '@tms/types';
+import { COUNTRIES } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PersonAvatar } from '@/components/PersonAvatar';
+import { DevoteeContactFields } from '@/components/DevoteeContactFields';
 import { DevoteeProfilePanel } from '@/components/DevoteeProfilePanel';
-import { CountryStateSelect } from '@/components/CountryStateSelect';
 import { RitualSelect } from '@/components/RitualSelect';
+import {
+  contactFormToApiFields,
+  devoteeToContactForm,
+  EMPTY_CONTACT_FORM,
+  type DevoteeContactFormValue,
+} from '@/lib/devotee-contacts';
 import styles from './devotees.module.css';
 
 const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -20,59 +27,45 @@ const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 type FormState = {
   firstName: string;
   lastName: string;
-  phone: string;
-  email: string;
   country: string;
   gotram: string;
   nakshatra: string;
   gender: '' | DevoteeGender;
   dateOfBirth: string;
   familyId: string;
-  addressLine1: string;
-  city: string;
-  state: string;
-  postalCode: string;
   status: Devotee['status'];
   membershipTier: string;
+  contacts: DevoteeContactFormValue;
 };
 
 const EMPTY_FORM: FormState = {
   firstName: '',
   lastName: '',
-  phone: '',
-  email: '',
   country: 'US',
   gotram: '',
   nakshatra: '',
   gender: '',
   dateOfBirth: '',
   familyId: '',
-  addressLine1: '',
-  city: '',
-  state: '',
-  postalCode: '',
   status: 'active',
   membershipTier: 'Member',
+  contacts: { ...EMPTY_CONTACT_FORM },
 };
 
 function devoteeToForm(d: Devotee): FormState {
+  const contacts = devoteeToContactForm(d);
   return {
     firstName: d.firstName,
     lastName: d.lastName,
-    phone: d.phone,
-    email: d.email ?? '',
     country: d.country,
     gotram: d.gotram ?? '',
     nakshatra: d.nakshatra ?? '',
     gender: d.gender ?? '',
     dateOfBirth: d.dateOfBirth ?? '',
     familyId: d.familyId ?? '',
-    addressLine1: d.address?.line1 ?? '',
-    city: d.address?.city ?? '',
-    state: d.address?.state ?? '',
-    postalCode: d.address?.postalCode ?? '',
     status: d.status,
     membershipTier: d.membershipTier ?? 'Member',
+    contacts: { ...contacts, country: d.country },
   };
 }
 
@@ -226,26 +219,20 @@ function FrontDeskDevoteesPageInner() {
     setBusy(true);
     setMessage(null);
     try {
+      const contactFields = contactFormToApiFields({
+        ...form.contacts,
+        country: form.country,
+      });
       const base = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        phone: form.phone.trim(),
         country: form.country,
-        email: form.email || undefined,
         gotram: form.gotram || undefined,
         nakshatra: form.nakshatra || undefined,
         gender: form.gender || undefined,
         dateOfBirth: form.dateOfBirth || undefined,
         familyId: form.familyId || undefined,
-        address: form.addressLine1
-          ? {
-              line1: form.addressLine1,
-              city: form.city,
-              state: form.state || undefined,
-              postalCode: form.postalCode || undefined,
-              country: form.country,
-            }
-          : undefined,
+        ...contactFields,
       };
 
       if (mode === 'create') {
@@ -605,22 +592,24 @@ function FrontDeskDevoteesPageInner() {
                 />
               </div>
               <div className="formGroup">
-                <label htmlFor="fd-phone">Phone *</label>
-                <input
-                  id="fd-phone"
-                  required
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="fd-email">Email</label>
-                <input
-                  id="fd-email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
+                <label htmlFor="fd-country">Country</label>
+                <select
+                  id="fd-country"
+                  value={form.country}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      country: e.target.value,
+                      contacts: { ...form.contacts, country: e.target.value },
+                    })
+                  }
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <RitualSelect
                 id="fd-gotram"
@@ -667,38 +656,12 @@ function FrontDeskDevoteesPageInner() {
                   placeholder="Link family members"
                 />
               </div>
-              <div className={`formGroup ${styles.spanFull}`}>
-                <label htmlFor="fd-address">Address</label>
-                <input
-                  id="fd-address"
-                  value={form.addressLine1}
-                  onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="fd-city">City</label>
-                <input
-                  id="fd-city"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                />
-              </div>
-              <CountryStateSelect
-                countryId="fd-country"
-                stateId="fd-state"
-                country={form.country}
-                state={form.state}
-                onCountryChange={(country) => setForm({ ...form, country })}
-                onStateChange={(state) => setForm({ ...form, state })}
+              <DevoteeContactFields
+                idPrefix="fd"
+                value={form.contacts}
+                onChange={(contacts) => setForm({ ...form, contacts })}
+                spanFullClassName={styles.spanFull}
               />
-              <div className="formGroup">
-                <label htmlFor="fd-postal">Postal</label>
-                <input
-                  id="fd-postal"
-                  value={form.postalCode}
-                  onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
-                />
-              </div>
               {mode === 'edit' && (
                 <div className="formGroup">
                   <label htmlFor="fd-status">Status</label>

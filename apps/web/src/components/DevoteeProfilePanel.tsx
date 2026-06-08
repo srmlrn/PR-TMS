@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Badge, Button } from '@tms/ui';
-import type { DevoteeProfile, DevoteeProfileBooking, DevoteeProfileDonation, SevaService } from '@tms/types';
+import type {
+  DevoteeAddressEntry,
+  DevoteeEmail,
+  DevoteePhone,
+  DevoteeProfile,
+  DevoteeProfileBooking,
+  DevoteeProfileDonation,
+  SevaService,
+} from '@tms/types';
+import { IN_LANGUAGES, IN_STATES } from '@tms/types';
 import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney, formatShortDate, formatTime } from '@/lib/api/endpoints';
 import styles from './DevoteeProfilePanel.module.css';
@@ -39,9 +48,52 @@ function serviceLabel(services: SevaService[], serviceId: string): string {
   return services.find((s) => s.id === serviceId)?.name ?? serviceId;
 }
 
-function formatAddress(p: DevoteeProfile): string {
-  const parts = [p.addressLine1, p.city, p.state, p.postalCode].filter(Boolean);
+function formatAddressLine(entry: DevoteeAddressEntry | Pick<DevoteeProfile, 'addressLine1' | 'city' | 'state' | 'postalCode'>): string {
+  const line1 = 'line1' in entry ? entry.line1 : entry.addressLine1;
+  const parts = [line1, entry.city, entry.state, entry.postalCode].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : '—';
+}
+
+function phoneTypeLabel(type: DevoteePhone['type']): string {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function emailTypeLabel(type: DevoteeEmail['type']): string {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function addressTypeLabel(type: DevoteeAddressEntry['type']): string {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function languageLabel(code?: string): string {
+  if (!code) return '—';
+  return IN_LANGUAGES.find((l) => l.code === code)?.name ?? code;
+}
+
+function indiaStateLabel(code?: string): string {
+  if (!code) return '—';
+  const match = IN_STATES.find((s) => s.code === code);
+  return match ? `${match.name} (${match.code})` : code;
+}
+
+function ContactList({
+  items,
+}: {
+  items: { key: string; label: string; value: string }[];
+}) {
+  if (items.length === 0) return <dd>—</dd>;
+  return (
+    <dd>
+      <ul className={styles.contactList}>
+        {items.map((item) => (
+          <li key={item.key}>
+            <span className={styles.contactType}>{item.label}</span> {item.value}
+          </li>
+        ))}
+      </ul>
+    </dd>
+  );
 }
 
 function paymentBadge(status?: string): { label: string; variant: 'ok' | 'pending' | 'error' } {
@@ -246,12 +298,14 @@ export function DevoteeProfilePanel({
       <div className={styles.head}>
         <div>
           <h3 className={styles.name}>
+            {profile.title ? `${profile.title} ` : ''}
             {profile.firstName} {profile.lastName}
           </h3>
           <p className={styles.meta}>
             {profile.phone}
             {profile.email ? ` · ${profile.email}` : ''}
             {profile.membershipTier ? ` · ${profile.membershipTier}` : ''}
+            {profile.communicationOptIn === false ? ' · Not mailable' : ''}
           </p>
         </div>
         <div className={styles.headActions}>
@@ -349,8 +403,60 @@ export function DevoteeProfilePanel({
         <div className={styles.section}>
           <dl className={styles.dl}>
             <div>
-              <dt>Address</dt>
-              <dd>{formatAddress(profile)}</dd>
+              <dt>Phones</dt>
+              <ContactList
+                items={(profile.phones ?? [{ type: 'cell', number: profile.phone }]).map((p, i) => ({
+                  key: `phone-${i}`,
+                  label: phoneTypeLabel(p.type),
+                  value: p.number,
+                }))}
+              />
+            </div>
+            <div>
+              <dt>Emails</dt>
+              <ContactList
+                items={
+                  profile.emails?.length
+                    ? profile.emails.map((e, i) => ({
+                        key: `email-${i}`,
+                        label: emailTypeLabel(e.type),
+                        value: e.address,
+                      }))
+                    : profile.email
+                      ? [{ key: 'email-0', label: 'Home', value: profile.email }]
+                      : []
+                }
+              />
+            </div>
+            <div>
+              <dt>Addresses</dt>
+              {profile.addresses?.length ? (
+                <dd>
+                  <ul className={styles.contactList}>
+                    {profile.addresses.map((a, i) => (
+                      <li key={`addr-${i}`}>
+                        <span className={styles.contactType}>{addressTypeLabel(a.type)}</span>{' '}
+                        {formatAddressLine(a)}
+                        {a.line2 ? ` · ${a.line2}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              ) : (
+                <dd>{formatAddressLine(profile)}</dd>
+              )}
+            </div>
+            <div>
+              <dt>India state / Language</dt>
+              <dd>
+                {[indiaStateLabel(profile.indiaState), languageLabel(profile.preferredLanguage)]
+                  .filter((v) => v !== '—')
+                  .join(' · ') || '—'}
+              </dd>
+            </div>
+            <div>
+              <dt>Mailable</dt>
+              <dd>{profile.communicationOptIn === false ? 'No' : 'Yes'}</dd>
             </div>
             <div>
               <dt>Gotram / Nakshatra</dt>

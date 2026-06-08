@@ -237,6 +237,22 @@
   text-decoration: underline;
 }
 
+.contactList {
+  margin: 0;
+  padding-left: 1rem;
+  list-style: disc;
+}
+
+.contactType {
+  display: inline-block;
+  min-width: 3rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--txt3);
+}
+
 @media (max-width: 768px) {
   .dl {
     grid-template-columns: 1fr;

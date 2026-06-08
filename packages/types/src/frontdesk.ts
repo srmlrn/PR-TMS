@@ -1,4 +1,10 @@
 import { TenantScoped, Timestamps } from './common';
+import type {
+  DevoteeAddressEntry,
+  DevoteeEmail,
+  DevoteePhone,
+  DevoteeTitle,
+} from './devotee';
 
 export type QueueType = 'darshan' | 'seva' | 'priority';
 export type QueueTokenStatus = 'waiting' | 'called' | 'served';
@@ -79,6 +85,7 @@ export interface DevoteeProfile {
   id: string;
   firstName: string;
   lastName: string;
+  title?: DevoteeTitle;
   email?: string;
   phone: string;
   country: string;
@@ -91,10 +98,16 @@ export interface DevoteeProfile {
   membershipTier?: string;
   membershipExpiresAt?: string;
   status: string;
+  indiaState?: string;
+  preferredLanguage?: string;
+  communicationOptIn?: boolean;
   addressLine1?: string;
   city?: string;
   state?: string;
   postalCode?: string;
+  phones?: DevoteePhone[];
+  emails?: DevoteeEmail[];
+  addresses?: DevoteeAddressEntry[];
   ytdDonations?: { amount: number; currency: string };
   familyMembers: DevoteeFamilyMember[];
   todayBookings: DevoteeTodayBooking[];

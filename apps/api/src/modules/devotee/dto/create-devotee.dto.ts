@@ -12,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { DevoteeGender, ImportantDate, ImportantDateType } from '@tms/types';
+import { DevoteeContactFieldsDto } from './devotee-contact.dto';
 
 class ImportantDateDto {
   @ApiProperty({ example: 'Birthday' })
@@ -61,7 +62,7 @@ class CreateAddressDto {
 
 const GENDERS = ['male', 'female', 'other'] as const satisfies readonly DevoteeGender[];
 
-export class CreateDevoteeDto {
+export class CreateDevoteeDto extends DevoteeContactFieldsDto {
   @ApiProperty({ example: 'Rajan' })
   @IsString()
   @MinLength(1)

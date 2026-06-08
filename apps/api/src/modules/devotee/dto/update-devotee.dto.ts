@@ -12,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Devotee, DevoteeGender, ImportantDateType } from '@tms/types';
+import { DevoteeContactFieldsDto } from './devotee-contact.dto';
 
 const DEVOTEE_STATUSES = ['active', 'inactive', 'renewal_due'] as const satisfies readonly Devotee['status'][];
 const GENDERS = ['male', 'female', 'other'] as const satisfies readonly DevoteeGender[];
@@ -62,7 +63,7 @@ class ImportantDateDto {
   type!: ImportantDateType;
 }
 
-export class UpdateDevoteeDto {
+export class UpdateDevoteeDto extends DevoteeContactFieldsDto {
   @ApiPropertyOptional({ example: 'Rajan' })
   @IsOptional()
   @IsString()

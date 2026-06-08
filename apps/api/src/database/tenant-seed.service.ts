@@ -379,6 +379,7 @@ export class TenantSeedService {
       devoteeRepo.create({
         firstName: 'Raj',
         lastName: 'Natarajan',
+        title: 'Mr.',
         email: 'raj@ex.com',
         phone: '+1 615-555-0211',
         country: 'US',
@@ -389,6 +390,28 @@ export class TenantSeedService {
         familyId,
         membershipTier: 'Annual',
         status: 'active',
+        preferredLanguage: 'ta',
+        indiaState: 'TN',
+        communicationOptIn: true,
+        phones: [
+          { type: 'cell', number: '+1 615-555-0211', primary: true },
+          { type: 'work', number: '+1 615-555-0299' },
+        ],
+        emails: [
+          { type: 'home', address: 'raj@ex.com', primary: true },
+          { type: 'work', address: 'raj.natarajan@work.com' },
+        ],
+        addresses: [
+          {
+            type: 'home',
+            line1: '865 Bellevue Rd, J13',
+            city: 'Nashville',
+            state: 'TN',
+            postalCode: '37221',
+            country: 'US',
+            primary: true,
+          },
+        ],
         address: {
           line1: '865 Bellevue Rd, J13',
           city: 'Nashville',

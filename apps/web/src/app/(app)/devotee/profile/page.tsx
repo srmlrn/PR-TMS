@@ -8,20 +8,17 @@ import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
-
-const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'hi', label: 'Hindi' },
-  { value: 'ta', label: 'Tamil' },
-  { value: 'te', label: 'Telugu' },
-  { value: 'kn', label: 'Kannada' },
-];
+import { DevoteeContactFields } from '@/components/DevoteeContactFields';
+import {
+  contactFormToApiFields,
+  devoteeToContactForm,
+  EMPTY_CONTACT_FORM,
+  type DevoteeContactFormValue,
+} from '@/lib/devotee-contacts';
 
 const EMPTY = {
   firstName: '',
   lastName: '',
-  phone: '',
-  email: '',
   country: 'US',
   gotram: '',
   nakshatra: '',
@@ -32,13 +29,8 @@ const EMPTY = {
   familyId: '',
   taxId: '',
   isNri: false,
-  communicationOptIn: true,
-  preferredLanguage: 'en',
   membershipTier: '',
-  addressLine1: '',
-  city: '',
-  state: '',
-  postalCode: '',
+  contacts: { ...EMPTY_CONTACT_FORM },
 };
 
 export default function DevoteeProfilePage() {
@@ -59,11 +51,10 @@ export default function DevoteeProfilePage() {
     const ep = createEndpoints(api);
     ep.getDevotee(user.devoteeId)
       .then((d: Devotee) => {
+        const contacts = devoteeToContactForm(d);
         setForm({
           firstName: d.firstName,
           lastName: d.lastName,
-          phone: d.phone,
-          email: d.email ?? '',
           country: d.country,
           gotram: d.gotram ?? '',
           nakshatra: d.nakshatra ?? '',
@@ -75,12 +66,7 @@ export default function DevoteeProfilePage() {
           taxId: d.taxId ?? '',
           membershipTier: d.membershipTier ?? '',
           isNri: d.isNri ?? false,
-          communicationOptIn: d.communicationOptIn ?? true,
-          preferredLanguage: d.preferredLanguage ?? 'en',
-          addressLine1: d.address?.line1 ?? '',
-          city: d.address?.city ?? '',
-          state: d.address?.state ?? '',
-          postalCode: d.address?.postalCode ?? '',
+          contacts: { ...contacts, country: d.country },
         });
         setImportantDates(d.importantDates ?? []);
       })
@@ -95,11 +81,13 @@ export default function DevoteeProfilePage() {
     setMessage(null);
     try {
       const ep = createEndpoints(api);
+      const contactFields = contactFormToApiFields({
+        ...form.contacts,
+        country: form.country,
+      });
       await ep.updateDevotee(user.devoteeId, {
         firstName: form.firstName,
         lastName: form.lastName,
-        phone: form.phone,
-        email: form.email || undefined,
         country: form.country,
         gotram: form.gotram || undefined,
         nakshatra: form.nakshatra || undefined,
@@ -110,17 +98,7 @@ export default function DevoteeProfilePage() {
         familyId: form.familyId || undefined,
         taxId: form.taxId || undefined,
         isNri: form.isNri,
-        communicationOptIn: form.communicationOptIn,
-        preferredLanguage: form.preferredLanguage,
-        address: form.addressLine1
-          ? {
-              line1: form.addressLine1,
-              city: form.city,
-              state: form.state,
-              postalCode: form.postalCode,
-              country: form.country,
-            }
-          : undefined,
+        ...contactFields,
         importantDates: importantDates.filter((d) => d.label && d.date),
       });
       setMessage('Profile saved.');
@@ -181,13 +159,24 @@ export default function DevoteeProfilePage() {
             <input id="lastName" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
           </div>
           <div className="formGroup">
-            <label htmlFor="phone">Phone</label>
-            <input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <label htmlFor="country">Country</label>
+            <input
+              id="country"
+              value={form.country}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  country: e.target.value,
+                  contacts: { ...form.contacts, country: e.target.value },
+                })
+              }
+            />
           </div>
-          <div className="formGroup">
-            <label htmlFor="email">Email</label>
-            <input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
+          <DevoteeContactFields
+            idPrefix="self"
+            value={form.contacts}
+            onChange={(contacts: DevoteeContactFormValue) => setForm({ ...form, contacts })}
+          />
           <div className="formGroup">
             <label htmlFor="gotram">Gotram</label>
             <input id="gotram" value={form.gotram} onChange={(e) => setForm({ ...form, gotram: e.target.value })} />
@@ -222,36 +211,9 @@ export default function DevoteeProfilePage() {
             <input id="taxId" value={form.taxId} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
           </div>
           <div className="formGroup">
-            <label htmlFor="address">Address</label>
-            <input id="address" value={form.addressLine1} onChange={(e) => setForm({ ...form, addressLine1: e.target.value })} />
-          </div>
-          <div className="formGroup">
-            <label htmlFor="city">City</label>
-            <input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-          </div>
-          <div className="formGroup">
             <label>
               <input type="checkbox" checked={form.isNri} onChange={(e) => setForm({ ...form, isNri: e.target.checked })} /> NRI / overseas
             </label>
-          </div>
-          <div className="formGroup">
-            <label>
-              <input type="checkbox" checked={form.communicationOptIn} onChange={(e) => setForm({ ...form, communicationOptIn: e.target.checked })} /> Email/SMS updates
-            </label>
-          </div>
-          <div className="formGroup">
-            <label htmlFor="preferredLanguage">Preferred language</label>
-            <select
-              id="preferredLanguage"
-              value={form.preferredLanguage}
-              onChange={(e) => setForm({ ...form, preferredLanguage: e.target.value })}
-            >
-              {LANGUAGE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
