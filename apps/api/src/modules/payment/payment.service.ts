@@ -18,7 +18,8 @@ import {
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { PaymentSessionEntity } from '../../database/entities/tenant/payment-session.entity';
 import { TenantDataService } from '../../database/tenant-data.service';
-import { isRazorpayLive, isStripeLive } from './payment-config';
+import { TenantPaymentSettingsService } from '../settings/tenant-payment-settings.service';
+import { isRazorpayLive } from './payment-config';
 import { RazorpayProvider } from './razorpay.provider';
 import { StripeProvider } from './stripe.provider';
 
@@ -48,6 +49,7 @@ export class PaymentService {
     private readonly stripeProvider: StripeProvider,
     private readonly razorpayProvider: RazorpayProvider,
     private readonly tenantData: TenantDataService,
+    private readonly paymentSettings: TenantPaymentSettingsService,
   ) {}
 
   private get usePostgres(): boolean {
@@ -75,12 +77,16 @@ export class PaymentService {
     return Math.round(usd * FX_RATES[to] * 100) / 100;
   }
 
-  resolvePaymentMode(provider: PaymentProvider): PaymentMode {
+  async resolvePaymentMode(
+    tenantId: string,
+    provider: PaymentProvider,
+  ): Promise<PaymentMode> {
     if (provider === 'demo' || provider === 'cash') {
       return 'demo';
     }
     if (provider === 'stripe') {
-      return isStripeLive() ? 'live' : 'demo';
+      const config = await this.paymentSettings.resolveStripeConfigForTenant(tenantId);
+      return this.paymentSettings.isStripeLiveForTenant(config) ? 'live' : 'demo';
     }
     if (provider === 'razorpay') {
       return isRazorpayLive() ? 'live' : 'demo';
@@ -88,8 +94,8 @@ export class PaymentService {
     return 'demo';
   }
 
-  isLivePaymentRequired(currency: Currency): boolean {
-    return this.resolvePaymentMode(this.getProviderForCurrency(currency)) === 'live';
+  async isLivePaymentRequired(tenantId: string, currency: Currency): Promise<boolean> {
+    return (await this.resolvePaymentMode(tenantId, this.getProviderForCurrency(currency))) === 'live';
   }
 
   async createSession(
@@ -98,7 +104,7 @@ export class PaymentService {
   ): Promise<PaymentSession> {
     const now = new Date();
     const sessionId = uuidv4();
-    const paymentMode = this.resolvePaymentMode(input.provider);
+    const paymentMode = await this.resolvePaymentMode(tenantId, input.provider);
     const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
 
     const session: PaymentSession = {
@@ -118,6 +124,7 @@ export class PaymentService {
     };
 
     if (input.provider === 'stripe' && paymentMode === 'live') {
+      const stripeConfig = await this.paymentSettings.resolveStripeConfigForTenant(tenantId);
       const intent = await this.stripeProvider.createPaymentIntent({
         amount: input.amount,
         currency: input.currency,
@@ -129,6 +136,10 @@ export class PaymentService {
       if (intent) {
         session.providerRefId = intent.paymentIntentId;
         session.clientSecret = intent.clientSecret;
+        session.stripePublishableKey =
+          stripeConfig.publishableKey?.trim() ||
+          process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ||
+          process.env.STRIPE_PUBLISHABLE_KEY?.trim();
       }
     } else if (input.provider === 'razorpay' && paymentMode === 'live') {
       const order = await this.razorpayProvider.createOrder({
@@ -160,7 +171,7 @@ export class PaymentService {
       return session;
     }
 
-    const mode = session.paymentMode ?? this.resolvePaymentMode(session.provider);
+    const mode = session.paymentMode ?? (await this.resolvePaymentMode(tenantId, session.provider));
 
     if (
       mode === 'live' &&
@@ -233,7 +244,7 @@ export class PaymentService {
       );
     }
 
-    if (this.isLivePaymentRequired(expectedCurrency)) {
+    if (await this.isLivePaymentRequired(tenantId, expectedCurrency)) {
       throw new BadRequestException(
         'paymentSessionId is required when live payment providers are enabled',
       );
@@ -252,7 +263,7 @@ export class PaymentService {
     this.assertSessionUsable(session);
 
     if (session.status !== PaymentStatus.PAID) {
-      const mode = session.paymentMode ?? this.resolvePaymentMode(session.provider);
+      const mode = session.paymentMode ?? (await this.resolvePaymentMode(tenantId, session.provider));
       if (
         mode === 'live' &&
         (session.provider === 'stripe' || session.provider === 'razorpay')
@@ -365,7 +376,12 @@ export class PaymentService {
       status: session.status,
       purpose: session.purpose,
       devoteeId: session.devoteeId,
-      metadata: session.metadata,
+      metadata: {
+        ...session.metadata,
+        ...(session.stripePublishableKey
+          ? { stripePublishableKey: session.stripePublishableKey }
+          : {}),
+      },
       providerRefId: session.providerRefId,
       clientSecret: session.clientSecret,
       paymentMode: session.paymentMode,
@@ -388,6 +404,7 @@ export class PaymentService {
       metadata: row.metadata,
       providerRefId: row.providerRefId,
       clientSecret: row.clientSecret,
+      stripePublishableKey: row.metadata?.stripePublishableKey,
       paymentMode: row.paymentMode as PaymentMode | undefined,
       expiresAt: row.expiresAt.toISOString(),
       createdAt: row.createdAt,
@@ -422,13 +439,16 @@ export class PaymentService {
   private async refreshSessionFromProvider(
     session: PaymentSession,
   ): Promise<PaymentSession | undefined> {
-    const mode = session.paymentMode ?? this.resolvePaymentMode(session.provider);
+    const mode =
+      session.paymentMode ??
+      (await this.resolvePaymentMode(session.tenantId, session.provider));
     if (mode !== 'live' || !session.providerRefId) {
       return undefined;
     }
 
     if (session.provider === 'stripe') {
       const status = await this.stripeProvider.retrievePaymentIntentStatus(
+        session.tenantId,
         session.providerRefId,
       );
       if (status === 'succeeded') {

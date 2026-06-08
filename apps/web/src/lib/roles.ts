@@ -195,6 +195,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/prasadam': 'Prasadam Sponsorship Program',
   '/admin/sponsors': 'Sponsor Management',
   '/admin/settings': 'Settings & Environments',
+  '/admin/settings/payments': 'Payment Settings',
   '/frontdesk/console': 'Reception Console',
   '/frontdesk/devotees': 'Devotee Management',
   '/frontdesk/queue': 'Queue Manager',

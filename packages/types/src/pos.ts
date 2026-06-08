@@ -42,6 +42,8 @@ export interface PosServiceLineInput {
   location: ServiceLocation;
   quantity: number;
   unitCost?: number;
+  /** Shrine deity for this line — defaults from catalog but may be overridden at counter. */
+  deity?: string;
 }
 
 export interface PosDonationLineInput {

@@ -135,13 +135,43 @@
   color: var(--txt2);
 }
 
-.configGrid select {
+.configGrid select,
+.configGrid input {
   padding: 0.55rem 0.75rem;
   background: var(--ink3);
   border: 1px solid var(--b);
   border-radius: var(--rs);
   color: var(--txt);
   font-size: 0.86rem;
+}
+
+.checkboxLabel {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  text-transform: none !important;
+  font-size: 0.86rem !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.settingsMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--txt2);
+}
+
+.successCard {
+  margin-bottom: 1rem;
+  border-color: var(--ok-border, var(--gr));
 }
 
 .muted {

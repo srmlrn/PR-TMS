@@ -16,6 +16,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { VolunteerModule } from './modules/volunteer/volunteer.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantDataModule } from './database/tenant-data.module';
 
@@ -39,6 +40,7 @@ const usePostgres = process.env.STORAGE_MODE === 'postgres';
     StaffModule,
     VolunteerModule,
     AnalyticsModule,
+    SettingsModule,
   ],
   providers: [
     TenantContextMiddleware,

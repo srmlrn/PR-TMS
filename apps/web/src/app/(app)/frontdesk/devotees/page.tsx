@@ -428,7 +428,7 @@ function FrontDeskDevoteesPageInner() {
       </div>
 
       <div className={styles.layout}>
-        <GlassCard compact title="Directory" noBodyPadding>
+        <GlassCard compact title="Directory" noBodyPadding className={styles.directoryCard}>
           {rows.length === 0 ? (
             <p className={styles.emptyDetail}>No devotees match your filters.</p>
           ) : (
@@ -443,7 +443,13 @@ function FrontDeskDevoteesPageInner() {
               return (
                 <div
                   key={row.id}
-                  className={`${styles.rowItem} ${selectedId === row.id ? styles.rowItemActive : ''}`}
+                  className={[
+                    styles.rowItem,
+                    selectedId === row.id ? styles.rowItemActive : '',
+                    menuId === row.id ? styles.rowItemMenuOpen : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   <button
                     type="button"

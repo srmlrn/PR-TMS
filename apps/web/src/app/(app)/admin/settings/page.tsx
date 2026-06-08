@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Badge,
   Button,
@@ -214,6 +215,15 @@ export default function SettingsPage() {
       </div>
 
       <GlassCard title="Tenant Configuration" className={styles.configCard}>
+        <p className={styles.muted}>
+          Manage Stripe and other payment provider keys per tenant.
+        </p>
+        <Link href="/admin/settings/payments">
+          <Button variant="primary">Payment Settings →</Button>
+        </Link>
+      </GlassCard>
+
+      <GlassCard title="General Configuration" className={styles.configCard}>
         <div className={styles.configGrid}>
           <label>
             Base Currency

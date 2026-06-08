@@ -164,10 +164,13 @@ export function LivePaymentModal({
     [session.clientSecret, theme],
   );
 
+  const stripePublishableKey =
+    session.stripePublishableKey?.trim() ||
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
+
   const stripePromise = useMemo(() => {
-    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
-    return key ? loadStripe(key) : null;
-  }, []);
+    return stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+  }, [stripePublishableKey]);
 
   const openRazorpay = useCallback(async () => {
     const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim();
@@ -247,7 +250,10 @@ export function LivePaymentModal({
             {!session.clientSecret ? (
               <p className={styles.error}>Stripe client secret missing from payment session.</p>
             ) : !stripePromise ? (
-              <p className={styles.error}>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not configured.</p>
+              <p className={styles.error}>
+                Stripe publishable key is not configured for this temple. Add it in Admin → Payment
+                Settings.
+              </p>
             ) : (
               <Elements stripe={stripePromise} options={stripeElementsOptions}>
                 <StripeCheckoutForm

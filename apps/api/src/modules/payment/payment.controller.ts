@@ -33,9 +33,10 @@ import { TenantContextStorage } from '../../common/context/tenant-context.storag
 import { TenantResolverService } from '../../database/tenant-resolver.service';
 import { CreatePaymentSessionDto } from './dto/create-payment-session.dto';
 import { PaymentService } from './payment.service';
-import { razorpayWebhookSecret, stripeWebhookSecret } from './payment-config';
+import { razorpayWebhookSecret } from './payment-config';
 import { RazorpayProvider } from './razorpay.provider';
 import { StripeProvider } from './stripe.provider';
+import { TenantPaymentSettingsService } from '../settings/tenant-payment-settings.service';
 
 @ApiTags('payments')
 @ApiBearerAuth()
@@ -45,6 +46,7 @@ export class PaymentController {
     private readonly paymentService: PaymentService,
     private readonly stripeProvider: StripeProvider,
     private readonly razorpayProvider: RazorpayProvider,
+    private readonly paymentSettings: TenantPaymentSettingsService,
     @Optional() private readonly tenantResolver?: TenantResolverService,
   ) {}
 
@@ -118,26 +120,35 @@ export class PaymentController {
   ): Promise<{ received: boolean; sessionId?: string }> {
     const payload = req.rawBody ?? Buffer.from(JSON.stringify(req.body ?? {}));
 
-    if (stripeWebhookSecret()) {
-      if (!signature) {
-        throw new UnauthorizedException('Missing stripe-signature header');
-      }
-      const event = this.stripeProvider.constructWebhookEvent(payload, signature);
-      if (event.type === 'payment_intent.succeeded') {
-        const intent = event.data.object as {
-          id: string;
-          metadata?: { tenantId?: string; sessionId?: string };
-        };
-        return this.markStripePaid(intent);
-      }
-      return { received: true };
-    }
-
     const body = req.body as {
       type?: string;
       data?: { object?: { id?: string; metadata?: { tenantId?: string; sessionId?: string } } };
     };
     const intent = body?.data?.object;
+    const tenantId = intent?.metadata?.tenantId;
+
+    if (tenantId) {
+      const config = await this.paymentSettings.resolveStripeConfigForTenant(tenantId);
+      if (config.webhookSecret) {
+        if (!signature) {
+          throw new UnauthorizedException('Missing stripe-signature header');
+        }
+        const event = await this.stripeProvider.constructWebhookEvent(
+          tenantId,
+          payload,
+          signature,
+        );
+        if (event.type === 'payment_intent.succeeded') {
+          const paidIntent = event.data.object as {
+            id: string;
+            metadata?: { tenantId?: string; sessionId?: string };
+          };
+          return this.markStripePaid(paidIntent);
+        }
+        return { received: true };
+      }
+    }
+
     if (body?.type === 'payment_intent.succeeded' && intent?.id) {
       return this.markStripePaid(intent as { id: string; metadata?: { tenantId?: string; sessionId?: string } });
     }

@@ -1,3 +1,16 @@
+/** Common shrine deities for counter POS and sankalpa. */
+export const DEITIES = [
+  'Lord Ganesha',
+  'Lord Murugan',
+  'Goddess Durga',
+  'Lord Shiva',
+  'Lord Vishnu',
+  'Lord Venkateswara',
+  'Goddess Lakshmi',
+  'Lord Hanuman',
+  'Goddess Saraswati',
+] as const;
+
 /** Saptarshi and commonly used gotras for sankalpa / devotee profiles. */
 export const GOTRAMS = [
   'Agastya',
@@ -71,4 +84,24 @@ export function ritualSelectOptions<T extends string>(
     return [trimmed, ...values];
   }
   return [...values];
+}
+
+/** Deity dropdown: catalog values first, then canonical list, preserving custom entries. */
+export function deitySelectOptions(
+  services: { deity: string }[],
+  current?: string,
+): string[] {
+  const merged: string[] = [];
+  for (const svc of services) {
+    const d = svc.deity?.trim();
+    if (d && !merged.includes(d)) merged.push(d);
+  }
+  for (const d of DEITIES) {
+    if (!merged.includes(d)) merged.push(d);
+  }
+  const trimmed = current?.trim();
+  if (trimmed && !merged.includes(trimmed)) {
+    merged.unshift(trimmed);
+  }
+  return merged;
 }

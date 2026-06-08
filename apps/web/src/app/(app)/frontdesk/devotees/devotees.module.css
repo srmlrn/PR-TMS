@@ -1,3 +1,8 @@
+/* GlassCard defaults to overflow:hidden — allow row menus to extend outside */
+.directoryCard {
+  overflow: visible !important;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.15fr);
@@ -71,6 +76,11 @@
 
 .rowItemActive {
   background: color-mix(in srgb, var(--gr) 10%, var(--ink3));
+}
+
+.rowItemMenuOpen {
+  position: relative;
+  z-index: 30;
 }
 
 .rowMain {
@@ -198,12 +208,12 @@
   position: absolute;
   right: 0;
   top: calc(100% + 0.2rem);
-  z-index: 12;
+  z-index: 40;
   min-width: 7.5rem;
   padding: 0.2rem;
   border: 1px solid var(--b2);
   border-radius: 8px;
-  background: var(--glass);
+  background: var(--ink);
   box-shadow: var(--card-shadow);
 }
 

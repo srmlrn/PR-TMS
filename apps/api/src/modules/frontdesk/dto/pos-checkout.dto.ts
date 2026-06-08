@@ -56,6 +56,11 @@ class PosServiceLineDto {
   @IsNumber()
   @IsPositive()
   unitCost?: number;
+
+  @ApiPropertyOptional({ example: 'Lord Ganesha' })
+  @IsOptional()
+  @IsString()
+  deity?: string;
 }
 
 class PosDonationLineDto {

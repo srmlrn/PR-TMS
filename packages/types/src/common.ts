@@ -31,6 +31,8 @@ export interface MoneyAmount {
 
 export interface Sankalpa {
   sponsorName: string;
+  /** Shrine / deity for this seva line (counter POS override). */
+  deity?: string;
   gotram?: string;
   nakshatra?: string;
   rashi?: string;

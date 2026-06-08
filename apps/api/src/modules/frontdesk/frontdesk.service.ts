@@ -772,6 +772,7 @@ export class FrontDeskService
         lineAmount,
         sankalpa: {
           sponsorName,
+          deity: line.deity?.trim() || service.deity,
           gotram: input.sankalpa?.gotram,
           nakshatra: input.sankalpa?.nakshatra,
           occasion: input.sankalpa?.occasion,

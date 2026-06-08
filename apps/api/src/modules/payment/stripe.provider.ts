@@ -1,7 +1,8 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import Stripe from 'stripe';
 import { Currency } from '@tms/types';
-import { isStripeLive, stripeWebhookSecret, toStripeAmount } from './payment-config';
+import { TenantPaymentSettingsService } from '../settings/tenant-payment-settings.service';
+import { toStripeAmount } from './payment-config';
 
 export interface StripeIntentResult {
   paymentIntentId: string;
@@ -11,18 +12,27 @@ export interface StripeIntentResult {
 @Injectable()
 export class StripeProvider {
   private readonly logger = new Logger(StripeProvider.name);
-  private client: Stripe | null = null;
+  private readonly clients = new Map<string, Stripe>();
 
-  private getClient(): Stripe | null {
-    if (!isStripeLive()) {
+  constructor(private readonly paymentSettings: TenantPaymentSettingsService) {}
+
+  private async getClient(tenantId: string): Promise<Stripe | null> {
+    const config = await this.paymentSettings.resolveStripeConfigForTenant(tenantId);
+    if (!this.paymentSettings.isStripeLiveForTenant(config) || !config.secretKey) {
       return null;
     }
-    if (!this.client) {
-      this.client = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-02-24.acacia',
-      });
+
+    const cacheKey = `${tenantId}:${config.secretKey}`;
+    const cached = this.clients.get(cacheKey);
+    if (cached) {
+      return cached;
     }
-    return this.client;
+
+    const client = new Stripe(config.secretKey, {
+      apiVersion: '2025-02-24.acacia',
+    });
+    this.clients.set(cacheKey, client);
+    return client;
   }
 
   async createPaymentIntent(opts: {
@@ -33,7 +43,7 @@ export class StripeProvider {
     tenantId: string;
     devoteeId?: string;
   }): Promise<StripeIntentResult | null> {
-    const stripe = this.getClient();
+    const stripe = await this.getClient(opts.tenantId);
     if (!stripe) {
       return null;
     }
@@ -61,8 +71,11 @@ export class StripeProvider {
     };
   }
 
-  async retrievePaymentIntentStatus(paymentIntentId: string): Promise<Stripe.PaymentIntent.Status | null> {
-    const stripe = this.getClient();
+  async retrievePaymentIntentStatus(
+    tenantId: string,
+    paymentIntentId: string,
+  ): Promise<Stripe.PaymentIntent.Status | null> {
+    const stripe = await this.getClient(tenantId);
     if (!stripe) {
       return null;
     }
@@ -70,14 +83,19 @@ export class StripeProvider {
     return intent.status;
   }
 
-  constructWebhookEvent(payload: Buffer, signature: string): Stripe.Event {
-    const secret = stripeWebhookSecret();
+  async constructWebhookEvent(
+    tenantId: string,
+    payload: Buffer,
+    signature: string,
+  ): Promise<Stripe.Event> {
+    const config = await this.paymentSettings.resolveStripeConfigForTenant(tenantId);
+    const secret = config.webhookSecret;
     if (!secret) {
-      throw new UnauthorizedException('STRIPE_WEBHOOK_SECRET is not configured');
+      throw new UnauthorizedException('Stripe webhook secret is not configured for this tenant');
     }
-    const stripe = this.getClient();
+    const stripe = await this.getClient(tenantId);
     if (!stripe) {
-      throw new UnauthorizedException('Stripe live mode is not configured');
+      throw new UnauthorizedException('Stripe live mode is not configured for this tenant');
     }
     try {
       return stripe.webhooks.constructEvent(payload, signature, secret);

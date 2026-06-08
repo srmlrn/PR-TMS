@@ -55,6 +55,18 @@ CREATE TABLE usage_meters (
 CREATE INDEX idx_tenant_env_tenant ON tenant_environments(tenant_id);
 CREATE INDEX idx_usage_meters_env ON usage_meters(environment_id, period_start);
 
+CREATE TABLE tenant_payment_settings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL UNIQUE REFERENCES tenants(id) ON DELETE CASCADE,
+  stripe_enabled BOOLEAN NOT NULL DEFAULT false,
+  stripe_mode VARCHAR(8) NOT NULL DEFAULT 'test',
+  stripe_publishable_key VARCHAR(255),
+  stripe_secret_key VARCHAR(255),
+  stripe_webhook_secret VARCHAR(255),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Demo tenant: Sri Venkateswara Temple
 INSERT INTO tenants (id, slug, name, country, base_currency, plan)
 VALUES (

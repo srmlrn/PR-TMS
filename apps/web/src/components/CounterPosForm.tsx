@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@tms/ui';
 import {
   Currency,
+  deitySelectOptions,
   DONATION_FUND_OPTIONS,
   POS_SALES_CATALOG,
   type CounterPaymentMethod,
@@ -24,6 +25,7 @@ type PosTab = 'services' | 'sales' | 'donations';
 interface ServiceLine {
   key: string;
   serviceId: string;
+  deity: string;
   date: string;
   location: ServiceLocation;
   quantity: number;
@@ -73,6 +75,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
           {
             key: nextKey(),
             serviceId: services[0].id,
+            deity: services[0].deity,
             date: today,
             location: 'on_site',
             quantity: 1,
@@ -126,6 +129,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
       {
         key: nextKey(),
         serviceId: svc.id,
+        deity: prefill?.deity ?? svc.deity,
         date: prefill?.date ?? today,
         location: prefill?.location ?? 'on_site',
         quantity: prefill?.quantity ?? 1,
@@ -142,7 +146,10 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
         const next = { ...r, ...patch };
         if (patch.serviceId) {
           const svc = services.find((s) => s.id === patch.serviceId);
-          if (svc) next.unitCost = svc.price;
+          if (svc) {
+            next.unitCost = svc.price;
+            if (patch.deity === undefined) next.deity = svc.deity;
+          }
         }
         return next;
       }),
@@ -190,6 +197,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
             {
               key: nextKey(),
               serviceId: services[0].id,
+              deity: services[0].deity,
               date: today,
               location: 'on_site',
               quantity: 1,
@@ -244,6 +252,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
           location: l.location,
           quantity: l.quantity,
           unitCost: l.unitCost,
+          deity: l.deity,
         })),
         donations: donationLines.map((l) => ({
           purpose: l.purpose,
@@ -353,7 +362,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
                 </thead>
                 <tbody>
                   {serviceLines.map((line) => {
-                    const svc = services.find((s) => s.id === line.serviceId);
+                    const lineDeityOptions = deitySelectOptions(services, line.deity);
                     const lineTotal = line.unitCost * line.quantity;
                     return (
                       <tr key={line.key}>
@@ -371,7 +380,20 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
                             ))}
                           </select>
                         </td>
-                        <td>{svc?.deity ?? '—'}</td>
+                        <td>
+                          <select
+                            value={line.deity}
+                            onChange={(e) =>
+                              updateServiceLine(line.key, { deity: e.target.value })
+                            }
+                          >
+                            {lineDeityOptions.map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
                         <td>
                           <select
                             value={line.location}
