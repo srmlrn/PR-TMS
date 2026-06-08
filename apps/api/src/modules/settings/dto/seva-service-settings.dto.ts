@@ -23,6 +23,12 @@ export class CreateSevaServiceSettingsDto {
   @Min(0)
   price!: number;
 
+  @ApiPropertyOptional({ example: 51, description: 'Off-site (home) price; omit for on-site only' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  priceOffSite?: number;
+
   @ApiPropertyOptional({ enum: Currency })
   @IsOptional()
   @IsEnum(Currency)
@@ -63,6 +69,12 @@ export class UpdateSevaServiceSettingsDto {
   @IsNumber()
   @Min(0)
   price?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  priceOffSite?: number | null;
 
   @ApiPropertyOptional({ enum: Currency })
   @IsOptional()

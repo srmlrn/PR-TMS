@@ -13,6 +13,8 @@ import {
   type PaymentProvider,
   type SevaService,
   type ServiceLocation,
+  resolveSevaUnitPrice,
+  sevaSupportsOffSite,
 } from '@tms/types';
 import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney } from '@/lib/api/endpoints';
@@ -64,6 +66,10 @@ function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
   return 'cash';
 }
 
+function catalogUnitCost(svc: SevaService, location: ServiceLocation): number {
+  return resolveSevaUnitPrice(svc, location);
+}
+
 export function CounterPosForm({ ep, devotee, services, products, onSuccess, onError }: Props) {
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
@@ -80,7 +86,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
             date: today,
             location: 'on_site',
             quantity: 1,
-            unitCost: services[0].price,
+            unitCost: catalogUnitCost(services[0], 'on_site'),
           },
         ]
       : [],
@@ -134,7 +140,9 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
         date: prefill?.date ?? today,
         location: prefill?.location ?? 'on_site',
         quantity: prefill?.quantity ?? 1,
-        unitCost: prefill?.unitCost ?? svc.price,
+        unitCost:
+          prefill?.unitCost ??
+          catalogUnitCost(svc, prefill?.location ?? 'on_site'),
       },
     ]);
     setTab('services');
@@ -145,11 +153,22 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
       rows.map((r) => {
         if (r.key !== key) return r;
         const next = { ...r, ...patch };
-        if (patch.serviceId) {
-          const svc = services.find((s) => s.id === patch.serviceId);
-          if (svc) {
-            next.unitCost = svc.price;
-            if (patch.deity === undefined) next.deity = svc.deity;
+        const svc = services.find((s) => s.id === (patch.serviceId ?? next.serviceId));
+        if (svc) {
+          if (patch.serviceId && patch.deity === undefined) {
+            next.deity = svc.deity;
+          }
+          let location = next.location;
+          if (patch.serviceId && !sevaSupportsOffSite(svc)) {
+            location = 'on_site';
+            next.location = 'on_site';
+          }
+          if (patch.location === 'off_site' && !sevaSupportsOffSite(svc)) {
+            location = 'on_site';
+            next.location = 'on_site';
+          }
+          if (patch.serviceId || patch.location) {
+            next.unitCost = catalogUnitCost(svc, location);
           }
         }
         return next;
@@ -202,7 +221,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
               date: today,
               location: 'on_site',
               quantity: 1,
-              unitCost: services[0].price,
+              unitCost: catalogUnitCost(services[0], 'on_site'),
             },
           ]
         : [],
@@ -306,7 +325,47 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   return (
     <>
       <div className={styles.pos}>
-        <div className={styles.main}>
+        <div className={styles.quickLinksBar}>
+          <p className={styles.quickLinksTitle}>Quick links</p>
+          <div className={styles.quickLinksScroll}>
+            {quickLinks.map((svc) => (
+              <button
+                key={svc.id}
+                type="button"
+                className={styles.quickLink}
+                onClick={() =>
+                  addServiceLine({
+                    serviceId: svc.id,
+                    location: 'on_site',
+                    unitCost: catalogUnitCost(svc, 'on_site'),
+                  })
+                }
+              >
+                <strong>{svc.name}</strong>
+                <span>
+                  {svc.deity} · On {formatMoney(svc.price, svc.currency)}
+                  {sevaSupportsOffSite(svc) && svc.priceOffSite != null && (
+                    <> · Off {formatMoney(svc.priceOffSite, svc.currency)}</>
+                  )}
+                </span>
+              </button>
+            ))}
+            {products.slice(0, 3).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={styles.quickLink}
+                onClick={() => addSalesLine(item.id)}
+              >
+                <strong>{item.name}</strong>
+                <span>{formatMoney(item.price, item.currency)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.body}>
+          <div className={styles.main}>
           <div className={styles.sankalpaRow}>
             <div className="formGroup">
               <label htmlFor="posGotram">Gotram</label>
@@ -363,8 +422,10 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
                 </thead>
                 <tbody>
                   {serviceLines.map((line) => {
+                    const svc = services.find((s) => s.id === line.serviceId);
                     const lineDeityOptions = deitySelectOptions(services, line.deity);
                     const lineTotal = line.unitCost * line.quantity;
+                    const offSiteAvailable = svc ? sevaSupportsOffSite(svc) : false;
                     return (
                       <tr key={line.key}>
                         <td>
@@ -405,7 +466,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
                             }
                           >
                             <option value="on_site">On Site</option>
-                            <option value="off_site">Off Site</option>
+                            {offSiteAvailable && <option value="off_site">Off Site</option>}
                           </select>
                         </td>
                         <td>
@@ -415,17 +476,8 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
                             onChange={(e) => updateServiceLine(line.key, { date: e.target.value })}
                           />
                         </td>
-                        <td>
-                          <input
-                            type="number"
-                            min={0}
-                            step={0.01}
-                            className={styles.numInput}
-                            value={line.unitCost}
-                            onChange={(e) =>
-                              updateServiceLine(line.key, { unitCost: Number(e.target.value) })
-                            }
-                          />
+                        <td className={styles.costReadonly}>
+                          {formatMoney(line.unitCost, currency)}
                         </td>
                         <td>
                           <input
@@ -593,102 +645,65 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
             </div>
           )}
 
-          <div className={styles.footer}>
-            <div className={styles.footerLeft}>
-              <div className="formGroup">
-                <label htmlFor="posComment">Comment / notes</label>
-                <input
-                  id="posComment"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Optional notes for receipt"
-                />
-              </div>
-              <div className="formGroup">
-                <label htmlFor="posPayment">Payment type</label>
-                <select
-                  id="posPayment"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as CounterPaymentMethod)}
-                >
-                  <option value="cash">Cash</option>
-                  <option value="check">Check</option>
-                  <option value="card">Card</option>
-                </select>
-              </div>
-              {paymentMethod === 'check' && (
-                <div className="formGroup">
-                  <label htmlFor="posCheck">Check number</label>
-                  <input
-                    id="posCheck"
-                    value={checkNumber}
-                    onChange={(e) => setCheckNumber(e.target.value)}
-                    placeholder="Check #"
-                  />
-                </div>
-              )}
-              <div className="formGroup">
-                <label htmlFor="posPaid">Total paid</label>
-                <input
-                  id="posPaid"
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={totalPaid === '' ? grandTotal : totalPaid}
-                  onChange={(e) =>
-                    setTotalPaid(e.target.value === '' ? '' : Number(e.target.value))
-                  }
-                />
-              </div>
-            </div>
-            <div className={styles.footerRight}>
-              <div className={styles.grandTotal}>
-                Total: {formatMoney(grandTotal, currency)}
-              </div>
-              <div className={styles.footerActions}>
-                <Button size="sm" variant="outline" onClick={handleCancel} disabled={busy}>
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleSubmit} disabled={busy || grandTotal <= 0}>
-                  {busy ? 'Processing…' : 'Submit'}
-                </Button>
-              </div>
-            </div>
           </div>
-        </div>
 
-        <aside className={styles.sidebar}>
-          <p className={styles.sidebarTitle}>Quick links</p>
-          {quickLinks.map((svc) => (
-            <button
-              key={svc.id}
-              type="button"
-              className={styles.quickLink}
-              onClick={() =>
-                addServiceLine({
-                  serviceId: svc.id,
-                  unitCost: svc.price,
-                })
-              }
-            >
-              <strong>{svc.name}</strong>
-              <span>
-                {svc.deity} · {formatMoney(svc.price, svc.currency)}
-              </span>
-            </button>
-          ))}
-          {products.slice(0, 3).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={styles.quickLink}
-              onClick={() => addSalesLine(item.id)}
-            >
-              <strong>{item.name}</strong>
-              <span>{formatMoney(item.price, item.currency)}</span>
-            </button>
-          ))}
-        </aside>
+          <aside className={styles.checkoutPanel}>
+            <div className="formGroup">
+              <label htmlFor="posComment">Comment / notes</label>
+              <input
+                id="posComment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Optional notes for receipt"
+              />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="posPayment">Payment type</label>
+              <select
+                id="posPayment"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as CounterPaymentMethod)}
+              >
+                <option value="cash">Cash</option>
+                <option value="check">Check</option>
+                <option value="card">Card</option>
+              </select>
+            </div>
+            {paymentMethod === 'check' && (
+              <div className="formGroup">
+                <label htmlFor="posCheck">Check number</label>
+                <input
+                  id="posCheck"
+                  value={checkNumber}
+                  onChange={(e) => setCheckNumber(e.target.value)}
+                  placeholder="Check #"
+                />
+              </div>
+            )}
+            <div className="formGroup">
+              <label htmlFor="posPaid">Total paid</label>
+              <input
+                id="posPaid"
+                type="number"
+                min={0}
+                step={0.01}
+                value={totalPaid === '' ? grandTotal : totalPaid}
+                onChange={(e) =>
+                  setTotalPaid(e.target.value === '' ? '' : Number(e.target.value))
+                }
+              />
+            </div>
+            <div className={styles.grandTotal}>Total: {formatMoney(grandTotal, currency)}</div>
+            <div className={styles.footerActions}>
+              <Button size="sm" variant="outline" onClick={handleCancel} disabled={busy}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSubmit} disabled={busy || grandTotal <= 0}>
+                {busy ? 'Processing…' : 'Submit'}
+              </Button>
+            </div>
+          </aside>
+        </div>
       </div>
       {livePaymentModal}
     </>

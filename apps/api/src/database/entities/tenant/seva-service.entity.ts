@@ -17,6 +17,9 @@ export class SevaServiceEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price!: number;
 
+  @Column({ name: 'price_off_site', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  priceOffSite?: number;
+
   @Column({ length: 8, default: 'USD' })
   currency!: string;
 

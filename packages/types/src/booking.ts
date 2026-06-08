@@ -6,10 +6,30 @@ export interface SevaService extends TenantScoped, Timestamps {
   name: string;
   deity: string;
   description?: string;
+  /** On-site (temple) price. */
   price: number;
+  /** Off-site (home / outside) price — omit when service is on-site only. */
+  priceOffSite?: number;
   currency: Currency;
   durationMinutes: number;
   isActive: boolean;
+}
+
+export type SevaServiceLocation = 'on_site' | 'off_site';
+
+/** Unit price for a seva line from catalog + ritual location. */
+export function resolveSevaUnitPrice(
+  service: Pick<SevaService, 'price' | 'priceOffSite'>,
+  location: SevaServiceLocation,
+): number {
+  if (location === 'off_site' && service.priceOffSite != null) {
+    return service.priceOffSite;
+  }
+  return service.price;
+}
+
+export function sevaSupportsOffSite(service: Pick<SevaService, 'priceOffSite'>): boolean {
+  return service.priceOffSite != null;
 }
 
 export interface Booking extends TenantScoped, Timestamps {

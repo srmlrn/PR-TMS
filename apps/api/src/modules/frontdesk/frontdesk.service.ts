@@ -13,6 +13,7 @@ import {
   QueueStats,
   QueueToken,
   QueueType,
+  resolveSevaUnitPrice,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
@@ -711,7 +712,13 @@ export class FrontDeskService
 
     for (const line of services) {
       const service = await this.sevaCatalogService.findOne(tenantId, line.serviceId);
-      const unitCost = line.unitCost ?? service.price;
+      const catalogCost = resolveSevaUnitPrice(service, line.location);
+      const unitCost = line.unitCost ?? catalogCost;
+      if (Math.abs(unitCost - catalogCost) > 0.01) {
+        throw new BadRequestException(
+          `Unit cost for ${service.name} (${unitCost}) does not match catalog ${line.location} price (${catalogCost})`,
+        );
+      }
       grandTotal += unitCost * line.quantity;
     }
 
@@ -756,7 +763,7 @@ export class FrontDeskService
     const createdBookings = [];
     for (const line of services) {
       const service = await this.sevaCatalogService.findOne(tenantId, line.serviceId);
-      const unitCost = line.unitCost ?? service.price;
+      const unitCost = resolveSevaUnitPrice(service, line.location);
       const lineAmount = Math.round(unitCost * line.quantity * 100) / 100;
       const scheduledAt = await this.resolveCounterScheduledAt(
         tenantId,

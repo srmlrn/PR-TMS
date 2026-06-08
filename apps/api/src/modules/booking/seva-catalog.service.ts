@@ -46,7 +46,7 @@ export class SevaCatalogService
   onModuleInit(): void {
     if (!this.usePostgres) {
       for (const tenantId of DEMO_TENANT_IDS) {
-        this.seedServices(tenantId);
+        this.syncDemoServices(tenantId);
       }
     }
   }
@@ -94,6 +94,7 @@ export class SevaCatalogService
           deity: input.deity.trim(),
           description: input.description?.trim(),
           price: input.price,
+          priceOffSite: input.priceOffSite,
           currency: input.currency ?? Currency.USD,
           durationMinutes: input.durationMinutes ?? 30,
           isActive: input.isActive ?? true,
@@ -108,6 +109,7 @@ export class SevaCatalogService
       deity: input.deity.trim(),
       description: input.description?.trim(),
       price: input.price,
+      priceOffSite: input.priceOffSite,
       currency: input.currency ?? Currency.USD,
       durationMinutes: input.durationMinutes ?? 30,
       isActive: input.isActive ?? true,
@@ -133,6 +135,9 @@ export class SevaCatalogService
           ? { description: input.description.trim() || undefined }
           : {}),
         ...(input.price !== undefined ? { price: input.price } : {}),
+        ...(input.priceOffSite !== undefined
+          ? { priceOffSite: input.priceOffSite ?? undefined }
+          : {}),
         ...(input.currency !== undefined ? { currency: input.currency } : {}),
         ...(input.durationMinutes !== undefined
           ? { durationMinutes: input.durationMinutes }
@@ -150,6 +155,9 @@ export class SevaCatalogService
         ? { description: input.description.trim() || undefined }
         : {}),
       ...(input.price !== undefined ? { price: input.price } : {}),
+      ...(input.priceOffSite !== undefined
+        ? { priceOffSite: input.priceOffSite ?? undefined }
+        : {}),
       ...(input.currency !== undefined ? { currency: input.currency } : {}),
       ...(input.durationMinutes !== undefined
         ? { durationMinutes: input.durationMinutes }
@@ -201,6 +209,7 @@ export class SevaCatalogService
       deity: row.deity,
       description: row.description,
       price: Number(row.price),
+      priceOffSite: row.priceOffSite != null ? Number(row.priceOffSite) : undefined,
       currency: row.currency as Currency,
       durationMinutes: row.durationMinutes,
       isActive: row.isActive,
@@ -225,15 +234,12 @@ export class SevaCatalogService
 
   private ensureSeeded(tenantId: string): void {
     if (this.scoped(tenantId).length === 0) {
-      this.seedServices(tenantId);
+      this.syncDemoServices(tenantId);
     }
   }
 
-  private seedServices(tenantId: string): void {
-    if (this.scoped(tenantId).length > 0) {
-      return;
-    }
-
+  /** Upsert canonical demo catalog (on-site + off-site prices). */
+  private syncDemoServices(tenantId: string): void {
     const now = new Date();
     const deity = getTenantBranding(tenantId).deity;
     const prefix = tenantId === GANESHA_TEMPLE_ID ? 'sgt-' : '';
@@ -245,6 +251,7 @@ export class SevaCatalogService
         deity,
         description: 'Daily archana with sankalpa name, gotram, and nakshatra',
         price: 25,
+        priceOffSite: 51,
         currency: Currency.USD,
         durationMinutes: 30,
         isActive: true,
@@ -256,6 +263,7 @@ export class SevaCatalogService
         deity,
         description: 'Special abhishekam ritual bathing of the deity',
         price: 101,
+        priceOffSite: 151,
         currency: Currency.USD,
         durationMinutes: 60,
         isActive: true,
@@ -267,6 +275,7 @@ export class SevaCatalogService
         deity,
         description: 'Sacred fire ritual with priest-led homam',
         price: 251,
+        priceOffSite: 401,
         currency: Currency.USD,
         durationMinutes: 90,
         isActive: true,
@@ -276,7 +285,7 @@ export class SevaCatalogService
         tenantId,
         name: 'VIP Darshan',
         deity,
-        description: 'Priority darshan with shorter queue wait',
+        description: 'Priority darshan with shorter queue wait (on-site only)',
         price: 51,
         currency: Currency.USD,
         durationMinutes: 15,
@@ -285,9 +294,10 @@ export class SevaCatalogService
     ];
 
     for (const service of services) {
+      const existing = this.store.get(service.id);
       this.store.set(service.id, {
         ...service,
-        createdAt: now,
+        createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       });
     }

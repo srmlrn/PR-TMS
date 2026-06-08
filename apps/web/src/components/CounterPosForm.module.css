@@ -1,7 +1,33 @@
 .pos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.quickLinksBar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.quickLinksTitle {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--txt2);
+}
+
+.quickLinksScroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.body {
   display: grid;
-  grid-template-columns: 1fr 160px;
+  grid-template-columns: 1fr minmax(200px, 240px);
   gap: 0.65rem;
+  align-items: start;
 }
 
 .main {
@@ -9,6 +35,22 @@
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
+}
+
+.checkoutPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border: 1px solid var(--b2);
+  border-radius: var(--rs);
+  background: var(--ink3);
+  position: sticky;
+  top: 0.5rem;
+}
+
+.checkoutPanel :global(.formGroup) {
+  margin-bottom: 0;
 }
 
 .tabs {
@@ -72,6 +114,11 @@
   width: 4rem !important;
 }
 
+.costReadonly {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .rowActions {
   display: flex;
   gap: 0.2rem;
@@ -97,25 +144,12 @@
   margin-top: 0.35rem;
 }
 
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.sidebarTitle {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--txt2);
-}
-
 .quickLink {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.1rem;
-  padding: 0.4rem 0.5rem;
+  padding: 0.4rem 0.55rem;
   border: 1px solid var(--b2);
   border-radius: var(--rs);
   background: var(--ink3);
@@ -123,6 +157,7 @@
   font-size: 0.68rem;
   color: var(--txt2);
   text-align: left;
+  min-width: 7.5rem;
 }
 
 .quickLink strong {
@@ -134,41 +169,17 @@
   border-color: var(--gr);
 }
 
-.footer {
-  margin-top: 0.45rem;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--b2);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.55rem;
-  align-items: end;
-}
-
-.footerLeft {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.45rem;
-}
-
-.footerLeft :global(.formGroup) {
-  margin-bottom: 0;
-}
-
-.footerRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-}
-
 .grandTotal {
   font-size: 1rem;
   font-weight: 700;
   color: var(--txt);
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--b2);
 }
 
 .footerActions {
   display: flex;
+  flex-direction: column;
   gap: 0.4rem;
 }
 
@@ -195,23 +206,19 @@
 }
 
 @media (max-width: 900px) {
-  .pos {
+  .body {
     grid-template-columns: 1fr;
   }
 
-  .footer {
-    grid-template-columns: 1fr;
-  }
-
-  .footerRight {
-    align-items: stretch;
+  .checkoutPanel {
+    position: static;
   }
 
   .sankalpaRow {
     grid-template-columns: 1fr;
   }
 
-  .footerLeft {
-    grid-template-columns: 1fr;
+  .footerActions {
+    flex-direction: row;
   }
 }

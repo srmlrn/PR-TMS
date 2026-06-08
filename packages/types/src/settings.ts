@@ -110,6 +110,7 @@ export interface CreateSevaServiceInput {
   deity: string;
   description?: string;
   price: number;
+  priceOffSite?: number;
   currency?: import('./enums').Currency;
   durationMinutes?: number;
   isActive?: boolean;
@@ -120,6 +121,7 @@ export interface UpdateSevaServiceInput {
   deity?: string;
   description?: string;
   price?: number;
+  priceOffSite?: number | null;
   currency?: import('./enums').Currency;
   durationMinutes?: number;
   isActive?: boolean;

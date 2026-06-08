@@ -19,6 +19,7 @@ const emptyForm = (): CreateSevaServiceInput => ({
   deity: '',
   description: '',
   price: 25,
+  priceOffSite: 51,
   currency: Currency.USD,
   durationMinutes: 30,
   isActive: true,
@@ -57,6 +58,7 @@ export default function SevaCatalogSettingsPage() {
       deity: service.deity,
       description: service.description ?? '',
       price: service.price,
+      priceOffSite: service.priceOffSite,
       currency: service.currency,
       durationMinutes: service.durationMinutes,
       isActive: service.isActive,
@@ -133,13 +135,29 @@ export default function SevaCatalogSettingsPage() {
             />
           </label>
           <label>
-            Price
+            On-site price
             <input
               type="number"
               min={0}
               step={0.01}
               value={form.price}
               onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))}
+            />
+          </label>
+          <label>
+            Off-site price
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={form.priceOffSite ?? ''}
+              placeholder="On-site only"
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  priceOffSite: e.target.value === '' ? undefined : Number(e.target.value),
+                }))
+              }
             />
           </label>
           <label>
@@ -192,7 +210,8 @@ export default function SevaCatalogSettingsPage() {
               <tr>
                 <th>Service</th>
                 <th>Deity</th>
-                <th>Price</th>
+                <th>On-site</th>
+                <th>Off-site</th>
                 <th>Duration</th>
                 <th>Status</th>
                 <th />
@@ -209,6 +228,11 @@ export default function SevaCatalogSettingsPage() {
                   </td>
                   <td>{s.deity}</td>
                   <td>{formatMoney(s.price, s.currency)}</td>
+                  <td>
+                    {s.priceOffSite != null
+                      ? formatMoney(s.priceOffSite, s.currency)
+                      : '—'}
+                  </td>
                   <td>{s.durationMinutes} min</td>
                   <td>
                     <Badge variant={s.isActive ? 'ok' : 'pending'}>
