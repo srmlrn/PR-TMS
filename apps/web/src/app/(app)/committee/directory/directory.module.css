@@ -2,7 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  min-height: 420px;
+  flex: 1;
+  min-height: calc(100dvh - var(--topbar-height) - 5.5rem);
 }
 
 .summary {
@@ -26,12 +27,15 @@
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: 0.5rem;
-  min-height: 480px;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
 }
 
 @media (max-width: 800px) {
   .split {
     grid-template-columns: 1fr;
+    flex: none;
     min-height: auto;
   }
 }
@@ -46,12 +50,15 @@
   background: var(--ink3);
   padding: 0.5rem;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .listTools {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .listTools input,
@@ -71,9 +78,8 @@
 
 .listScroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  max-height: 62vh;
-  min-height: 200px;
 }
 
 .categoryBlock {
@@ -123,6 +129,20 @@
   color: var(--txt3);
 }
 
+.detailBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  overflow: hidden;
+}
+
+.detailHeader,
+.detailTools {
+  flex-shrink: 0;
+}
+
 .detailHeader {
   display: flex;
   flex-direction: column;
@@ -156,29 +176,33 @@
 
 .detailTools {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 0.35rem;
+  align-items: center;
 }
 
 @media (max-width: 640px) {
   .detailTools {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .detailTools > input[type='search'] {
+    grid-column: 1 / -1;
   }
 }
 
 .memberTable {
   flex: 1;
-  overflow: auto;
-  max-height: 36vh;
-  min-height: 120px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .memberRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 0.45rem;
+  gap: 0.4rem;
   align-items: center;
-  padding: 0.35rem 0;
+  padding: 0.25rem 0;
   border-bottom: 1px solid color-mix(in srgb, var(--b) 60%, transparent);
 }
 
@@ -257,6 +281,20 @@
   font-size: 0.78rem;
   color: var(--txt3);
   padding: 2rem 1rem;
+}
+
+.detailManage {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: min(42vh, 320px);
+  overflow-y: auto;
+}
+
+.flash,
+.managePanel {
+  flex-shrink: 0;
 }
 
 .flash {

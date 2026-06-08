@@ -83,6 +83,7 @@ export default function CommitteeDirectoryPage() {
   const [memberQuery, setMemberQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'' | CommitteeMemberRole>('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAddPanel, setShowAddPanel] = useState(false);
   const [addForm, setAddForm] = useState<CreateCommitteeMemberInput>(emptyMemberForm);
   const [editForm, setEditForm] = useState<UpdateCommitteeMemberInput>({});
   const [saving, setSaving] = useState(false);
@@ -167,6 +168,7 @@ export default function CommitteeDirectoryPage() {
         displayTitle: addForm.displayTitle?.trim() || undefined,
       });
       setAddForm(emptyMemberForm());
+      setShowAddPanel(false);
       setMsg('Member added.');
     });
   }
@@ -188,6 +190,7 @@ export default function CommitteeDirectoryPage() {
   }
 
   function startEdit(member: CommitteeMember) {
+    setShowAddPanel(false);
     setEditingId(member.id);
     setEditForm({
       name: member.name,
@@ -285,6 +288,7 @@ export default function CommitteeDirectoryPage() {
                                   onClick={() => {
                                     setSelectedId(e.committee.id);
                                     setEditingId(null);
+                                    setShowAddPanel(false);
                                     setMemberQuery('');
                                     setRoleFilter('');
                                   }}
@@ -308,86 +312,102 @@ export default function CommitteeDirectoryPage() {
                   <p className={styles.emptyPane}>Select a committee</p>
                 ) : (
                   <>
-                    <header className={styles.detailHeader}>
-                      <h2 className={styles.detailTitle}>{selected.committee.name}</h2>
-                      <div className={styles.detailMeta}>
-                        <span>{selected.categoryLabel}</span>
-                        <span>·</span>
-                        <span>{selected.committee.committeeType.replace('_', ' ')}</span>
-                        {selected.committee.meetingCadence && (
-                          <>
-                            <span>·</span>
-                            <span>{selected.committee.meetingCadence.replace('_', ' ')}</span>
-                          </>
+                    <div className={styles.detailBody}>
+                      <header className={styles.detailHeader}>
+                        <h2 className={styles.detailTitle}>{selected.committee.name}</h2>
+                        <div className={styles.detailMeta}>
+                          <span>{selected.categoryLabel}</span>
+                          <span>·</span>
+                          <span>{selected.committee.committeeType.replace('_', ' ')}</span>
+                          {selected.committee.meetingCadence && (
+                            <>
+                              <span>·</span>
+                              <span>{selected.committee.meetingCadence.replace('_', ' ')}</span>
+                            </>
+                          )}
+                          <span>·</span>
+                          <span>{selected.members.length} members</span>
+                        </div>
+                        {(selected.committee.purpose ?? selected.committee.description) && (
+                          <p className={styles.detailPurpose}>
+                            {selected.committee.purpose ?? selected.committee.description}
+                          </p>
                         )}
-                        <span>·</span>
-                        <span>{selected.members.length} members</span>
+                      </header>
+
+                      <div className={styles.detailTools}>
+                        <input
+                          type="search"
+                          placeholder="Search members…"
+                          value={memberQuery}
+                          onChange={(e) => setMemberQuery(e.target.value)}
+                          aria-label="Search members"
+                        />
+                        <select
+                          value={roleFilter}
+                          onChange={(e) =>
+                            setRoleFilter(e.target.value as '' | CommitteeMemberRole)
+                          }
+                          aria-label="Filter by role"
+                        >
+                          {ROLE_FILTER_OPTIONS.map((o) => (
+                            <option key={o.label} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                        {canManage && (
+                          <Button
+                            size="sm"
+                            variant={showAddPanel ? 'primary' : 'outline'}
+                            onClick={() => {
+                              setShowAddPanel((open) => !open);
+                              setEditingId(null);
+                            }}
+                          >
+                            {showAddPanel ? 'Close' : 'Add'}
+                          </Button>
+                        )}
                       </div>
-                      {(selected.committee.purpose ?? selected.committee.description) && (
-                        <p className={styles.detailPurpose}>
-                          {selected.committee.purpose ?? selected.committee.description}
-                        </p>
-                      )}
-                    </header>
 
-                    <div className={styles.detailTools}>
-                      <input
-                        type="search"
-                        placeholder="Search members…"
-                        value={memberQuery}
-                        onChange={(e) => setMemberQuery(e.target.value)}
-                        aria-label="Search members"
-                      />
-                      <select
-                        value={roleFilter}
-                        onChange={(e) =>
-                          setRoleFilter(e.target.value as '' | CommitteeMemberRole)
-                        }
-                        aria-label="Filter by role"
-                      >
-                        {ROLE_FILTER_OPTIONS.map((o) => (
-                          <option key={o.label} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className={styles.memberTable}>
+                        {filteredMembers.length === 0 ? (
+                          <p className={styles.emptyPane}>No members match</p>
+                        ) : (
+                          filteredMembers.map((m) => (
+                            <div key={m.id} className={styles.memberRow}>
+                              <PersonRow
+                                name={m.name}
+                                photoUrl={m.photoUrl}
+                                subtitle={m.email ?? '—'}
+                                size="sm"
+                              />
+                              <span
+                                className={[
+                                  styles.roleTag,
+                                  m.role === 'chair' || m.role === 'vice_chair'
+                                    ? styles.roleTagLead
+                                    : '',
+                                ].join(' ')}
+                              >
+                                {memberTitle(m)}
+                              </span>
+                              {canManage && (
+                                <Button size="sm" variant="outline" onClick={() => startEdit(m)}>
+                                  Edit
+                                </Button>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
 
-                    <div className={styles.memberTable}>
-                      {filteredMembers.length === 0 ? (
-                        <p className={styles.emptyPane}>No members match</p>
-                      ) : (
-                        filteredMembers.map((m) => (
-                          <div key={m.id} className={styles.memberRow}>
-                            <PersonRow
-                              name={m.name}
-                              photoUrl={m.photoUrl}
-                              subtitle={m.email ?? '—'}
-                              size="md"
-                            />
-                            <span
-                              className={[
-                                styles.roleTag,
-                                m.role === 'chair' || m.role === 'vice_chair'
-                                  ? styles.roleTagLead
-                                  : '',
-                              ].join(' ')}
-                            >
-                              {memberTitle(m)}
-                            </span>
-                            {canManage && (
-                              <Button size="sm" variant="outline" onClick={() => startEdit(m)}>
-                                Edit
-                              </Button>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
+                    {(msg || (canManage && (editingId || showAddPanel))) && (
+                      <div className={styles.detailManage}>
+                        {msg && <p className={styles.flash}>{msg}</p>}
 
-                    {msg && <p className={styles.flash}>{msg}</p>}
-
-                    {canManage && editingId && (
+                        {canManage && editingId && (
                       <div className={styles.managePanel}>
                         <h3 className={styles.manageTitle}>Edit member</h3>
                         <div className={styles.formGrid}>
@@ -457,9 +477,9 @@ export default function CommitteeDirectoryPage() {
                           </Button>
                         </div>
                       </div>
-                    )}
+                        )}
 
-                    {canManage && (
+                        {canManage && showAddPanel && (
                       <div className={styles.managePanel}>
                         <h3 className={styles.manageTitle}>Add member</h3>
                         <div className={styles.formGrid}>
@@ -513,7 +533,16 @@ export default function CommitteeDirectoryPage() {
                           <Button size="sm" disabled={saving} onClick={() => void handleAdd()}>
                             Add member
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowAddPanel(false)}
+                          >
+                            Cancel
+                          </Button>
                         </div>
+                      </div>
+                        )}
                       </div>
                     )}
                   </>
