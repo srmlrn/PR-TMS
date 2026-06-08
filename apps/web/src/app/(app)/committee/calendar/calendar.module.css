@@ -241,6 +241,15 @@
   gap: 0.65rem;
 }
 
+.formLabel {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--txt2);
+}
+
 .blockList {
   display: flex;
   flex-direction: column;

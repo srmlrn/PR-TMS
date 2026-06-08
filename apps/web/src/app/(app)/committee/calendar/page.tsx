@@ -7,7 +7,7 @@ import type {
   CreateCommitteeCalendarBlockInput,
 } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
-import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
+import { createEndpoints } from '@/lib/api/endpoints';
 import { useAuth } from '@/lib/auth-context';
 import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
 import { useTenant } from '@/lib/tenant-context';
@@ -22,6 +22,9 @@ import {
   currentMonthKey,
   dominantBlockTypeForDate,
   filterBlocks,
+  formatLocalDateKey,
+  formatLocalDateRange,
+  localDateKey,
   monthKey,
   monthLabel,
   parseMonthKey,
@@ -89,7 +92,7 @@ export default function CommitteeCalendarPage() {
     isAllCommittees,
   } = useCommitteeScope();
 
-  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayKey = useMemo(() => localDateKey(), []);
   const [view, setView] = useState<CalendarView>('month');
   const [calendarMonth, setCalendarMonth] = useState(currentMonthKey);
   const [filter, setFilter] = useState<CalendarFilter>('all');
@@ -137,10 +140,8 @@ export default function CommitteeCalendarPage() {
     setMsg(null);
   }
 
-  function selectDate(date: string) {
-    setSelectedDate(date);
-    setShowForm(false);
-    setMsg(null);
+  function handleDayClick(date: string) {
+    openAddBlock(date);
   }
 
   async function saveBlock() {
@@ -213,7 +214,7 @@ export default function CommitteeCalendarPage() {
             variant="outline"
             onClick={() => {
               setCalendarMonth(currentMonthKey());
-              selectDate(todayKey);
+              handleDayClick(todayKey);
             }}
           >
             Today
@@ -266,8 +267,7 @@ export default function CommitteeCalendarPage() {
                         ]
                           .filter(Boolean)
                           .join(' ')}
-                        onClick={() => selectDate(cell.date)}
-                        onDoubleClick={() => openAddBlock(cell.date)}
+                        onClick={() => handleDayClick(cell.date)}
                       >
                         <span className={styles.dayNum}>{cell.day}</span>
                         {visible.map((b) => (
@@ -338,14 +338,18 @@ export default function CommitteeCalendarPage() {
           <GlassCard
             title={
               selectedDate
-                ? formatShortDate(selectedDate)
+                ? formatLocalDateKey(selectedDate, {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })
                 : 'Select a date'
             }
             compact
             headerRight={
-              selectedDate ? (
+              selectedDate && !showForm ? (
                 <Button size="sm" onClick={() => openAddBlock(selectedDate)}>
-                  Block date
+                  Add event
                 </Button>
               ) : undefined
             }
@@ -353,8 +357,37 @@ export default function CommitteeCalendarPage() {
             <div className={styles.detailPanel}>
               {msg && <p className="hint">{msg}</p>}
 
+              {selectedDate && selectedBlocks.length > 0 && (
+                <div className={styles.blockList}>
+                  {selectedBlocks.map((b) => (
+                    <div key={b.id} className={styles.blockItem}>
+                      <div className={styles.blockItemHead}>
+                        <div>
+                          <div className={styles.blockItemTitle}>{b.title}</div>
+                          <p className="hint">{committeeName(b.committeeId)}</p>
+                        </div>
+                        <Badge
+                          variant={
+                            b.blockType === 'temple'
+                              ? 'pending'
+                              : b.blockType === 'personal'
+                                ? 'ok'
+                                : 'info'
+                          }
+                        >
+                          {blockTypeLabel(b.blockType)}
+                        </Badge>
+                      </div>
+                      <p className="hint">{formatLocalDateRange(b.startDate, b.endDate)}</p>
+                      {b.reason && <p className="hint">{b.reason}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {showForm && selectedDate ? (
                 <div className="formStack">
+                  <p className={styles.formLabel}>New event</p>
                   <label>
                     Block type
                     <select
@@ -425,7 +458,7 @@ export default function CommitteeCalendarPage() {
                   </label>
                   <div className="flexRow">
                     <Button size="sm" disabled={saving} onClick={() => void saveBlock()}>
-                      Save block
+                      Save event
                     </Button>
                     <Button
                       size="sm"
@@ -439,45 +472,11 @@ export default function CommitteeCalendarPage() {
                     </Button>
                   </div>
                 </div>
+              ) : !selectedDate ? (
+                <p className="hint">Click a date on the calendar to add an event.</p>
               ) : selectedBlocks.length === 0 ? (
-                <p className="hint">
-                  {selectedDate
-                    ? 'No blocks on this date. Click “Block date” to add one.'
-                    : 'Click a date on the calendar to view or add blocks.'}
-                </p>
-              ) : (
-                <div className={styles.blockList}>
-                  {selectedBlocks.map((b) => (
-                    <div key={b.id} className={styles.blockItem}>
-                      <div className={styles.blockItemHead}>
-                        <div>
-                          <div className={styles.blockItemTitle}>{b.title}</div>
-                          <p className="hint">{committeeName(b.committeeId)}</p>
-                        </div>
-                        <Badge
-                          variant={
-                            b.blockType === 'temple'
-                              ? 'pending'
-                              : b.blockType === 'personal'
-                                ? 'ok'
-                                : 'info'
-                          }
-                        >
-                          {blockTypeLabel(b.blockType)}
-                        </Badge>
-                      </div>
-                      <p className="hint">
-                        {formatShortDate(b.startDate)}
-                        {b.startDate !== b.endDate && ` – ${formatShortDate(b.endDate)}`}
-                      </p>
-                      {b.reason && <p className="hint">{b.reason}</p>}
-                      {b.blocksTempleCalendar && b.blockType !== 'temple' && (
-                        <Badge variant="pending">Temple calendar</Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                <p className="hint">No events on this date. Use Add event to create one.</p>
+              ) : null}
             </div>
           </GlassCard>
         </div>

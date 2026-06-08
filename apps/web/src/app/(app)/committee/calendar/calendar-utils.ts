@@ -4,6 +4,41 @@ export const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
 
 export type CalendarFilter = 'all' | 'committee' | 'personal';
 
+/** Local YYYY-MM-DD (avoids UTC shift from toISOString). */
+export function localDateKey(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Parse YYYY-MM-DD as local midnight, not UTC. */
+export function parseLocalDateKey(dateKey: string): Date {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function formatLocalDateKey(
+  dateKey: string,
+  options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' },
+): string {
+  return parseLocalDateKey(dateKey).toLocaleDateString('en-US', options);
+}
+
+export function formatLocalDateRange(start: string, end: string): string {
+  if (start === end) {
+    return formatLocalDateKey(start, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  return `${formatLocalDateKey(start)} – ${formatLocalDateKey(end)}`;
+}
+
+export function normalizeBlockType(
+  block: CommitteeCalendarBlock,
+): CommitteeCalendarBlockType {
+  if (block.blockType) return block.blockType;
+  return block.blocksTempleCalendar ? 'temple' : 'committee';
+}
+
 export type MonthCell =
   | { key: string; empty: true }
   | { key: string; date: string; day: number; today: boolean };
@@ -72,11 +107,14 @@ export function filterBlocks(
   filter: CalendarFilter,
   userId?: string,
 ): CommitteeCalendarBlock[] {
-  if (filter === 'all') return blocks;
+  const normalized = blocks.map((b) => ({ ...b, blockType: normalizeBlockType(b) }));
+  if (filter === 'all') return normalized;
   if (filter === 'personal') {
-    return blocks.filter((b) => b.blockType === 'personal' && (!userId || b.createdByUserId === userId));
+    return normalized.filter(
+      (b) => b.blockType === 'personal' && (!userId || b.createdByUserId === userId),
+    );
   }
-  return blocks.filter((b) => b.blockType === 'committee' || b.blockType === 'temple');
+  return normalized.filter((b) => b.blockType === 'committee' || b.blockType === 'temple');
 }
 
 export function blockTypeLabel(type: CommitteeCalendarBlockType): string {
@@ -105,7 +143,7 @@ export function dominantBlockTypeForDate(
 ): CommitteeCalendarBlockType | null {
   const dayBlocks = blocksForDate(blocks, date);
   if (dayBlocks.length === 0) return null;
-  if (dayBlocks.some((b) => b.blockType === 'temple')) return 'temple';
-  if (dayBlocks.some((b) => b.blockType === 'committee')) return 'committee';
+  if (dayBlocks.some((b) => normalizeBlockType(b) === 'temple')) return 'temple';
+  if (dayBlocks.some((b) => normalizeBlockType(b) === 'committee')) return 'committee';
   return 'personal';
 }
