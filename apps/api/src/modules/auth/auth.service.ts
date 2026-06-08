@@ -1,6 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AuthUser, JwtPayload, LoginResponse, TenantEnvironment, UserRole } from '@tms/types';
+import {
+  AuthUser,
+  JwtPayload,
+  LoginResponse,
+  TenantEnvironment,
+  UserRole,
+} from '@tms/types';
+import { TenantUsersService } from '../staff/tenant-users.service';
 import { DevoteeService } from '../devotee/devotee.service';
 import { DEMO_TENANT_ID, DEMO_USERS } from './demo-users';
 import { LoginDto } from './dto/login.dto';
@@ -10,17 +17,52 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly devoteeService: DevoteeService,
+    private readonly tenantUsersService: TenantUsersService,
   ) {}
 
   async login(dto: LoginDto): Promise<LoginResponse> {
-    const record = DEMO_USERS.find(
+    const demoRecord = DEMO_USERS.find(
       (u) => u.email.toLowerCase() === dto.email.toLowerCase() && u.password === dto.password,
     );
 
-    if (!record) {
-      throw new UnauthorizedException('Invalid email or password');
+    if (demoRecord) {
+      return this.buildLoginResponse(demoRecord, dto);
     }
 
+    const tenantUser = await this.tenantUsersService.findByEmailAnyTenant(dto.email);
+    if (
+      tenantUser &&
+      this.tenantUsersService.verifyPassword(tenantUser, dto.password)
+    ) {
+      if (
+        dto.tenantId &&
+        dto.tenantId !== tenantUser.tenantId
+      ) {
+        throw new UnauthorizedException('Invalid email or password for this temple');
+      }
+
+      const tenantId = dto.tenantId ?? tenantUser.tenantId;
+      const environment = dto.environment ?? TenantEnvironment.PROD;
+
+      const user: AuthUser = {
+        id: tenantUser.id,
+        email: tenantUser.email,
+        name: tenantUser.name,
+        role: tenantUser.role as UserRole,
+        tenantId,
+        environment,
+      };
+
+      return this.signResponse(user);
+    }
+
+    throw new UnauthorizedException('Invalid email or password');
+  }
+
+  private async buildLoginResponse(
+    record: (typeof DEMO_USERS)[number],
+    dto: LoginDto,
+  ): Promise<LoginResponse> {
     if (
       dto.tenantId &&
       dto.tenantId !== record.tenantId &&
@@ -51,6 +93,10 @@ export class AuthService {
       devoteeId,
     };
 
+    return this.signResponse(user);
+  }
+
+  private async signResponse(user: AuthUser): Promise<LoginResponse> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,

@@ -14,6 +14,7 @@ export { DonationSubscriptionEntity } from './donation-subscription.entity';
 export { VendorPaymentEntity } from './vendor-payment.entity';
 export { QueueTokenEntity } from './queue-token.entity';
 export { StaffEntity } from './staff.entity';
+export { StaffLeaveEntity } from './staff-leave.entity';
 export { VolunteerShiftEntity } from './volunteer-shift.entity';
 export { PaymentSessionEntity } from './payment-session.entity';
 export { PosProductEntity } from './pos-product.entity';
@@ -34,6 +35,7 @@ import { DonationSubscriptionEntity } from './donation-subscription.entity';
 import { VendorPaymentEntity } from './vendor-payment.entity';
 import { QueueTokenEntity } from './queue-token.entity';
 import { StaffEntity } from './staff.entity';
+import { StaffLeaveEntity } from './staff-leave.entity';
 import { VolunteerShiftEntity } from './volunteer-shift.entity';
 import { PaymentSessionEntity } from './payment-session.entity';
 import { PosProductEntity } from './pos-product.entity';
@@ -55,6 +57,7 @@ export const TENANT_ENTITIES = [
   VendorPaymentEntity,
   QueueTokenEntity,
   StaffEntity,
+  StaffLeaveEntity,
   VolunteerShiftEntity,
   PaymentSessionEntity,
   PosProductEntity,

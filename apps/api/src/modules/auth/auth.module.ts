@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { DevoteeModule } from '../devotee/devotee.module';
+import { StaffModule } from '../staff/staff.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
@@ -17,6 +18,7 @@ import { JwtStrategy } from './jwt.strategy';
       signOptions: { expiresIn: '12h' },
     }),
     DevoteeModule,
+    StaffModule,
   ],
   controllers: [AuthController],
   providers: [

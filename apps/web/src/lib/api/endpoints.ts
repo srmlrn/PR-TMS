@@ -43,6 +43,15 @@ import type {
   TenantEnvironmentRecord,
   VendorPayment,
   Staff,
+  StaffLeave,
+  StaffLeaveStatus,
+  CreateStaffInput,
+  UpdateStaffInput,
+  CreateStaffLeaveInput,
+  UpdateStaffLeaveInput,
+  TenantUser,
+  CreateTenantUserInput,
+  UpdateTenantUserInput,
   VolunteerShift,
   CreateVolunteerShiftInput,
   VolunteerStats,
@@ -399,8 +408,38 @@ export function createEndpoints(client: ApiClient) {
     getTenantUsage: (tenantId: string) =>
       client.get<EnvironmentUsage[]>(`/platform/tenants/${tenantId}/usage`),
 
-    getStaff: (params?: { role?: Staff['role'] }) =>
+    getStaff: (params?: { role?: Staff['role']; includeInactive?: boolean }) =>
       client.get<{ data: Staff[] }>('/staff', { params }),
+
+    getStaffMember: (id: string) => client.get<Staff>(`/staff/${id}`),
+
+    createStaff: (body: CreateStaffInput) => client.post<Staff>('/staff', body),
+
+    updateStaff: (id: string, body: UpdateStaffInput) =>
+      client.patch<Staff>(`/staff/${id}`, body),
+
+    deactivateStaff: (id: string) => client.post<Staff>(`/staff/${id}/deactivate`, {}),
+
+    getStaffLeaves: (params?: {
+      staffId?: string;
+      status?: StaffLeaveStatus;
+      from?: string;
+      to?: string;
+    }) => client.get<{ data: StaffLeave[] }>('/staff/leaves', { params }),
+
+    createStaffLeave: (body: CreateStaffLeaveInput) =>
+      client.post<StaffLeave>('/staff/leaves', body),
+
+    updateStaffLeave: (id: string, body: UpdateStaffLeaveInput) =>
+      client.patch<StaffLeave>(`/staff/leaves/${id}`, body),
+
+    getTenantUsers: () => client.get<{ data: TenantUser[] }>('/users'),
+
+    createTenantUser: (body: CreateTenantUserInput) =>
+      client.post<TenantUser>('/users', body),
+
+    updateTenantUser: (id: string, body: UpdateTenantUserInput) =>
+      client.patch<TenantUser>(`/users/${id}`, body),
 
     getVolunteerShifts: (params?: { category?: VolunteerCategory }) =>
       client.get<{ data: VolunteerShift[] }>('/volunteer/shifts', { params }),

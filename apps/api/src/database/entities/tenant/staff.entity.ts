@@ -24,6 +24,18 @@ export class StaffEntity {
   @Column({ length: 32, nullable: true })
   phone?: string;
 
+  @Column({ length: 128, nullable: true })
+  title?: string;
+
+  @Column({ length: 128, nullable: true })
+  department?: string;
+
+  @Column({ type: 'text', nullable: true })
+  notes?: string;
+
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId?: string;
+
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;
 

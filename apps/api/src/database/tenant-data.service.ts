@@ -20,6 +20,7 @@ import {
   VendorPaymentEntity,
   QueueTokenEntity,
   StaffEntity,
+  StaffLeaveEntity,
   VolunteerShiftEntity,
   PaymentSessionEntity,
   PosProductEntity,
@@ -142,6 +143,12 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(StaffEntity);
+  }
+
+  async staffLeaves() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(StaffLeaveEntity);
   }
 
   async volunteerShifts() {

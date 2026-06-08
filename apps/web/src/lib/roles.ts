@@ -19,6 +19,7 @@ export interface RoleConfig {
 const adminNav: DockNavItem[] = [
   { id: 'a-dash', emoji: '📊', label: 'Dashboard', href: '/admin/dashboard' },
   { id: 'a-devotees', emoji: '👥', label: 'Devotees', href: '/admin/devotees' },
+  { id: 'a-people', emoji: '🧑‍💼', label: 'People', href: '/admin/people' },
   { id: 'events', emoji: '🎪', label: 'Event Management', href: '/admin/events' },
   { id: 'rentals', emoji: '🏛️', label: 'Venue & Equipment Rentals', href: '/admin/rentals' },
   { id: 'prasadam', emoji: '🍬', label: 'Prasadam Sponsorship', href: '/admin/prasadam' },
@@ -190,6 +191,10 @@ const PAGE_TITLES: Record<string, string> = {
   '/devotee/profile': 'My Profile',
   '/admin/dashboard': 'Temple Dashboard',
   '/admin/devotees': 'Devotee CRM',
+  '/admin/people': 'People Management',
+  '/admin/people/staff': 'Staff Roster',
+  '/admin/people/users': 'Users & Roles',
+  '/admin/people/leaves': 'Leave Management',
   '/admin/events': 'Event Management',
   '/admin/rentals': 'Venue & Equipment Rentals',
   '/admin/prasadam': 'Prasadam Sponsorship Program',

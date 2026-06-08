@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Badge, Button, DataTable, GlassCard, PageHeader, StatTile } from '@tms/ui';
-import { Booking, BookingStatus, Devotee } from '@tms/types';
+import { Booking, BookingStatus, Devotee, Staff } from '@tms/types';
 import { formatMoney, formatTime } from '@/lib/api/endpoints';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
@@ -23,7 +23,7 @@ const FALLBACK_PRIESTS = [
   { id: 'user-priest-003', name: 'Swami Ramanujan' },
 ];
 
-function priestLabel(priestId: string | undefined, priests: { id: string; name: string }[]): string {
+function priestLabel(priestId: string | undefined, priests: Pick<Staff, 'id' | 'name'>[]): string {
   if (!priestId) return 'Unassigned';
   return priests.find((p) => p.id === priestId)?.name ?? priestId.slice(0, 8);
 }
@@ -83,7 +83,9 @@ export default function PriestSchedulePage() {
 
   const bookings = data?.bookings?.data ?? [];
   const devotees = data?.devotees?.data;
-  const priests = data?.priests?.length ? data.priests : FALLBACK_PRIESTS;
+  const priests: Pick<Staff, 'id' | 'name' | 'onLeaveToday'>[] = data?.priests?.length
+    ? data.priests
+    : FALLBACK_PRIESTS;
   const confirmed = bookings.filter((b) => b.status === BookingStatus.CONFIRMED).length;
   const honorariumTotal = data?.honorarium?.total ?? 0;
   const honorariumCurrency = data?.honorarium?.currency ?? 'USD';
@@ -177,8 +179,9 @@ export default function PriestSchedulePage() {
                 >
                   <option value="">Unassigned</option>
                   {priests.map((p) => (
-                    <option key={p.id} value={p.id}>
+                    <option key={p.id} value={p.id} disabled={p.onLeaveToday}>
                       {p.name}
+                      {p.onLeaveToday ? ' (on leave)' : ''}
                     </option>
                   ))}
                   {r.priestId &&

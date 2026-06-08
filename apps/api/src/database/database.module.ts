@@ -5,6 +5,7 @@ import { TenantEnvironmentEntity } from './entities/control/tenant-environment.e
 import { UsageMeterEntity } from './entities/control/usage-meter.entity';
 import { TenantPaymentSettingsEntity } from './entities/control/tenant-payment-settings.entity';
 import { TenantSiteSettingsEntity } from './entities/control/tenant-site-settings.entity';
+import { TenantUserEntity } from './entities/control/tenant-user.entity';
 import { TenantConnectionService } from './tenant-connection.service';
 import { TenantResolverService } from './tenant-resolver.service';
 import { EnvironmentProvisionerService } from './environment-provisioner.service';
@@ -27,6 +28,7 @@ import { TenantDataService } from './tenant-data.service';
         UsageMeterEntity,
         TenantPaymentSettingsEntity,
         TenantSiteSettingsEntity,
+        TenantUserEntity,
       ],
       synchronize: false,
       logging: process.env.DB_LOGGING === 'true',
@@ -37,6 +39,7 @@ import { TenantDataService } from './tenant-data.service';
       UsageMeterEntity,
       TenantPaymentSettingsEntity,
       TenantSiteSettingsEntity,
+      TenantUserEntity,
     ]),
   ],
   providers: [
