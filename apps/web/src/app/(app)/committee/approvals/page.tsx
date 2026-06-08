@@ -62,7 +62,7 @@ export default function CommitteeApprovalsPage() {
                   {r.description && <p className="hint">{r.description}</p>}
                   {r.requestedByName && (
                     <div style={{ marginTop: '0.35rem' }}>
-                      <PersonRow name={r.requestedByName} subtitle="Requester" size="sm" />
+                      <PersonRow name={r.requestedByName} subtitle="Requester" size="md" />
                     </div>
                   )}
                 </div>

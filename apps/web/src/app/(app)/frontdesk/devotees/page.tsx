@@ -458,7 +458,7 @@ function FrontDeskDevoteesPageInner() {
                     <PersonAvatar
                       name={row.name}
                       photoUrl={'photoUrl' in row ? String(row.photoUrl) : undefined}
-                      size="sm"
+                      size="md"
                     />
                     <span className={styles.rowInfo}>
                       <span className={styles.rowNameLine}>

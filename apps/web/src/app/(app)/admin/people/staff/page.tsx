@@ -219,7 +219,7 @@ export default function StaffRosterPage() {
                 key: 'name',
                 header: 'Name',
                 render: (r) => (
-                  <PersonRow name={r.name} subtitle={r.title ?? r.role} size="sm" />
+                  <PersonRow name={r.name} subtitle={r.title ?? r.role} size="md" />
                 ),
               },
               { key: 'role', header: 'Role', render: (r) => r.role },

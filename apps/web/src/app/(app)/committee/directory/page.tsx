@@ -380,7 +380,7 @@ export default function CommitteeDirectoryPage() {
                                 name={m.name}
                                 photoUrl={m.photoUrl}
                                 subtitle={m.email ?? '—'}
-                                size="sm"
+                                size="md"
                               />
                               <span
                                 className={[

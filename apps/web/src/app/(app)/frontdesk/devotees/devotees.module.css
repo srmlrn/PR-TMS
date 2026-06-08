@@ -65,9 +65,10 @@
 .rowItem {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
   border-bottom: 1px solid var(--b2);
-  padding: 0.38rem 0.5rem 0.38rem 0.55rem;
+  padding: 0.55rem 0.6rem 0.55rem 0.65rem;
+  min-height: 3.25rem;
 }
 
 .rowItem:hover {
