@@ -9,13 +9,13 @@ import {
   Chip,
   DataTable,
   GlassCard,
-  PageHeader,
   StatTile,
 } from '@tms/ui';
 import type { Booking, Devotee, Donation, SevaSubscription } from '@tms/types';
 import { BookingStatus } from '@tms/types';
 import { formatMoney, formatShortDate, formatTime } from '@/lib/api/endpoints';
 import { useAuth } from '@/lib/auth-context';
+import { PageIntro } from '@/components/AppPage';
 import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
 import styles from './home.module.css';
@@ -114,14 +114,8 @@ export default function DevoteeHomePage() {
 
   return (
     <>
-      <PageHeader
-        title={`Welcome back, ${welcomeName} 🙏`}
-        subtitle={
-          <>
-            {site.name} · {site.deity} · ⭐{' '}
-            <strong style={{ color: 'var(--amber)' }}>{nakshatra} Nakshatra</strong> today
-          </>
-        }
+      <PageIntro
+        subtitle={`${site.name} · ${site.deity} · ⭐ ${nakshatra} Nakshatra today`}
         actions={
           <div className="flexRow">
             <Button size="sm" variant={view === 'desktop' ? 'primary' : 'glass'} onClick={() => setView('desktop')}>
@@ -132,6 +126,7 @@ export default function DevoteeHomePage() {
             </Button>
           </div>
         }
+        showTenantContext={false}
       />
 
       <ApiBanner loading={loading} error={error} />

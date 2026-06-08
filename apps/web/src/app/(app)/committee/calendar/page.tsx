@@ -15,7 +15,6 @@ export default function CommitteeCalendarPage() {
 
   return (
     <AppPage
-      title="Calendar Blocks"
       subtitle="Blocked dates across your committees"
       loading={loading}
       error={error}
@@ -27,22 +26,16 @@ export default function CommitteeCalendarPage() {
           <p className="hint">No calendar blocks scheduled.</p>
         ) : (
           blocks.map((b) => (
-            <div
-              key={b.id}
-              className="mb2"
-              style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}
-            >
-              <div className="flexRow" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                <strong>{b.title}</strong>
-                {b.blocksTempleCalendar && (
-                  <Badge variant="info">Temple calendar</Badge>
-                )}
+            <div key={b.id} className="listRow">
+              <div className="listRowMain">
+                <div className="listRowTitle">{b.title}</div>
+                <p className="hint">
+                  {formatShortDate(b.startDate)}
+                  {b.startDate !== b.endDate && ` – ${formatShortDate(b.endDate)}`}
+                </p>
+                {b.reason && <p className="hint">{b.reason}</p>}
               </div>
-              <p className="hint">
-                {formatShortDate(b.startDate)}
-                {b.startDate !== b.endDate && ` – ${formatShortDate(b.endDate)}`}
-              </p>
-              {b.reason && <p>{b.reason}</p>}
+              {b.blocksTempleCalendar && <Badge variant="info">Temple calendar</Badge>}
             </div>
           ))
         )}

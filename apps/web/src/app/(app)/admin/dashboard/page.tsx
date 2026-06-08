@@ -9,12 +9,12 @@ import {
   Chip,
   DataTable,
   GlassCard,
-  PageHeader,
   StatTile,
   dataTableAmountStyles,
 } from '@tms/ui';
 import { BookingStatus } from '@tms/types';
 import { formatMoney, formatTime } from '@/lib/api/endpoints';
+import { PageIntro } from '@/components/AppPage';
 import { useApi } from '@/lib/api/use-api';
 import { useTenantSite } from '@/lib/tenant-site';
 import styles from './dashboard.module.css';
@@ -160,8 +160,7 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <PageHeader
-        title={`${site.name} Dashboard`}
+      <PageIntro
         subtitle={`${site.deity} · ${site.location} · Real-time`}
         actions={
           <>
@@ -169,6 +168,7 @@ export default function AdminDashboardPage() {
             <Button size="sm">This Month ▾</Button>
           </>
         }
+        showTenantContext={false}
       />
 
       <ApiBanner loading={loading} error={error} />

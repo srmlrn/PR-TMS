@@ -68,7 +68,6 @@ export default function CommitteeRequestsPage() {
 
   return (
     <AppPage
-      title="Requests"
       subtitle="Submit and track committee requests"
       loading={loading}
       error={error}
@@ -159,25 +158,25 @@ export default function CommitteeRequestsPage() {
             <p className="hint">No requests submitted yet.</p>
           ) : (
             requests.map((r) => (
-              <div key={r.id} className="mb2">
-                <div className="flexRow" style={{ justifyContent: 'space-between' }}>
-                  <strong>{r.title}</strong>
-                  <Badge
-                    variant={
-                      r.status === 'approved'
-                        ? 'ok'
-                        : r.status === 'rejected'
-                          ? 'error'
-                          : 'pending'
-                    }
-                  >
-                    {r.status}
-                  </Badge>
+              <div key={r.id} className="listRow">
+                <div className="listRowMain">
+                  <div className="listRowTitle">{r.title}</div>
+                  <p className="hint">
+                    {r.type.replace('_', ' ')} · {formatShortDate(r.createdAt)}
+                  </p>
+                  {r.reviewNote && <p className="hint">Note: {r.reviewNote}</p>}
                 </div>
-                <p className="hint">
-                  {r.type.replace('_', ' ')} · {formatShortDate(r.createdAt)}
-                </p>
-                {r.reviewNote && <p className="hint">Note: {r.reviewNote}</p>}
+                <Badge
+                  variant={
+                    r.status === 'approved'
+                      ? 'ok'
+                      : r.status === 'rejected'
+                        ? 'error'
+                        : 'pending'
+                  }
+                >
+                  {r.status}
+                </Badge>
               </div>
             ))
           )}

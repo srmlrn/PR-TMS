@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, GlassCard, PageHeader } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
 import {
   type TenantScheduleSettings,
   type UpdateTenantScheduleInput,
 } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import styles from '../settings.module.css';
 
@@ -65,14 +66,14 @@ export default function ScheduleSettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Schedules & Hours"
+      <PageIntro
         subtitle="Temple open hours and default seva booking slot interval"
         actions={
           <Link href="/admin/settings">
             <Button variant="glass">← Settings</Button>
           </Link>
         }
+        showTenantContext={false}
       />
 
       {error && (

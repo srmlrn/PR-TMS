@@ -130,7 +130,6 @@ export default function AdminSubscriptionsPage() {
 
   return (
     <AppPage
-      title="Recurring Subscriptions"
       subtitle="Recurring archana/seva and donation auto-debit plans"
       loading={loading}
       error={error}

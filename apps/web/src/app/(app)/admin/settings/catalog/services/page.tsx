@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, GlassCard } from '@tms/ui';
 import {
   Currency,
   type CreateSevaServiceInput,
   type SevaService,
   type UpdateSevaServiceInput,
 } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import { formatMoney } from '@/lib/api/endpoints';
 import styles from '../../settings.module.css';
@@ -99,14 +100,14 @@ export default function SevaCatalogSettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Seva Catalog"
+      <PageIntro
         subtitle="Poojas and services — prices flow to devotee booking, counter POS, and priest schedule"
         actions={
           <Link href="/admin/settings">
             <Button variant="glass">← Settings</Button>
           </Link>
         }
+        showTenantContext={false}
       />
 
       {error && (

@@ -7,7 +7,6 @@ import {
   Button,
   EnvBadge,
   GlassCard,
-  PageHeader,
   ProgressBar,
   StatTile,
 } from '@tms/ui';
@@ -16,6 +15,7 @@ import {
   type EnvironmentUsageSummary,
   type TenantEnvironmentRecord,
 } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import { useTenantSite } from '@/lib/tenant-site';
 import styles from './settings.module.css';
@@ -81,10 +81,10 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Settings & Environments"
+      <PageIntro
         subtitle="Each environment has its own isolated database — dev, test, UAT, and prod"
         actions={<Button variant="primary">+ Create Environment</Button>}
+        showTenantContext={false}
       />
 
       {error && (

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, DataTable, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import { Badge, Button, DataTable, GlassCard, StatTile } from '@tms/ui';
 import type { QueueToken, QueueType } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './queue.module.css';
 
@@ -72,14 +73,14 @@ export default function FrontDeskQueuePage() {
 
   return (
     <div className={styles.queue}>
-      <PageHeader
-        title="Queue Manager"
+      <PageIntro
         subtitle="Call next · mark served"
         actions={
           <Button size="sm" onClick={handleCallNext} disabled={busy}>
             Call next
           </Button>
         }
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

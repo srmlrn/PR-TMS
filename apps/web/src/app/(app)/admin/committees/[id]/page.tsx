@@ -8,7 +8,6 @@ import {
   Button,
   DataTable,
   GlassCard,
-  PageHeader,
   ProgressBar,
 } from '@tms/ui';
 import type {
@@ -28,6 +27,7 @@ import type {
 } from '@tms/types';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 
 type Tab =
@@ -142,8 +142,7 @@ export default function AdminCommitteeDetailPage() {
 
   return (
     <>
-      <PageHeader
-        title={committee?.name ?? 'Committee'}
+      <PageIntro
         subtitle={committee?.purpose ?? 'Governance committee detail'}
         actions={
           <Link href="/admin/committees">
@@ -152,6 +151,7 @@ export default function AdminCommitteeDetailPage() {
             </Button>
           </Link>
         }
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

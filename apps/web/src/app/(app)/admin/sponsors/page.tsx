@@ -9,7 +9,6 @@ import {
   Chip,
   DataTable,
   GlassCard,
-  PageHeader,
   ProgressBar,
   StatTile,
   dataTableAmountStyles,
@@ -22,6 +21,7 @@ import {
   type Sponsor,
 } from '@tms/types';
 import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoints';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import styles from './sponsors.module.css';
@@ -297,14 +297,14 @@ export default function AdminSponsorsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Sponsor Management"
+      <PageIntro
         subtitle="Ubayam, event sponsors, corporate partners — CRM for sponsors"
         actions={
           <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
             {showForm ? 'Cancel' : '+ Add Sponsor'}
           </Button>
         }
+        showTenantContext={false}
       />
 
       {formMsg && (

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, GlassCard, PageHeader } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { waitForSessionPaid } from '@/lib/payment-flow';
@@ -45,9 +46,9 @@ export default function PaymentReturnPage() {
 
   return (
     <>
-      <PageHeader
-        title="Payment status"
+      <PageIntro
         subtitle="Confirming your payment with the temple"
+        showTenantContext={false}
       />
       <GlassCard title="Payment return">
         {status === 'missing' && (

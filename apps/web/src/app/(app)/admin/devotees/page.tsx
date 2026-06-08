@@ -6,12 +6,12 @@ import {
   Button,
   DataTable,
   GlassCard,
-  PageHeader,
   StatTile,
 } from '@tms/ui';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './devotees.module.css';
 
@@ -254,8 +254,7 @@ export default function DevoteesPage() {
 
   return (
     <>
-      <PageHeader
-        title="Devotee CRM"
+      <PageIntro
         subtitle="Industry-standard profile: name, contacts, gotram, nakshatra for ritual sankalpa"
         actions={
           <>
@@ -267,6 +266,7 @@ export default function DevoteesPage() {
             </Button>
           </>
         }
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

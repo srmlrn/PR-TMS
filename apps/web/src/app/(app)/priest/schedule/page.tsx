@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, DataTable, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import { Badge, Button, DataTable, GlassCard, StatTile } from '@tms/ui';
+import { PageIntro } from '@/components/AppPage';
 import { Booking, BookingStatus, Devotee, Staff } from '@tms/types';
 import { formatMoney, formatTime } from '@/lib/api/endpoints';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
-import styles from './schedule.module.css';
 
 const SERVICE_LABELS: Record<string, string> = {
   'svc-archana': 'Archana',
@@ -134,13 +134,13 @@ export default function PriestSchedulePage() {
 
   return (
     <>
-      <PageHeader
-        title="Today's Schedule"
+      <PageIntro
         subtitle={`Pooja list with devotee name and sankalpa — ${new Date().toLocaleDateString()}`}
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 
-      <div className={styles.stats}>
+      <div className="statGrid mb2">
         <StatTile label="Today's Sevas" value={String(bookings.length)} icon="📿" />
         <StatTile label="Confirmed" value={String(confirmed)} icon="✅" />
         <StatTile
@@ -171,7 +171,7 @@ export default function PriestSchedulePage() {
               header: 'Priest',
               render: (r) => (
                 <select
-                  className={styles.priestSelect}
+                  className="priestSelect"
                   value={r.priestId ?? ''}
                   disabled={assigning === r.id || r.status === BookingStatus.COMPLETED}
                   onChange={(e) => assignPriest(r.id, e.target.value)}

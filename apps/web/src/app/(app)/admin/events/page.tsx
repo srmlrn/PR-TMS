@@ -8,7 +8,6 @@ import {
   Button,
   Chip,
   GlassCard,
-  PageHeader,
   ProgressBar,
 } from '@tms/ui';
 import { EventLifecycleStage, type TempleEvent } from '@tms/types';
@@ -19,6 +18,7 @@ import {
   type EventBudgetSnapshot,
   type EventPipeline,
 } from '@/lib/api/endpoints';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import styles from './events.module.css';
@@ -388,14 +388,14 @@ export default function AdminEventsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Event Management"
+      <PageIntro
         subtitle="Full lifecycle — Enquiry → Contract → Live → Report"
         actions={
           <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
             {showForm ? 'Cancel' : '+ New Event'}
           </Button>
         }
+        showTenantContext={false}
       />
 
       <ApiBanner loading={loading} error={error} />

@@ -58,7 +58,6 @@ export default function AdminCommitteesPage() {
 
   return (
     <AppPage
-      title="Committee Management"
       subtitle="Governance committees, members, tasks, and approvals"
       loading={loading}
       error={error}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, DataTable, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, DataTable, GlassCard } from '@tms/ui';
 import type {
   CreateStaffLeaveInput,
   Staff,
@@ -11,6 +11,7 @@ import type {
   StaffLeaveType,
   UpdateStaffLeaveInput,
 } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import styles from '../people.module.css';
@@ -94,14 +95,14 @@ export default function LeaveManagementPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Leave Management"
+      <PageIntro
         subtitle="Approve priest and staff time off"
         actions={
           <Link href="/admin/people">
             <Button variant="glass">← People</Button>
           </Link>
         }
+        showTenantContext={false}
       />
 
       {error && (

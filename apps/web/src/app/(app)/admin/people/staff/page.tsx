@@ -110,7 +110,6 @@ export default function StaffRosterPage() {
 
   return (
     <AppPage
-      title="Staff Roster"
       subtitle="Temple employees and volunteers"
       loading={loading}
       error={error}

@@ -220,6 +220,147 @@
   justify-content: space-between;
 }
 
+/* ── App page shell (title lives in TopBar; subtitle only here) ── */
+.pageShell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pageIntro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.15rem;
+}
+
+.pageIntroSubtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--txt2);
+  line-height: 1.45;
+  max-width: 42rem;
+}
+
+.pageIntroActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── Shared layout grids ── */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--txt2);
+  line-height: 1.45;
+  margin: 0.15rem 0 0;
+}
+
+.cardLink {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--bl);
+  text-decoration: none;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+.listRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--b);
+}
+
+.listRow:first-child {
+  padding-top: 0;
+}
+
+.listRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.listRowMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.listRowTitle {
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.formStack label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: var(--txt2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.formStack input,
+.formStack select,
+.priestSelect {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--r);
+  border: 1px solid var(--b);
+  background: var(--input-bg);
+  color: var(--txt);
+  max-width: 10rem;
+}
+
+.formStack textarea {
+  padding: 0.55rem 0.75rem;
+  background: var(--input-bg);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  color: var(--txt);
+  font-size: 0.86rem;
+  font-family: inherit;
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
 .flexWrap {
   flex-wrap: wrap;
 }
@@ -433,8 +574,20 @@
   font-size: 2.5rem;
 }
 
+@media (max-width: 1100px) {
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 680px) {
   .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statGrid,
+  .grid2,
+  .grid3 {
     grid-template-columns: 1fr;
   }
 

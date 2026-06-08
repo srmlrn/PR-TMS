@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, GlassCard, PageHeader } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
 import {
   Currency,
   type DevoteeLookupMatch,
@@ -11,6 +11,7 @@ import {
   type QueueToken,
   type QueueType,
 } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
@@ -228,8 +229,7 @@ function FrontDeskConsolePageInner() {
 
   return (
     <div className={styles.console}>
-      <PageHeader
-        title="Reception Console"
+      <PageIntro
         subtitle="Look up a guest, then book or checkout"
         actions={
           <div className={styles.actionBar}>
@@ -241,6 +241,7 @@ function FrontDeskConsolePageInner() {
             </Button>
           </div>
         }
+        showTenantContext={false}
       />
 
       <ApiBanner loading={loading || posLoading} error={error ?? posError} />

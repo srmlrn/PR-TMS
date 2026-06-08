@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, GlassCard } from '@tms/ui';
 import {
   Currency,
   type CreatePosProductInput,
   type PosProduct,
   type UpdatePosProductInput,
 } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import { formatMoney } from '@/lib/api/endpoints';
 import styles from '../../settings.module.css';
@@ -93,14 +94,14 @@ export default function PosProductsSettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Counter Products"
+      <PageIntro
         subtitle="Prasadam and article sales at the front desk POS — replaces the static catalog"
         actions={
           <Link href="/admin/settings">
             <Button variant="glass">← Settings</Button>
           </Link>
         }
+        showTenantContext={false}
       />
 
       {error && (

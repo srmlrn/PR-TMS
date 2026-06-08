@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, GlassCard, PageHeader } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
 import {
   type TenantBrandingSettingsPublic,
   type UpdateTenantBrandingInput,
 } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
 import styles from '../settings.module.css';
 
@@ -90,14 +91,14 @@ export default function BrandingSettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Branding & Labels"
+      <PageIntro
         subtitle="Temple name, logo, deity label, address, and display-board ticker messages"
         actions={
           <Link href="/admin/settings">
             <Button variant="glass">← Settings</Button>
           </Link>
         }
+        showTenantContext={false}
       />
 
       {error && (

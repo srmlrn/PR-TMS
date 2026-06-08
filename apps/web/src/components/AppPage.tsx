@@ -1,11 +1,34 @@
 'use client';
 
-import { PageHeader } from '@tms/ui';
 import { ApiBanner } from '@/components/ApiBanner';
 import { useTenantSite } from '@/lib/tenant-site';
 
+export function PageIntro({
+  subtitle,
+  actions,
+  showTenantContext = true,
+}: {
+  subtitle?: React.ReactNode;
+  actions?: React.ReactNode;
+  showTenantContext?: boolean;
+}) {
+  const site = useTenantSite();
+  const resolvedSubtitle =
+    subtitle ??
+    (showTenantContext ? `${site.deity} · ${site.location}` : undefined);
+
+  if (!resolvedSubtitle && !actions) return null;
+
+  return (
+    <div className="pageIntro">
+      {resolvedSubtitle && <p className="pageIntroSubtitle">{resolvedSubtitle}</p>}
+      {actions && <div className="pageIntroActions">{actions}</div>}
+    </div>
+  );
+}
+
 export function AppPage({
-  title,
+  title: _title,
   subtitle,
   actions,
   loading,
@@ -13,13 +36,13 @@ export function AppPage({
   children,
   showTenantContext = true,
 }: {
-  title: string;
+  /** Kept for call-site clarity; page title is shown in the app TopBar */
+  title?: string;
   subtitle?: string;
   actions?: React.ReactNode;
   loading?: boolean;
   error?: string | null;
   children: React.ReactNode;
-  /** Append deity · location when subtitle is omitted */
   showTenantContext?: boolean;
 }) {
   const site = useTenantSite();
@@ -28,12 +51,12 @@ export function AppPage({
     (showTenantContext ? `${site.deity} · ${site.location}` : undefined);
 
   return (
-    <>
-      <PageHeader title={title} subtitle={resolvedSubtitle} actions={actions} />
+    <div className="pageShell">
+      <PageIntro subtitle={resolvedSubtitle} actions={actions} showTenantContext={false} />
       {(loading || error) && (
         <ApiBanner loading={!!loading} error={error ?? null} />
       )}
       {children}
-    </>
+    </div>
   );
 }

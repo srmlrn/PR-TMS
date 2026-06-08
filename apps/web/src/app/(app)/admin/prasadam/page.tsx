@@ -9,7 +9,6 @@ import {
   Chip,
   DataTable,
   GlassCard,
-  PageHeader,
   StatTile,
 } from '@tms/ui';
 import {
@@ -23,6 +22,7 @@ import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoin
 import { useTenant } from '@/lib/tenant-context';
 import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
+import { PageIntro } from '@/components/AppPage';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
@@ -296,14 +296,14 @@ export default function AdminPrasadamPage() {
 
   return (
     <>
-      <PageHeader
-        title="Prasadam Sponsorship Program"
+      <PageIntro
         subtitle="Sponsor deity prasadam, annadanam, festival kits — online & NRI"
         actions={
           <div className="flexRow">
             <Button size="sm">Kitchen Orders</Button>
           </div>
         }
+        showTenantContext={false}
       />
 
       <ApiBanner loading={loading} error={error} />

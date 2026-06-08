@@ -28,7 +28,6 @@ const SECTIONS = [
 export default function PeopleHubPage() {
   return (
     <AppPage
-      title="People Management"
       subtitle="Staff roster, tenant users, and leave requests"
       showTenantContext={false}
     >

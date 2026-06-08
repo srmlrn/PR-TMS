@@ -6,8 +6,8 @@ import {
   Badge,
   Button,
   GlassCard,
-  PageHeader,
 } from '@tms/ui';
+import { PageIntro } from '@/components/AppPage';
 import {
   SECRET_FIELD_MASK,
   type TenantPaymentSettingsPublic,
@@ -85,14 +85,14 @@ export default function PaymentSettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Payment Settings"
+      <PageIntro
         subtitle="Configure Stripe keys for this temple — each tenant manages its own payment provider"
         actions={
           <Link href="/admin/settings">
             <Button variant="glass">← Back to Settings</Button>
           </Link>
         }
+        showTenantContext={false}
       />
 
       {error && (

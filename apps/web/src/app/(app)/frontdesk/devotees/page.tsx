@@ -2,11 +2,12 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Badge, Button, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, GlassCard } from '@tms/ui';
 import type { Devotee, DevoteeGender } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import { DevoteeProfilePanel } from '@/components/DevoteeProfilePanel';
 import { CountryStateSelect } from '@/components/CountryStateSelect';
@@ -351,8 +352,7 @@ function FrontDeskDevoteesPageInner() {
 
   return (
     <>
-      <PageHeader
-        title="Devotee Management"
+      <PageIntro
         subtitle="Search · add · edit · family · seva & donation history"
         actions={
           <div className={styles.detailActions}>
@@ -376,6 +376,7 @@ function FrontDeskDevoteesPageInner() {
             </Button>
           </div>
         }
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

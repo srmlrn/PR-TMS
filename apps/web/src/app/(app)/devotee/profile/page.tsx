@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, GlassCard, PageHeader } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
 import type { Devotee, DevoteeGender, ImportantDate, ImportantDateType } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 
 const LANGUAGE_OPTIONS = [
@@ -133,7 +134,7 @@ export default function DevoteeProfilePage() {
   if (!user?.devoteeId) {
     return (
       <>
-        <PageHeader title="My Profile" subtitle="Devotee self-service" />
+        <PageIntro subtitle="Devotee self-service" showTenantContext={false} />
         <p className="tms-t2">No devotee profile linked to your login.</p>
       </>
     );
@@ -141,7 +142,7 @@ export default function DevoteeProfilePage() {
 
   return (
     <>
-      <PageHeader title="My Profile" subtitle="Update ritual details, address, and tax ID for receipts" />
+      <PageIntro subtitle="Update ritual details, address, and tax ID for receipts" showTenantContext={false} />
       <ApiBanner loading={loading} error={error} />
 
       <GlassCard title="Profile">

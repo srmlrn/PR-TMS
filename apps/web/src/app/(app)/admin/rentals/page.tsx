@@ -7,11 +7,11 @@ import {
   Button,
   DataTable,
   GlassCard,
-  PageHeader,
   StatTile,
   dataTableAmountStyles,
 } from '@tms/ui';
 import { RentalStatus, type RentalAsset, type RentalOrder } from '@tms/types';
+import { PageIntro } from '@/components/AppPage';
 import { formatMoney, formatShortDate } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import styles from './rentals.module.css';
@@ -211,10 +211,10 @@ export default function AdminRentalsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Venue & Equipment Rentals"
+      <PageIntro
         subtitle="Halls, mandapams, PA systems, furniture, kitchen gear"
         actions={<Button variant="primary">+ New Rental Order</Button>}
+        showTenantContext={false}
       />
 
       <ApiBanner loading={loading} error={error} />

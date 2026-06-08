@@ -78,7 +78,6 @@ export default function AdminCommunicationsPage() {
 
   return (
     <AppPage
-      title="Communications"
       subtitle="Send email or SMS using temple notification templates"
       loading={loading}
       error={loadError}

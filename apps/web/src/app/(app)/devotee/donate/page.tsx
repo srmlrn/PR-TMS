@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, GlassCard, PageHeader, ProgressBar } from '@tms/ui';
+import { Button, GlassCard, ProgressBar } from '@tms/ui';
 import { Currency, DonationFrequency, type PaymentProvider, type TaxReceipt } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PaymentModeBadge } from '@/components/PaymentModeBadge';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
@@ -138,13 +139,13 @@ export default function DonatePage() {
 
   return (
     <>
-      <PageHeader
-        title={kioskT?.donatePageTitle ?? `Donate · ${site.name}`}
+      <PageIntro
         subtitle={
           kioskT?.donatePageSubtitle ??
           `Support ${site.name} — IRS / 80G / CRA compliant receipts`
         }
         actions={<PaymentModeBadge />}
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

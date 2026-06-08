@@ -34,7 +34,6 @@ const SECTIONS = [
 export default function OperationsHubPage() {
   return (
     <AppPage
-      title="Operations"
       subtitle="Reminders, outreach, subscriptions, and facility rentals"
       showTenantContext={false}
     >

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, DataTable, GlassCard, StatTile } from '@tms/ui';
+import { Badge, Button, DataTable, GlassCard } from '@tms/ui';
+import { PageStats } from '@/components/PageStats';
 import type { DevoteeReminderDue } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
 import { createEndpoints } from '@/lib/api/endpoints';
@@ -47,7 +48,6 @@ export default function AdminRemindersPage() {
 
   return (
     <AppPage
-      title="Important Date Reminders"
       subtitle="Devotees with birthdays, anniversaries, and star days"
       loading={loading}
       error={error}
@@ -59,7 +59,7 @@ export default function AdminRemindersPage() {
       }
     >
 
-      <div className="flexRow mb2" style={{ gap: '1rem', alignItems: 'flex-end' }}>
+      <div className="flexRow mb2" style={{ gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div className="formGroup" style={{ marginBottom: 0 }}>
           <label htmlFor="reminder-date">Date</label>
           <input
@@ -69,21 +69,14 @@ export default function AdminRemindersPage() {
             onChange={(e) => setDate(e.target.value)}
           />
         </div>
-        <StatTile
-          compact
-          accent="amber"
-          icon="🔔"
-          label="Notifications queued"
-          value={String(queued)}
-        />
-        <StatTile
-          compact
-          accent="blue"
-          icon="👥"
-          label="Devotees due"
-          value={String(reminders.length)}
-        />
       </div>
+
+      <PageStats
+        items={[
+          { icon: '🔔', label: 'Notifications queued', value: queued, accent: 'amber' },
+          { icon: '👥', label: 'Devotees due', value: reminders.length, accent: 'blue' },
+        ]}
+      />
 
       {runMsg && <p className="tms-t2 mb1">{runMsg}</p>}
 

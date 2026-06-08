@@ -1,11 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Badge, Button, DataTable, GlassCard, PageHeader, StatTile, dataTableAmountStyles } from '@tms/ui';
+import { Badge, Button, DataTable, GlassCard, StatTile, dataTableAmountStyles } from '@tms/ui';
 import type { TaxComplianceStatus, VendorPayment } from '@tms/types';
 import { createEndpoints, formatMoney, formatShortDate } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { useTenant } from '@/lib/tenant-context';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './finance.module.css';
 
@@ -83,9 +84,9 @@ export default function AccountantFinancePage() {
 
   return (
     <>
-      <PageHeader
-        title="Finance Dashboard"
+      <PageIntro
         subtitle="Income, payables, and tax compliance (80G · IRS · CRA)"
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

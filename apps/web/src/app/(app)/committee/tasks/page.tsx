@@ -33,7 +33,6 @@ export default function CommitteeTasksPage() {
 
   return (
     <AppPage
-      title="My Tasks"
       subtitle="Tasks assigned to you across committees"
       loading={loading}
       error={error}
@@ -44,20 +43,14 @@ export default function CommitteeTasksPage() {
           <p className="hint">No tasks assigned to you.</p>
         ) : (
           tasks.map((task) => (
-            <div
-              key={task.id}
-              className="mb2"
-              style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}
-            >
-              <div className="flexRow" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div>
-                  <strong>{task.title}</strong>
+            <div key={task.id} className="listRow" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+              <div className="flexBetween" style={{ width: '100%' }}>
+                <div className="listRowMain">
+                  <div className="listRowTitle">{task.title}</div>
                   {task.description && <p className="hint">{task.description}</p>}
-                  {task.dueDate && (
-                    <p className="hint">Due {formatShortDate(task.dueDate)}</p>
-                  )}
+                  {task.dueDate && <p className="hint">Due {formatShortDate(task.dueDate)}</p>}
                 </div>
-                <div className="flexRow" style={{ gap: '0.25rem', alignItems: 'center' }}>
+                <div className="flexRow" style={{ flexShrink: 0 }}>
                   <Badge variant={task.priority === 'high' ? 'error' : 'info'}>
                     {task.priority}
                   </Badge>
@@ -67,7 +60,7 @@ export default function CommitteeTasksPage() {
                 </div>
               </div>
               {task.status !== 'done' && (
-                <div className="flexRow mt1" style={{ gap: '0.25rem', flexWrap: 'wrap' }}>
+                <div className="flexRow mt1" style={{ flexWrap: 'wrap' }}>
                   {STATUS_OPTIONS.filter((s) => s !== task.status).map((s) => (
                     <Button
                       key={s}

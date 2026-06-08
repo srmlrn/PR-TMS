@@ -5,7 +5,6 @@ import {
   Badge,
   Button,
   GlassCard,
-  PageHeader,
   ProgressBar,
   StatTile,
 } from '@tms/ui';
@@ -24,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './shifts.module.css';
 
@@ -536,9 +536,9 @@ export default function VolunteerShiftsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Volunteering"
+      <PageIntro
         subtitle="Discover seva opportunities, sign up for shifts, and track your hours"
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, GlassCard, PageHeader, Chip } from '@tms/ui';
+import { Button, GlassCard, Chip } from '@tms/ui';
 import { Currency, type PaymentProvider } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { formatMoney } from '@/lib/api/endpoints';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import { PaymentModeBadge } from '@/components/PaymentModeBadge';
 import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
@@ -132,13 +133,13 @@ export default function BookSevaPage() {
 
   return (
     <>
-      <PageHeader
-        title={kioskT?.bookSevaPageTitle ?? `Book Seva · ${site.name}`}
+      <PageIntro
         subtitle={
           kioskT?.bookSevaPageSubtitle ??
           `Select a service, date, and sankalpa details for ${site.deity}`
         }
         actions={<PaymentModeBadge />}
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

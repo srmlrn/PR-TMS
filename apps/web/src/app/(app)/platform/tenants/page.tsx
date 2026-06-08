@@ -1,8 +1,9 @@
 'use client';
 
-import { Badge, DataTable, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import { Badge, DataTable, GlassCard, StatTile } from '@tms/ui';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
+import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
 import styles from './tenants.module.css';
 
@@ -44,9 +45,9 @@ export default function PlatformTenantsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Platform Tenants"
+      <PageIntro
         subtitle="Multi-tenant control plane · environments · metered usage"
+        showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 

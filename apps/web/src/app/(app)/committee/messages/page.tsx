@@ -62,7 +62,6 @@ export default function CommitteeMessagesPage() {
 
   return (
     <AppPage
-      title="Committee Messages"
       subtitle="Group announcements and discussion"
       loading={committeesLoading || messagesLoading}
       error={error}
@@ -119,19 +118,15 @@ export default function CommitteeMessagesPage() {
             <p className="hint">No messages yet.</p>
           ) : (
             messages.map((m) => (
-              <div
-                key={m.id}
-                className="mb2"
-                style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}
-              >
-                <div className="flexRow" style={{ justifyContent: 'space-between' }}>
-                  <strong>{m.subject ?? 'Message'}</strong>
+              <div key={m.id} className="listRow" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div className="flexBetween" style={{ width: '100%' }}>
+                  <div className="listRowTitle">{m.subject ?? 'Message'}</div>
                   {m.isAnnouncement && <Badge variant="info">Announcement</Badge>}
                 </div>
                 <p className="hint">
                   {m.authorName ?? 'Member'} · {formatShortDate(m.createdAt)}
                 </p>
-                <p>{m.body}</p>
+                <p className="hint" style={{ marginTop: '0.35rem' }}>{m.body}</p>
               </div>
             ))
           )}
