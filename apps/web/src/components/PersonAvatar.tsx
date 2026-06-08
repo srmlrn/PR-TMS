@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { getPersonAvatarUrl, getPersonHue, getPersonInitials } from '@tms/types';
 import styles from './PersonAvatar.module.css';
 
+/** sm/md: compact inline; lg: list rows, directories, profile headers */
 export type PersonAvatarSize = 'sm' | 'md' | 'lg';
 
 const sizeClass: Record<PersonAvatarSize, string> = {
@@ -58,13 +59,14 @@ export function PersonRow({
   name,
   photoUrl,
   subtitle,
-  size = 'md',
+  size = 'lg',
   children,
   className,
 }: {
   name: string;
   photoUrl?: string;
   subtitle?: string;
+  /** Defaults to lg — standard size for list/table rows */
   size?: PersonAvatarSize;
   children?: React.ReactNode;
   className?: string;

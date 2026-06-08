@@ -297,7 +297,6 @@ export default function AdminCommitteeDetailPage() {
                       name={m.name}
                       photoUrl={m.photoUrl}
                       subtitle={m.email}
-                      size="md"
                     />
                   ),
                 },

@@ -1,3 +1,11 @@
+:root {
+  --person-avatar-size-sm: 2rem;
+  --person-avatar-size-md: 2.625rem;
+  --person-avatar-size-lg: 3.5rem;
+  /* List/table rows — keep in sync with lg */
+  --person-avatar-size-list: var(--person-avatar-size-lg);
+}
+
 .avatar {
   flex-shrink: 0;
   border-radius: 50%;
@@ -9,18 +17,18 @@
 }
 
 .sm {
-  width: 2rem;
-  height: 2rem;
+  width: var(--person-avatar-size-sm);
+  height: var(--person-avatar-size-sm);
 }
 
 .md {
-  width: 2.625rem;
-  height: 2.625rem;
+  width: var(--person-avatar-size-md);
+  height: var(--person-avatar-size-md);
 }
 
 .lg {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: var(--person-avatar-size-lg);
+  height: var(--person-avatar-size-lg);
 }
 
 .fallback {
@@ -48,7 +56,7 @@
   align-items: center;
   gap: 0.55rem;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: var(--person-avatar-size-list);
   padding: 0.2rem 0;
 }
 

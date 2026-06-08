@@ -566,7 +566,6 @@ export default function DevoteesPage() {
                   name={row.name}
                   photoUrl={'photoUrl' in row ? String(row.photoUrl) : undefined}
                   subtitle={row.phone}
-                  size="md"
                 />
               ),
             },

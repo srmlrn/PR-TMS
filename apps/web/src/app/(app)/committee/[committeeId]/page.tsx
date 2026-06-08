@@ -146,7 +146,6 @@ export default function CommitteeWorkspacePage() {
                   name={m.name}
                   photoUrl={m.photoUrl}
                   subtitle={m.displayTitle ?? m.role.replace('_', ' ')}
-                  size="md"
                 />
               ))}
               {members.length > 8 && (
