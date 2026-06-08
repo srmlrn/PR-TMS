@@ -17,6 +17,8 @@ export function getDefaultHrefForRole(role: AppRole): string {
       return '/accountant/finance';
     case UserRole.VOLUNTEER:
       return '/volunteer/shifts';
+    case UserRole.COMMITTEE:
+      return '/committee/dashboard';
     case UserRole.SUPER_ADMIN:
       return '/platform/tenants';
     case 'kiosk':
@@ -58,6 +60,10 @@ export function canAccessPath(role: AppRole, pathname: string): boolean {
 
   if (role === UserRole.VOLUNTEER) {
     return pathname.startsWith('/volunteer');
+  }
+
+  if (role === UserRole.COMMITTEE) {
+    return pathname.startsWith('/committee');
   }
 
   if (role === 'kiosk') {

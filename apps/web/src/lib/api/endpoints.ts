@@ -69,6 +69,27 @@ import type {
   SevaSubscription,
   CreateSevaSubscriptionInput,
   UpdateSevaSubscriptionInput,
+  Committee,
+  CommitteeMember,
+  CommitteeCalendarBlock,
+  CommitteeTask,
+  CommitteeTarget,
+  CommitteeRequest,
+  CommitteeMessage,
+  CommitteeDashboard,
+  CreateCommitteeInput,
+  UpdateCommitteeInput,
+  CreateCommitteeMemberInput,
+  UpdateCommitteeMemberInput,
+  CreateCommitteeCalendarBlockInput,
+  UpdateCommitteeCalendarBlockInput,
+  CreateCommitteeTaskInput,
+  UpdateCommitteeTaskInput,
+  CreateCommitteeTargetInput,
+  UpdateCommitteeTargetInput,
+  CreateCommitteeRequestInput,
+  UpdateCommitteeRequestInput,
+  CreateCommitteeMessageInput,
 } from '@tms/types';
 import type { ApiClient } from './client';
 
@@ -523,6 +544,117 @@ export function createEndpoints(client: ApiClient) {
 
     markAllInAppNotificationsRead: () =>
       client.patch<{ updated: number }>('/notifications/in-app/read-all', {}),
+
+    getCommittees: (params?: { mine?: boolean }) =>
+      client.get<{ data: Committee[] }>('/committees', { params }),
+
+    getCommittee: (id: string) => client.get<Committee>(`/committees/${id}`),
+
+    createCommittee: (body: CreateCommitteeInput) =>
+      client.post<Committee>('/committees', body),
+
+    updateCommittee: (id: string, body: UpdateCommitteeInput) =>
+      client.patch<Committee>(`/committees/${id}`, body),
+
+    getCommitteeDashboard: () => client.get<CommitteeDashboard>('/committees/dashboard'),
+
+    getCommitteeMembers: (committeeId: string) =>
+      client.get<{ data: CommitteeMember[] }>(`/committees/${committeeId}/members`),
+
+    addCommitteeMember: (committeeId: string, body: CreateCommitteeMemberInput) =>
+      client.post<CommitteeMember>(`/committees/${committeeId}/members`, body),
+
+    updateCommitteeMember: (
+      committeeId: string,
+      memberId: string,
+      body: UpdateCommitteeMemberInput,
+    ) => client.patch<CommitteeMember>(`/committees/${committeeId}/members/${memberId}`, body),
+
+    removeCommitteeMember: (committeeId: string, memberId: string) =>
+      client.delete<{ deleted: boolean }>(`/committees/${committeeId}/members/${memberId}`),
+
+    getCommitteeCalendarBlocks: (committeeId: string) =>
+      client.get<{ data: CommitteeCalendarBlock[] }>(
+        `/committees/${committeeId}/calendar-blocks`,
+      ),
+
+    createCommitteeCalendarBlock: (
+      committeeId: string,
+      body: CreateCommitteeCalendarBlockInput,
+    ) =>
+      client.post<CommitteeCalendarBlock>(
+        `/committees/${committeeId}/calendar-blocks`,
+        body,
+      ),
+
+    updateCommitteeCalendarBlock: (
+      committeeId: string,
+      blockId: string,
+      body: UpdateCommitteeCalendarBlockInput,
+    ) =>
+      client.patch<CommitteeCalendarBlock>(
+        `/committees/${committeeId}/calendar-blocks/${blockId}`,
+        body,
+      ),
+
+    deleteCommitteeCalendarBlock: (committeeId: string, blockId: string) =>
+      client.delete<{ deleted: boolean }>(
+        `/committees/${committeeId}/calendar-blocks/${blockId}`,
+      ),
+
+    getCommitteeTasks: (committeeId: string) =>
+      client.get<{ data: CommitteeTask[] }>(`/committees/${committeeId}/tasks`),
+
+    createCommitteeTask: (committeeId: string, body: CreateCommitteeTaskInput) =>
+      client.post<CommitteeTask>(`/committees/${committeeId}/tasks`, body),
+
+    updateCommitteeTask: (
+      committeeId: string,
+      taskId: string,
+      body: UpdateCommitteeTaskInput,
+    ) => client.patch<CommitteeTask>(`/committees/${committeeId}/tasks/${taskId}`, body),
+
+    getCommitteeTargets: (committeeId: string) =>
+      client.get<{ data: CommitteeTarget[] }>(`/committees/${committeeId}/targets`),
+
+    createCommitteeTarget: (committeeId: string, body: CreateCommitteeTargetInput) =>
+      client.post<CommitteeTarget>(`/committees/${committeeId}/targets`, body),
+
+    updateCommitteeTarget: (
+      committeeId: string,
+      targetId: string,
+      body: UpdateCommitteeTargetInput,
+    ) => client.patch<CommitteeTarget>(`/committees/${committeeId}/targets/${targetId}`, body),
+
+    getCommitteeRequests: (committeeId: string) =>
+      client.get<{ data: CommitteeRequest[] }>(`/committees/${committeeId}/requests`),
+
+    createCommitteeRequest: (committeeId: string, body: CreateCommitteeRequestInput) =>
+      client.post<CommitteeRequest>(`/committees/${committeeId}/requests`, body),
+
+    updateCommitteeRequest: (
+      committeeId: string,
+      requestId: string,
+      body: UpdateCommitteeRequestInput,
+    ) =>
+      client.patch<CommitteeRequest>(
+        `/committees/${committeeId}/requests/${requestId}`,
+        body,
+      ),
+
+    getCommitteeMessages: (committeeId: string) =>
+      client.get<{ data: CommitteeMessage[] }>(`/committees/${committeeId}/messages`),
+
+    createCommitteeMessage: (committeeId: string, body: CreateCommitteeMessageInput) =>
+      client.post<CommitteeMessage>(`/committees/${committeeId}/messages`, body),
+
+    getMyCommitteeTasks: () => client.get<{ data: CommitteeTask[] }>('/committees/my/tasks'),
+
+    getMyCommitteeBlocks: () =>
+      client.get<{ data: CommitteeCalendarBlock[] }>('/committees/my/blocks'),
+
+    getMyCommitteeRequests: () =>
+      client.get<{ data: CommitteeRequest[] }>('/committees/my/requests'),
   };
 }
 

@@ -19,6 +19,7 @@ export * from './analytics';
 export * from './staff';
 export * from './hr';
 export * from './volunteer';
+export * from './committee';
 export * from './tenants';
 export * from './ritual';
 export * from './geo';

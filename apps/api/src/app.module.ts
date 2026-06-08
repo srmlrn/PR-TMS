@@ -15,6 +15,7 @@ import { FrontDeskModule } from './modules/frontdesk/frontdesk.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { VolunteerModule } from './modules/volunteer/volunteer.module';
+import { CommitteeModule } from './modules/committee/committee.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -39,6 +40,7 @@ const usePostgres = process.env.STORAGE_MODE === 'postgres';
     PaymentModule,
     StaffModule,
     VolunteerModule,
+    CommitteeModule,
     AnalyticsModule,
     SettingsModule,
   ],

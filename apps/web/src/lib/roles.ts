@@ -20,6 +20,7 @@ const adminNav: DockNavItem[] = [
   { id: 'a-dash', emoji: '📊', label: 'Dashboard', href: '/admin/dashboard' },
   { id: 'a-devotees', emoji: '👥', label: 'Devotees', href: '/admin/devotees' },
   { id: 'a-people', emoji: '🧑‍💼', label: 'People', href: '/admin/people' },
+  { id: 'a-committees', emoji: '🏛️', label: 'Committees', href: '/admin/committees' },
   { id: 'a-reminders', emoji: '🔔', label: 'Reminders', href: '/admin/reminders' },
   { id: 'a-comms', emoji: '✉️', label: 'Communications', href: '/admin/communications' },
   { id: 'a-subs', emoji: '🔁', label: 'Subscriptions', href: '/admin/subscriptions' },
@@ -95,6 +96,21 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     envVariant: 'prod',
     defaultHref: '/volunteer/shifts',
     nav: [{ id: 'vol', emoji: '🤝', label: 'Volunteering', href: '/volunteer/shifts' }],
+  },
+  [UserRole.COMMITTEE]: {
+    key: UserRole.COMMITTEE,
+    label: 'Committee',
+    avatarInitials: 'CM',
+    envLabel: 'PROD',
+    envVariant: 'prod',
+    defaultHref: '/committee/dashboard',
+    nav: [
+      { id: 'cm-dash', emoji: '📊', label: 'Dashboard', href: '/committee/dashboard' },
+      { id: 'cm-tasks', emoji: '✅', label: 'My Tasks', href: '/committee/tasks' },
+      { id: 'cm-req', emoji: '📋', label: 'Requests', href: '/committee/requests' },
+      { id: 'cm-cal', emoji: '📅', label: 'Calendar', href: '/committee/calendar' },
+      { id: 'cm-msg', emoji: '💬', label: 'Messages', href: '/committee/messages' },
+    ],
   },
   [UserRole.SUPER_ADMIN]: {
     key: UserRole.SUPER_ADMIN,
@@ -172,6 +188,13 @@ export const LANDING_ROLES: LandingRoleCard[] = [
     loginEmail: 'volunteer@svtemple.org',
   },
   {
+    role: UserRole.COMMITTEE,
+    emoji: '🏛️',
+    title: 'Committee Member',
+    description: 'Governance, tasks, approvals, calendar',
+    loginEmail: 'committee@svtemple.org',
+  },
+  {
     role: UserRole.SUPER_ADMIN,
     emoji: '⚙️',
     title: 'Platform Admin',
@@ -198,6 +221,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/people/staff': 'Staff Roster',
   '/admin/people/users': 'Users & Roles',
   '/admin/people/leaves': 'Leave Management',
+  '/admin/committees': 'Committee Management',
   '/admin/reminders': 'Important Date Reminders',
   '/admin/communications': 'Communications',
   '/admin/subscriptions': 'Recurring Subscriptions',
@@ -220,6 +244,11 @@ const PAGE_TITLES: Record<string, string> = {
   '/priest/schedule': "Today's Schedule",
   '/accountant/finance': 'Finance Dashboard',
   '/volunteer/shifts': 'Volunteering',
+  '/committee/dashboard': 'Committee Dashboard',
+  '/committee/tasks': 'My Tasks',
+  '/committee/requests': 'Requests',
+  '/committee/calendar': 'Calendar Blocks',
+  '/committee/messages': 'Committee Messages',
   '/platform/tenants': 'Platform Tenants',
   '/kiosk': 'Self-Service Kiosk',
 };
@@ -230,6 +259,7 @@ export function resolveRoleFromPath(pathname: string): AppRole {
   if (pathname.startsWith('/priest')) return UserRole.PRIEST;
   if (pathname.startsWith('/accountant')) return UserRole.ACCOUNTANT;
   if (pathname.startsWith('/volunteer')) return UserRole.VOLUNTEER;
+  if (pathname.startsWith('/committee')) return UserRole.COMMITTEE;
   if (pathname.startsWith('/platform')) return UserRole.SUPER_ADMIN;
   if (pathname.startsWith('/kiosk')) return 'kiosk';
   if (pathname.startsWith('/admin')) return UserRole.ADMIN;

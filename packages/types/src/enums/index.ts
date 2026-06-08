@@ -94,5 +94,6 @@ export enum UserRole {
   PRIEST = 'priest',
   ACCOUNTANT = 'accountant',
   VOLUNTEER = 'volunteer',
+  COMMITTEE = 'committee',
   SUPER_ADMIN = 'superadmin',
 }

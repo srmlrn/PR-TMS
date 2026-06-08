@@ -19,6 +19,13 @@ export { StaffLeaveEntity } from './staff-leave.entity';
 export { VolunteerShiftEntity } from './volunteer-shift.entity';
 export { PaymentSessionEntity } from './payment-session.entity';
 export { PosProductEntity } from './pos-product.entity';
+export { CommitteeEntity } from './committee.entity';
+export { CommitteeMemberEntity } from './committee-member.entity';
+export { CommitteeCalendarBlockEntity } from './committee-calendar-block.entity';
+export { CommitteeTaskEntity } from './committee-task.entity';
+export { CommitteeTargetEntity } from './committee-target.entity';
+export { CommitteeRequestEntity } from './committee-request.entity';
+export { CommitteeMessageEntity } from './committee-message.entity';
 
 import { DevoteeEntity } from './devotee.entity';
 import { SevaServiceEntity } from './seva-service.entity';
@@ -41,6 +48,13 @@ import { StaffLeaveEntity } from './staff-leave.entity';
 import { VolunteerShiftEntity } from './volunteer-shift.entity';
 import { PaymentSessionEntity } from './payment-session.entity';
 import { PosProductEntity } from './pos-product.entity';
+import { CommitteeEntity } from './committee.entity';
+import { CommitteeMemberEntity } from './committee-member.entity';
+import { CommitteeCalendarBlockEntity } from './committee-calendar-block.entity';
+import { CommitteeTaskEntity } from './committee-task.entity';
+import { CommitteeTargetEntity } from './committee-target.entity';
+import { CommitteeRequestEntity } from './committee-request.entity';
+import { CommitteeMessageEntity } from './committee-message.entity';
 
 export const TENANT_ENTITIES = [
   DevoteeEntity,
@@ -64,4 +78,11 @@ export const TENANT_ENTITIES = [
   VolunteerShiftEntity,
   PaymentSessionEntity,
   PosProductEntity,
+  CommitteeEntity,
+  CommitteeMemberEntity,
+  CommitteeCalendarBlockEntity,
+  CommitteeTaskEntity,
+  CommitteeTargetEntity,
+  CommitteeRequestEntity,
+  CommitteeMessageEntity,
 ];

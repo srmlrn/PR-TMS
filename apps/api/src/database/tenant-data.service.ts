@@ -25,6 +25,13 @@ import {
   VolunteerShiftEntity,
   PaymentSessionEntity,
   PosProductEntity,
+  CommitteeEntity,
+  CommitteeMemberEntity,
+  CommitteeCalendarBlockEntity,
+  CommitteeTaskEntity,
+  CommitteeTargetEntity,
+  CommitteeRequestEntity,
+  CommitteeMessageEntity,
 } from './entities/tenant';
 
 @Injectable()
@@ -174,5 +181,47 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(PosProductEntity);
+  }
+
+  async committees() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeEntity);
+  }
+
+  async committeeMembers() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeMemberEntity);
+  }
+
+  async committeeCalendarBlocks() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeCalendarBlockEntity);
+  }
+
+  async committeeTasks() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeTaskEntity);
+  }
+
+  async committeeTargets() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeTargetEntity);
+  }
+
+  async committeeRequests() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeRequestEntity);
+  }
+
+  async committeeMessages() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CommitteeMessageEntity);
   }
 }
