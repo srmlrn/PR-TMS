@@ -1,24 +1,27 @@
 'use client';
 
 import Link from 'next/link';
-import { Badge, GlassCard, PageHeader, StatTile } from '@tms/ui';
+import { Badge, GlassCard, StatTile } from '@tms/ui';
 import type { CommitteeRequest, CommitteeTask } from '@tms/types';
-import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
+import { AppPage } from '@/components/AppPage';
+import { formatShortDate } from '@/lib/api/endpoints';
+import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
+import { useTenantSite } from '@/lib/tenant-site';
 
 export default function CommitteeDashboardPage() {
+  const site = useTenantSite();
   const { data, loading, error } = useApi((ep) => ep.getCommitteeDashboard());
-  const dashboard = data;
+  const dashboard = data ?? (error ? demoCommitteeDashboard(site.name) : null);
 
   return (
-    <>
-      <PageHeader
-        title="Committee Dashboard"
-        subtitle="Your committees, tasks, and pending approvals"
-      />
-      <ApiBanner loading={loading} error={error} />
-
+    <AppPage
+      title="Committee Dashboard"
+      subtitle="Your committees, tasks, and pending approvals"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+    >
       {dashboard && (
         <>
           <div className="statGrid mb2">
@@ -98,6 +101,6 @@ export default function CommitteeDashboardPage() {
           </div>
         </>
       )}
-    </>
+    </AppPage>
   );
 }

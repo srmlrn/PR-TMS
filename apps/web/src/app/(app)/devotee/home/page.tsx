@@ -118,8 +118,8 @@ export default function DevoteeHomePage() {
         title={`Welcome back, ${welcomeName} 🙏`}
         subtitle={
           <>
-            ⭐ Star day today: <strong style={{ color: 'var(--amber)' }}>{nakshatra} Nakshatra</strong> ·
-            Friday, Jun 6, 2026
+            {site.name} · {site.deity} · ⭐{' '}
+            <strong style={{ color: 'var(--amber)' }}>{nakshatra} Nakshatra</strong> today
           </>
         }
         actions={

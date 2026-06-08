@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, GlassCard } from '@tms/ui';
+import { AppPage } from '@/components/AppPage';
 import type {
   Committee,
   CommitteeRequestType,
@@ -10,7 +11,8 @@ import type {
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
+import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
+import { useTenantSite } from '@/lib/tenant-site';
 
 const REQUEST_TYPES: CommitteeRequestType[] = [
   'calendar_block',
@@ -22,6 +24,7 @@ const REQUEST_TYPES: CommitteeRequestType[] = [
 ];
 
 export default function CommitteeRequestsPage() {
+  const site = useTenantSite();
   const { api } = useTenant();
   const [committeeId, setCommitteeId] = useState('');
   const [form, setForm] = useState<CreateCommitteeRequestInput>({
@@ -35,7 +38,8 @@ export default function CommitteeRequestsPage() {
   const { data: committeesData } = useApi((ep) => ep.getCommittees({ mine: true }));
   const { data, loading, error, refetch } = useApi((ep) => ep.getMyCommitteeRequests());
   const committees = committeesData?.data ?? [];
-  const requests = data?.data ?? [];
+  const requests =
+    data?.data ?? (error ? demoCommitteeDashboard(site.name).pendingApprovals : []);
 
   async function handleSubmit() {
     const cid = committeeId || committees[0]?.id;
@@ -63,10 +67,13 @@ export default function CommitteeRequestsPage() {
   }
 
   return (
-    <>
-      <PageHeader title="Requests" subtitle="Submit and track committee requests" />
-      <ApiBanner loading={loading} error={error} />
-
+    <AppPage
+      title="Requests"
+      subtitle="Submit and track committee requests"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+    >
       <div className="grid2 mb2">
         <GlassCard title="Submit request" compact>
           <div className="formStack">
@@ -176,6 +183,6 @@ export default function CommitteeRequestsPage() {
           )}
         </GlassCard>
       </div>
-    </>
+    </AppPage>
   );
 }

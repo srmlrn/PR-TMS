@@ -6,8 +6,8 @@ import {
   Button,
   DataTable,
   GlassCard,
-  PageHeader,
 } from '@tms/ui';
+import { AppPage } from '@/components/AppPage';
 import type {
   DonationSubscription,
   SevaSubscription,
@@ -20,7 +20,6 @@ import {
 } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
 
 type Tab = 'seva' | 'donations';
 
@@ -130,13 +129,13 @@ export default function AdminSubscriptionsPage() {
   const error = tab === 'seva' ? sevaError : donationError;
 
   return (
-    <>
-      <PageHeader
-        title="Recurring Subscriptions"
-        subtitle="Recurring archana/seva and donation auto-debit plans"
-      />
-      <ApiBanner loading={loading} error={error} />
-
+    <AppPage
+      title="Recurring Subscriptions"
+      subtitle="Recurring archana/seva and donation auto-debit plans"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+    >
       <div className="flexRow mb2" style={{ gap: '0.5rem' }}>
         <Button
           size="sm"
@@ -358,6 +357,6 @@ export default function AdminSubscriptionsPage() {
           )}
         </GlassCard>
       )}
-    </>
+    </AppPage>
   );
 }

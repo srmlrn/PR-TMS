@@ -12,6 +12,7 @@ import { Button } from '@tms/ui';
 import type { PaymentSession } from '@tms/types';
 import { formatMoney } from '@/lib/api/endpoints';
 import { useTheme } from '@/lib/theme-context';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './live-payment-modal.module.css';
 
 declare global {
@@ -147,6 +148,7 @@ export function LivePaymentModal({
   payerPhone,
 }: LivePaymentModalProps) {
   const { theme } = useTheme();
+  const site = useTenantSite();
   const [error, setError] = useState<string | null>(null);
   const [razorpayReady, setRazorpayReady] = useState(false);
 
@@ -197,7 +199,7 @@ export function LivePaymentModal({
         key: keyId,
         amount: toRazorpayAmount(session.amount, session.currency),
         currency: session.currency,
-        name: 'Temple Management',
+        name: site.name,
         description: session.purpose,
         order_id: session.providerRefId,
         handler: () => onSuccess(),
@@ -218,7 +220,7 @@ export function LivePaymentModal({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Razorpay checkout failed');
     }
-  }, [session, onSuccess, onCancel, payerName, payerEmail, payerPhone]);
+  }, [session, site.name, onSuccess, onCancel, payerName, payerEmail, payerPhone]);
 
   useEffect(() => {
     if (session.provider === 'razorpay') {

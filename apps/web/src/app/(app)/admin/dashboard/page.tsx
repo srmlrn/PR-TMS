@@ -161,8 +161,8 @@ export default function AdminDashboardPage() {
   return (
     <>
       <PageHeader
-        title="Temple Dashboard"
-        subtitle={`${site.name}${site.address ? `, ${site.address}` : ''} · Real-time`}
+        title={`${site.name} Dashboard`}
+        subtitle={`${site.deity} · ${site.location} · Real-time`}
         actions={
           <>
             <Button size="sm">Today</Button>

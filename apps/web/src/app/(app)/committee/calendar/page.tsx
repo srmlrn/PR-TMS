@@ -1,21 +1,26 @@
 'use client';
 
-import { Badge, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, GlassCard } from '@tms/ui';
+import { AppPage } from '@/components/AppPage';
 import { formatShortDate } from '@/lib/api/endpoints';
+import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
+import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
 
 export default function CommitteeCalendarPage() {
+  const site = useTenantSite();
   const { data, loading, error } = useApi((ep) => ep.getMyCommitteeBlocks());
-  const blocks = data?.data ?? [];
+  const blocks =
+    data?.data ?? (error ? demoCommitteeDashboard(site.name).upcomingBlocks : []);
 
   return (
-    <>
-      <PageHeader
-        title="Calendar Blocks"
-        subtitle="Blocked dates across your committees"
-      />
-      <ApiBanner loading={loading} error={error} />
+    <AppPage
+      title="Calendar Blocks"
+      subtitle="Blocked dates across your committees"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+    >
 
       <GlassCard title={`Blocks (${blocks.length})`} compact>
         {blocks.length === 0 ? (
@@ -42,6 +47,6 @@ export default function CommitteeCalendarPage() {
           ))
         )}
       </GlassCard>
-    </>
+    </AppPage>
   );
 }

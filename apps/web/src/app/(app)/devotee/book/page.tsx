@@ -15,15 +15,17 @@ import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './book.module.css';
 
 export default function BookSevaPage() {
   const { user } = useAuth();
   const { api } = useTenant();
+  const site = useTenantSite();
   const searchParams = useSearchParams();
   const channel = (searchParams.get('channel') as 'app' | 'kiosk' | 'counter') ?? 'app';
   const kioskLang = channel === 'kiosk' ? parseKioskLang(searchParams.get('lang')) : null;
-  const kioskT = kioskLang ? kioskStrings(kioskLang) : null;
+  const kioskT = kioskLang ? kioskStrings(kioskLang, site.name) : null;
   const [serviceId, setServiceId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [slot, setSlot] = useState('');
@@ -131,8 +133,11 @@ export default function BookSevaPage() {
   return (
     <>
       <PageHeader
-        title={kioskT?.bookSevaPageTitle ?? 'Book Seva'}
-        subtitle={kioskT?.bookSevaPageSubtitle ?? 'Select a service, date, and sankalpa details'}
+        title={kioskT?.bookSevaPageTitle ?? `Book Seva · ${site.name}`}
+        subtitle={
+          kioskT?.bookSevaPageSubtitle ??
+          `Select a service, date, and sankalpa details for ${site.deity}`
+        }
         actions={<PaymentModeBadge />}
       />
       <ApiBanner loading={loading} error={error} />

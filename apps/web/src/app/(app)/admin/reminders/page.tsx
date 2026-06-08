@@ -1,19 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Badge,
-  Button,
-  DataTable,
-  GlassCard,
-  PageHeader,
-  StatTile,
-} from '@tms/ui';
+import { Badge, Button, DataTable, GlassCard, StatTile } from '@tms/ui';
 import type { DevoteeReminderDue } from '@tms/types';
+import { AppPage } from '@/components/AppPage';
 import { createEndpoints } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
 
 const DATE_TYPE_LABELS: Record<string, string> = {
   birthday: 'Birthday',
@@ -53,17 +46,18 @@ export default function AdminRemindersPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Important Date Reminders"
-        subtitle="Devotees with birthdays, anniversaries, and star days"
-        actions={
-          <Button size="sm" onClick={handleRunReminders} disabled={running}>
-            {running ? 'Running…' : 'Run reminders'}
-          </Button>
-        }
-      />
-      <ApiBanner loading={loading} error={error} />
+    <AppPage
+      title="Important Date Reminders"
+      subtitle="Devotees with birthdays, anniversaries, and star days"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+      actions={
+        <Button size="sm" onClick={handleRunReminders} disabled={running}>
+          {running ? 'Running…' : 'Run reminders'}
+        </Button>
+      }
+    >
 
       <div className="flexRow mb2" style={{ gap: '1rem', alignItems: 'flex-end' }}>
         <div className="formGroup" style={{ marginBottom: 0 }}>
@@ -120,6 +114,6 @@ export default function AdminRemindersPage() {
           />
         )}
       </GlassCard>
-    </>
+    </AppPage>
   );
 }

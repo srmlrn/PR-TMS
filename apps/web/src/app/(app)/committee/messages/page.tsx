@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, GlassCard } from '@tms/ui';
+import { AppPage } from '@/components/AppPage';
 import type { Committee, CreateCommitteeMessageInput } from '@tms/types';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
 
 export default function CommitteeMessagesPage() {
   const { api } = useTenant();
@@ -61,10 +61,13 @@ export default function CommitteeMessagesPage() {
   }
 
   return (
-    <>
-      <PageHeader title="Committee Messages" subtitle="Group announcements and discussion" />
-      <ApiBanner loading={committeesLoading || messagesLoading} error={error} />
-
+    <AppPage
+      title="Committee Messages"
+      subtitle="Group announcements and discussion"
+      loading={committeesLoading || messagesLoading}
+      error={error}
+      showTenantContext={false}
+    >
       <div className="grid2 mb2">
         <GlassCard title="Post message" compact>
           <div className="formStack">
@@ -134,6 +137,6 @@ export default function CommitteeMessagesPage() {
           )}
         </GlassCard>
       </div>
-    </>
+    </AppPage>
   );
 }

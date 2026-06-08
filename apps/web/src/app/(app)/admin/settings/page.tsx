@@ -17,6 +17,7 @@ import {
   type TenantEnvironmentRecord,
 } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './settings.module.css';
 
 const ENV_ORDER: TenantEnvironment[] = [
@@ -41,6 +42,8 @@ function statusTag(status: TenantEnvironmentRecord['status']) {
 
 export default function SettingsPage() {
   const { tenantId, environment, setEnvironment, api } = useTenant();
+  const site = useTenantSite();
+  const dbSlug = site.slug.replace(/-/g, '_');
   const [envs, setEnvs] = useState<TenantEnvironmentRecord[]>([]);
   const [usage, setUsage] = useState<EnvironmentUsageSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +148,7 @@ export default function SettingsPage() {
                     <div>
                       <strong>{envType.toUpperCase()}</strong>
                       <div className={styles.dbName}>
-                        {record?.dbName ?? `tms_sv_temple_${envType}`}
+                        {record?.dbName ?? `tms_${dbSlug}_${envType}`}
                       </div>
                       {record?.subdomain && (
                         <div className={styles.subdomain}>{record.subdomain}.templesaas.com</div>

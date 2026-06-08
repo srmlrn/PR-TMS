@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { PageHeader } from '@tms/ui';
+import { AppPage } from '@/components/AppPage';
 import styles from './people.module.css';
 
 const SECTIONS = [
@@ -27,11 +27,11 @@ const SECTIONS = [
 
 export default function PeopleHubPage() {
   return (
-    <div>
-      <PageHeader
-        title="People Management"
-        subtitle="Staff roster, tenant users, and leave requests"
-      />
+    <AppPage
+      title="People Management"
+      subtitle="Staff roster, tenant users, and leave requests"
+      showTenantContext={false}
+    >
       <div className={styles.hubGrid}>
         {SECTIONS.map((section) => (
           <Link key={section.href} href={section.href} className={styles.hubCard}>
@@ -41,6 +41,6 @@ export default function PeopleHubPage() {
           </Link>
         ))}
       </div>
-    </div>
+    </AppPage>
   );
 }

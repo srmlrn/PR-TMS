@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, GlassCard, PageHeader } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
 import type { NotificationChannel, NotificationTemplate } from '@tms/types';
+import { AppPage } from '@/components/AppPage';
 import { createEndpoints } from '@/lib/api/endpoints';
+import { DEMO_NOTIFICATION_TEMPLATES } from '@/lib/demo-fallbacks';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
 
 export default function AdminCommunicationsPage() {
   const { api } = useTenant();
@@ -23,7 +24,8 @@ export default function AdminCommunicationsPage() {
     ep.getNotificationTemplates(),
   );
 
-  const channelTemplates = (templates ?? []).filter((t) => t.channel === channel);
+  const resolvedTemplates = loadError ? DEMO_NOTIFICATION_TEMPLATES : (templates ?? []);
+  const channelTemplates = resolvedTemplates.filter((t) => t.channel === channel);
 
   useEffect(() => {
     if (channelTemplates.length > 0 && !templateId) {
@@ -32,16 +34,16 @@ export default function AdminCommunicationsPage() {
   }, [channelTemplates, templateId]);
 
   useEffect(() => {
-    const tpl = (templates ?? []).find((t) => t.id === templateId);
+    const tpl = resolvedTemplates.find((t) => t.id === templateId);
     if (tpl) {
       setSubject(tpl.subject ?? '');
       setBody(tpl.body);
     }
-  }, [templateId, templates]);
+  }, [templateId, resolvedTemplates]);
 
   function handleTemplateChange(id: string) {
     setTemplateId(id);
-    const tpl = (templates ?? []).find((t) => t.id === id);
+    const tpl = resolvedTemplates.find((t) => t.id === id);
     if (tpl) {
       setChannel(tpl.channel);
       setSubject(tpl.subject ?? '');
@@ -75,13 +77,13 @@ export default function AdminCommunicationsPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Communications"
-        subtitle="Send email or SMS using temple notification templates"
-      />
-      <ApiBanner loading={loading} error={loadError} />
-
+    <AppPage
+      title="Communications"
+      subtitle="Send email or SMS using temple notification templates"
+      loading={loading}
+      error={loadError}
+      showTenantContext={false}
+    >
       <GlassCard title="Compose message">
         <div className="formGrid">
           <div className="formGroup">
@@ -154,6 +156,6 @@ export default function AdminCommunicationsPage() {
         )}
         {result && <p className="tms-t2 mt1">{result}</p>}
       </GlassCard>
-    </>
+    </AppPage>
   );
 }

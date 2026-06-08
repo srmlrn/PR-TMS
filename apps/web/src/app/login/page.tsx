@@ -1,12 +1,13 @@
 'use client';
 
-import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getTenantBranding } from '@tms/types';
+import { getTenantBranding, type TenantBranding } from '@tms/types';
 import { Button, GlassCard } from '@tms/ui';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
+import { TenantPicker } from '@/components/TenantPicker';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { getLandingRoles } from '@/lib/landing-roles';
 import { getDefaultHrefForRole } from '@/lib/route-access';
@@ -43,6 +44,17 @@ function LoginForm() {
     }
   }, [tenantParam]);
 
+  const pickTenant = useCallback(
+    (next: TenantBranding) => {
+      setTenantId(next.id);
+      writeSelectedTenantId(next.id);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tenant', next.id);
+      router.replace(`/login?${params.toString()}`);
+    },
+    [router, searchParams],
+  );
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -64,6 +76,7 @@ function LoginForm() {
   return (
     <div className="loginPage compactUi">
       <PublicThemeBar />
+      <TenantPicker tenantId={tenantId} onSelect={pickTenant} />
       <div className="loginHero">
         {tenant.logoSrc ? (
           <div
@@ -88,11 +101,11 @@ function LoginForm() {
           <span className="landingShine">Sign in</span>
         </h1>
         <p className="landingSub">
-          {tenant.name} · {tenant.subtitle}
+          {tenant.deity} · {tenant.location}
         </p>
       </div>
 
-      <GlassCard title="Temple Management System" className="loginCard">
+      <GlassCard title={tenant.name} className="loginCard">
         <form onSubmit={handleSubmit} className="loginForm">
           <div className="formGroup">
             <label htmlFor="email">Email</label>

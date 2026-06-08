@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, DataTable, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, DataTable, GlassCard } from '@tms/ui';
 import type { CreateStaffInput, Staff, StaffRole, UpdateStaffInput } from '@tms/types';
+import { AppPage } from '@/components/AppPage';
+import { DEMO_STAFF } from '@/lib/demo-fallbacks';
 import { useTenant } from '@/lib/tenant-context';
 import styles from '../people.module.css';
 
@@ -104,23 +106,21 @@ export default function StaffRosterPage() {
     }
   }
 
-  return (
-    <div>
-      <PageHeader
-        title="Staff Roster"
-        subtitle="Temple employees and volunteers"
-        actions={
-          <Link href="/admin/people">
-            <Button variant="glass">← People</Button>
-          </Link>
-        }
-      />
+  const roster = error && staff.length === 0 ? DEMO_STAFF : staff;
 
-      {error && (
-        <GlassCard className={styles.errorCard}>
-          <p>{error}</p>
-        </GlassCard>
-      )}
+  return (
+    <AppPage
+      title="Staff Roster"
+      subtitle="Temple employees and volunteers"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+      actions={
+        <Link href="/admin/people">
+          <Button variant="glass">← People</Button>
+        </Link>
+      }
+    >
 
       <GlassCard title={editingId ? 'Edit Staff' : 'Add Staff'} className={styles.configGrid}>
         <div className={styles.configGrid}>
@@ -213,7 +213,7 @@ export default function StaffRosterPage() {
         ) : (
           <DataTable
             getRowKey={(row) => row.id}
-            data={staff}
+            data={roster}
             columns={[
               { key: 'name', header: 'Name', render: (r) => r.name },
               { key: 'role', header: 'Role', render: (r) => r.role },
@@ -250,6 +250,6 @@ export default function StaffRosterPage() {
           />
         )}
       </GlassCard>
-    </div>
+    </AppPage>
   );
 }

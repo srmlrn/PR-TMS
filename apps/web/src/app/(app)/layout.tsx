@@ -33,7 +33,13 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   const role = (user?.role ?? 'admin') as AppRole;
   const config = getRoleConfigForUser(role);
-  const title = getPageTitle(pathname);
+  const baseTitle = getPageTitle(pathname);
+  const title =
+    pathname === '/admin/dashboard'
+      ? `${site.name} Dashboard`
+      : baseTitle === 'Temple Management System'
+        ? site.name
+        : baseTitle;
   const isKiosk = pathname.startsWith('/kiosk');
   const isDisplayPage = pathname.startsWith('/frontdesk/display');
   const isFullscreenPage =

@@ -14,6 +14,7 @@ import { PaymentProviderPicker } from '@/components/PaymentProviderPicker';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from './donate.module.css';
 
 const AMOUNTS_USD = [25, 51, 101, 251, 501, 1001];
@@ -28,10 +29,11 @@ const TAX_ID_LABEL: Record<Currency, string> = {
 export default function DonatePage() {
   const { user } = useAuth();
   const { api } = useTenant();
+  const site = useTenantSite();
   const searchParams = useSearchParams();
   const channel = (searchParams.get('channel') as 'app' | 'kiosk' | 'counter') ?? 'app';
   const kioskLang = channel === 'kiosk' ? parseKioskLang(searchParams.get('lang')) : null;
-  const kioskT = kioskLang ? kioskStrings(kioskLang) : null;
+  const kioskT = kioskLang ? kioskStrings(kioskLang, site.name) : null;
   const [fxHint, setFxHint] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<TaxReceipt | null>(null);
   const [lastDonationId, setLastDonationId] = useState<string | null>(null);
@@ -137,8 +139,11 @@ export default function DonatePage() {
   return (
     <>
       <PageHeader
-        title={kioskT?.donatePageTitle ?? 'Donate'}
-        subtitle={kioskT?.donatePageSubtitle ?? 'Support the temple — IRS / 80G / CRA compliant receipts'}
+        title={kioskT?.donatePageTitle ?? `Donate · ${site.name}`}
+        subtitle={
+          kioskT?.donatePageSubtitle ??
+          `Support ${site.name} — IRS / 80G / CRA compliant receipts`
+        }
         actions={<PaymentModeBadge />}
       />
       <ApiBanner loading={loading} error={error} />

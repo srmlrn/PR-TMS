@@ -3,16 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  getTenantBranding,
-  type TenantBranding,
-} from '@tms/types';
+import { getTenantBranding, type TenantBranding } from '@tms/types';
 import { PublicThemeBar } from '@/components/PublicThemeBar';
+import { TenantPicker } from '@/components/TenantPicker';
 import { getLandingRoles, LANDING_ROLE_ORDER } from '@/lib/landing-roles';
 import {
   getDefaultTenantId,
   readSelectedTenantId,
-  SELECTABLE_TENANTS,
   writeSelectedTenantId,
 } from '@/lib/tenant-selection';
 import styles from '@/app/landing.module.css';
@@ -52,36 +49,7 @@ export function LandingPortal() {
       <PublicThemeBar />
 
       <main className={styles.portal}>
-        <div className={styles.tenantPicker}>
-          {SELECTABLE_TENANTS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`${styles.tenantChip}${t.id === tenantId ? ` ${styles.tenantChipActive}` : ''}`}
-              onClick={() => pickTenant(t)}
-            >
-              {t.logoSrc ? (
-                <span
-                  className={styles.tenantLogoWrap}
-                  style={t.logoBg ? { ['--tenant-logo-bg' as string]: t.logoBg } : undefined}
-                >
-                  <Image
-                    src={t.logoSrc}
-                    alt=""
-                    width={148}
-                    height={29}
-                    className={styles.tenantLogo}
-                  />
-                </span>
-              ) : (
-                <span className={styles.tenantChipIcon} aria-hidden>
-                  {t.icon}
-                </span>
-              )}
-              <span className={styles.tenantChipName}>{t.name}</span>
-            </button>
-          ))}
-        </div>
+        <TenantPicker tenantId={tenantId} onSelect={pickTenant} />
 
         <div className={styles.brand}>
           {tenant.logoSrc ? (

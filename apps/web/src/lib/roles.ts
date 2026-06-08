@@ -21,14 +21,11 @@ const adminNav: DockNavItem[] = [
   { id: 'a-devotees', emoji: '👥', label: 'Devotees', href: '/admin/devotees' },
   { id: 'a-people', emoji: '🧑‍💼', label: 'People', href: '/admin/people' },
   { id: 'a-committees', emoji: '🏛️', label: 'Committees', href: '/admin/committees' },
-  { id: 'a-reminders', emoji: '🔔', label: 'Reminders', href: '/admin/reminders' },
-  { id: 'a-comms', emoji: '✉️', label: 'Communications', href: '/admin/communications' },
-  { id: 'a-subs', emoji: '🔁', label: 'Subscriptions', href: '/admin/subscriptions' },
-  { id: 'events', emoji: '🎪', label: 'Event Management', href: '/admin/events' },
-  { id: 'rentals', emoji: '🏛️', label: 'Venue & Equipment Rentals', href: '/admin/rentals' },
-  { id: 'prasadam', emoji: '🍬', label: 'Prasadam Sponsorship', href: '/admin/prasadam' },
-  { id: 'sponsors', emoji: '🤝', label: 'Sponsor Management', href: '/admin/sponsors' },
-  { id: 'a-settings', emoji: '⚙️', label: 'Settings & Envs', href: '/admin/settings' },
+  { id: 'a-ops', emoji: '📡', label: 'Operations', href: '/admin/operations' },
+  { id: 'events', emoji: '🎪', label: 'Events', href: '/admin/events' },
+  { id: 'prasadam', emoji: '🍬', label: 'Prasadam', href: '/admin/prasadam' },
+  { id: 'sponsors', emoji: '🤝', label: 'Sponsors', href: '/admin/sponsors' },
+  { id: 'a-settings', emoji: '⚙️', label: 'Settings', href: '/admin/settings' },
 ];
 
 export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
@@ -215,12 +212,13 @@ const PAGE_TITLES: Record<string, string> = {
   '/devotee/book': 'Book Seva',
   '/devotee/donate': 'Donate',
   '/devotee/profile': 'My Profile',
-  '/admin/dashboard': 'Temple Dashboard',
+  '/admin/dashboard': 'Dashboard',
   '/admin/devotees': 'Devotee CRM',
   '/admin/people': 'People Management',
   '/admin/people/staff': 'Staff Roster',
   '/admin/people/users': 'Users & Roles',
   '/admin/people/leaves': 'Leave Management',
+  '/admin/operations': 'Operations',
   '/admin/committees': 'Committee Management',
   '/admin/reminders': 'Important Date Reminders',
   '/admin/communications': 'Communications',
@@ -267,7 +265,16 @@ export function resolveRoleFromPath(pathname: string): AppRole {
 }
 
 export function getPageTitle(pathname: string): string {
-  return PAGE_TITLES[pathname] ?? 'Temple Management System';
+  if (PAGE_TITLES[pathname]) {
+    return PAGE_TITLES[pathname];
+  }
+  const prefixes = Object.keys(PAGE_TITLES).sort((a, b) => b.length - a.length);
+  for (const prefix of prefixes) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+      return PAGE_TITLES[prefix];
+    }
+  }
+  return 'Temple Management System';
 }
 
 export function getRoleConfig(role: AppRole): RoleConfig {

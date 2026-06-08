@@ -9,6 +9,8 @@ import {
   Staff,
   StaffRole,
   UpdateStaffInput,
+  GANESHA_TEMPLE_ID,
+  SV_TEMPLE_ID,
   UserRole,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
@@ -17,8 +19,6 @@ import { TenantDataService } from '../../database/tenant-data.service';
 import { StaffLeaveService } from './staff-leave.service';
 
 type StaffRecord = Staff & TenantEntity;
-
-const DEMO_TENANT = '00000000-0000-0000-0000-000000000001';
 
 @Injectable()
 export class StaffService extends BaseTenantService<StaffRecord> implements OnModuleInit {
@@ -40,7 +40,8 @@ export class StaffService extends BaseTenantService<StaffRecord> implements OnMo
 
   onModuleInit(): void {
     if (!this.usePostgres) {
-      this.seedDemoStaff(DEMO_TENANT);
+      this.seedDemoStaff(SV_TEMPLE_ID);
+      this.seedDemoStaff(GANESHA_TEMPLE_ID);
     }
   }
 
@@ -48,33 +49,35 @@ export class StaffService extends BaseTenantService<StaffRecord> implements OnMo
     if (this.scoped(tenantId).length > 0) return;
 
     const now = new Date();
+    const isGanesha = tenantId === GANESHA_TEMPLE_ID;
+    const domain = isGanesha ? 'sgtemple.org' : 'svtemple.org';
     const priests: Array<Omit<StaffRecord, 'createdAt' | 'updatedAt'>> = [
       {
-        id: 'user-priest-001',
+        id: isGanesha ? 'user-ganesha-priest-001' : 'user-priest-001',
         tenantId,
-        name: 'Sri Raman',
+        name: isGanesha ? 'Sri Murugan' : 'Sri Raman',
         role: 'priest',
-        email: 'priest@svtemple.org',
+        email: `priest@${domain}`,
         title: 'Head Priest',
         department: 'Rituals',
-        userId: 'user-priest-001',
+        userId: isGanesha ? 'user-ganesha-priest-001' : 'user-priest-001',
         isActive: true,
       },
       {
-        id: 'user-priest-002',
+        id: isGanesha ? 'user-ganesha-priest-002' : 'user-priest-002',
         tenantId,
-        name: 'Swami Venkat',
+        name: isGanesha ? 'Swami Ganesha' : 'Swami Venkat',
         role: 'priest',
-        email: 'venkat@svtemple.org',
+        email: isGanesha ? `murugan@${domain}` : `venkat@${domain}`,
         department: 'Rituals',
         isActive: true,
       },
       {
-        id: 'user-priest-003',
+        id: isGanesha ? 'user-ganesha-priest-003' : 'user-priest-003',
         tenantId,
-        name: 'Swami Ramanujan',
+        name: isGanesha ? 'Swami Iyer' : 'Swami Ramanujan',
         role: 'priest',
-        email: 'ramanujan@svtemple.org',
+        email: isGanesha ? `iyer@${domain}` : `ramanujan@${domain}`,
         department: 'Rituals',
         isActive: true,
       },

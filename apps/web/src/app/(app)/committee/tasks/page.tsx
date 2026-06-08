@@ -1,20 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, GlassCard, PageHeader } from '@tms/ui';
+import { Badge, Button, GlassCard } from '@tms/ui';
 import type { CommitteeTask, CommitteeTaskStatus } from '@tms/types';
+import { AppPage } from '@/components/AppPage';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
+import { demoCommitteeDashboard } from '@/lib/demo-fallbacks';
 import { useTenant } from '@/lib/tenant-context';
+import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
 
 const STATUS_OPTIONS: CommitteeTaskStatus[] = ['todo', 'in_progress', 'done', 'blocked'];
 
 export default function CommitteeTasksPage() {
+  const site = useTenantSite();
   const { api } = useTenant();
   const [actionId, setActionId] = useState<string | null>(null);
   const { data, loading, error, refetch } = useApi((ep) => ep.getMyCommitteeTasks());
-  const tasks = data?.data ?? [];
+  const tasks =
+    data?.data ?? (error ? demoCommitteeDashboard(site.name).myTasks : []);
 
   async function updateStatus(task: CommitteeTask, status: CommitteeTaskStatus) {
     setActionId(task.id);
@@ -28,10 +32,13 @@ export default function CommitteeTasksPage() {
   }
 
   return (
-    <>
-      <PageHeader title="My Tasks" subtitle="Tasks assigned to you across committees" />
-      <ApiBanner loading={loading} error={error} />
-
+    <AppPage
+      title="My Tasks"
+      subtitle="Tasks assigned to you across committees"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+    >
       <GlassCard title={`Assigned tasks (${tasks.length})`} compact>
         {tasks.length === 0 ? (
           <p className="hint">No tasks assigned to you.</p>
@@ -78,6 +85,6 @@ export default function CommitteeTasksPage() {
           ))
         )}
       </GlassCard>
-    </>
+    </AppPage>
   );
 }

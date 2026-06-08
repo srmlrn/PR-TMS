@@ -18,6 +18,7 @@ import { VolunteerModule } from './modules/volunteer/volunteer.module';
 import { CommitteeModule } from './modules/committee/committee.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantDataModule } from './database/tenant-data.module';
 
@@ -43,6 +44,7 @@ const usePostgres = process.env.STORAGE_MODE === 'postgres';
     CommitteeModule,
     AnalyticsModule,
     SettingsModule,
+    NotificationsModule,
   ],
   providers: [
     TenantContextMiddleware,

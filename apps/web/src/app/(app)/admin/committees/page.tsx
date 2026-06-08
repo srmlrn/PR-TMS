@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, DataTable, GlassCard, PageHeader } from '@tms/ui';
-import type { Committee, CreateCommitteeInput } from '@tms/types';
+import { Badge, Button, DataTable, GlassCard } from '@tms/ui';
+import { AppPage } from '@/components/AppPage';
+import { UserRole, type Committee, type CreateCommitteeInput } from '@tms/types';
 import { createEndpoints } from '@/lib/api/endpoints';
+import { useAuth } from '@/lib/auth-context';
+import { getLandingRoles } from '@/lib/landing-roles';
 import { useTenant } from '@/lib/tenant-context';
+import { resolveActiveTenantId } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
-import { ApiBanner } from '@/components/ApiBanner';
 
 const emptyForm = (): CreateCommitteeInput => ({
   name: '',
@@ -16,7 +19,12 @@ const emptyForm = (): CreateCommitteeInput => ({
 });
 
 export default function AdminCommitteesPage() {
-  const { api } = useTenant();
+  const { user } = useAuth();
+  const { api, tenantId } = useTenant();
+  const activeTenantId = resolveActiveTenantId(user?.tenantId, tenantId);
+  const committeeEmail =
+    getLandingRoles(activeTenantId).find((r) => r.role === UserRole.COMMITTEE)?.loginEmail ??
+    'committee@svtemple.org';
   const [form, setForm] = useState<CreateCommitteeInput>(emptyForm());
   const [creating, setCreating] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -49,12 +57,13 @@ export default function AdminCommitteesPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Committee Management"
-        subtitle="Temple governance committees, members, tasks, and approvals"
-      />
-      <ApiBanner loading={loading} error={error} />
+    <AppPage
+      title="Committee Management"
+      subtitle="Governance committees, members, tasks, and approvals"
+      loading={loading}
+      error={error}
+      showTenantContext={false}
+    >
 
       <div className="grid2 mb2">
         <GlassCard title="Create committee" compact>
@@ -96,7 +105,7 @@ export default function AdminCommitteesPage() {
             workflows. Committee members log in with the <strong>committee</strong> role.
           </p>
           <p className="hint">
-            Demo login: <code>committee@svtemple.org</code> / demo123
+            Demo login: <code>{committeeEmail}</code> / demo123
           </p>
         </GlassCard>
       </div>
@@ -136,6 +145,6 @@ export default function AdminCommitteesPage() {
         />
         {committees.length === 0 && <p className="hint mt1">No committees yet</p>}
       </GlassCard>
-    </>
+    </AppPage>
   );
 }
