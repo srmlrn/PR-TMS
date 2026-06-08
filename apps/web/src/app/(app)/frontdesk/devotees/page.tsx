@@ -141,7 +141,9 @@ function FrontDeskDevoteesPageInner() {
         id: d.id,
         name: `${d.firstName} ${d.lastName}`,
         phone: d.phone,
-        gotram: d.gotram ?? '—',
+        email: d.email?.trim() || '',
+        gotram: d.gotram?.trim() || '',
+        photoUrl: d.photoUrl,
         status: d.status,
         familyNames,
       };
@@ -457,21 +459,35 @@ function FrontDeskDevoteesPageInner() {
                   >
                     <PersonAvatar
                       name={row.name}
-                      photoUrl={'photoUrl' in row ? String(row.photoUrl) : undefined}
-                      size="md"
+                      photoUrl={row.photoUrl}
+                      size="lg"
                     />
                     <span className={styles.rowInfo}>
                       <span className={styles.rowNameLine}>
                         <strong>{row.name}</strong>
                         {row.status !== 'active' && <Badge variant="pending">{row.status}</Badge>}
                       </span>
-                      <span className={styles.rowSub}>
-                        {row.gotram}
-                        {row.familyNames.length > 0 && ` · ${row.familyNames.join(', ')}`}
+                      <span className={styles.rowMeta}>
+                        {row.gotram ? (
+                          <span className={styles.rowMetaItem}>{row.gotram}</span>
+                        ) : (
+                          <span className={styles.rowMetaMuted}>No gotram</span>
+                        )}
+                        <span className={styles.rowMetaSep} aria-hidden>
+                          ·
+                        </span>
+                        {row.email ? (
+                          <span className={styles.rowMetaItem}>{row.email}</span>
+                        ) : (
+                          <span className={styles.rowMetaMuted}>No email</span>
+                        )}
                       </span>
+                      {row.familyNames.length > 0 && (
+                        <span className={styles.rowSub}>Family: {row.familyNames.join(', ')}</span>
+                      )}
                     </span>
-                    <span className={styles.rowPhone}>{row.phone}</span>
                   </button>
+                  <span className={styles.rowPhone}>{row.phone}</span>
                   <div className={styles.rowQuick}>
                     <button
                       type="button"

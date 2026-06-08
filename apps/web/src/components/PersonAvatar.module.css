@@ -2,8 +2,10 @@
   flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center top;
   border: 1px solid var(--b);
   background: var(--ink2);
+  overflow: hidden;
 }
 
 .sm {
@@ -17,8 +19,8 @@
 }
 
 .lg {
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.5rem;
+  height: 3.5rem;
 }
 
 .fallback {
