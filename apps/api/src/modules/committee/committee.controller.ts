@@ -113,6 +113,19 @@ export class CommitteeController {
     return { data };
   }
 
+  @Get('my/board-tasks')
+  @ApiOperation({ summary: 'All committee tasks for kanban board (includes open pool)' })
+  async boardTasks(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() query: CommitteeScopeQueryDto,
+  ): Promise<{ data: CommitteeTask[] }> {
+    const data = await this.committeeService.findBoardTasks(tenantId, user, {
+      committeeId: query.committeeId,
+    });
+    return { data };
+  }
+
   @Get('my/blocks')
   @ApiOperation({ summary: 'Calendar blocks across my committees' })
   async myBlocks(

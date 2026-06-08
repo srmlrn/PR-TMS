@@ -175,23 +175,60 @@ export default function CommitteeDashboardPage() {
           )}
 
           {tab === 'tasks' && (
-            <Panel title="Open tasks" href="/committee/tasks" linkLabel="Manage all">
-              {dashboard.myTasks.length === 0 ? (
-                <p className={styles.empty}>None</p>
-              ) : (
-                <div className={styles.rows}>
-                  {dashboard.myTasks.map((t: CommitteeTask) => (
-                    <div key={t.id} className={styles.row}>
-                      <div className={styles.rowMain}>
-                        <div className={styles.rowTitle}>{t.title}</div>
-                        {isAllCommittees && (
-                          <div className={styles.rowMeta}>{committeeName(t.committeeId)}</div>
-                        )}
+            <Panel title="Task board" href="/committee/tasks" linkLabel="Full board">
+              <div className={styles.boardStrip}>
+                {(
+                  [
+                    ['available', 'Open pool', dashboard.taskBoard.counts.available],
+                    ['todo', 'To do', dashboard.taskBoard.counts.todo],
+                    ['in_progress', 'In progress', dashboard.taskBoard.counts.in_progress],
+                    ['blocked', 'Blocked', dashboard.taskBoard.counts.blocked],
+                  ] as const
+                ).map(([key, label, count]) => (
+                  <div key={key} className={styles.boardChip}>
+                    <span className={styles.boardChipCount}>{count}</span>
+                    <span className={styles.boardChipLabel}>{label}</span>
+                  </div>
+                ))}
+              </div>
+              {dashboard.taskBoard.openPool.length > 0 && (
+                <>
+                  <p className={styles.boardSectionLabel}>Pick up open work</p>
+                  <div className={styles.rows}>
+                    {dashboard.taskBoard.openPool.map((t: CommitteeTask) => (
+                      <div key={t.id} className={styles.row}>
+                        <div className={styles.rowMain}>
+                          <div className={styles.rowTitle}>{t.title}</div>
+                          {isAllCommittees && (
+                            <div className={styles.rowMeta}>{committeeName(t.committeeId)}</div>
+                          )}
+                        </div>
+                        <span className={styles.statusPill}>open</span>
                       </div>
-                      <span className={statusClass(t)}>{t.status.replace('_', ' ')}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {dashboard.myTasks.length > 0 && (
+                <>
+                  <p className={styles.boardSectionLabel}>Your active tasks</p>
+                  <div className={styles.rows}>
+                    {dashboard.myTasks.slice(0, 5).map((t: CommitteeTask) => (
+                      <div key={t.id} className={styles.row}>
+                        <div className={styles.rowMain}>
+                          <div className={styles.rowTitle}>{t.title}</div>
+                          {isAllCommittees && (
+                            <div className={styles.rowMeta}>{committeeName(t.committeeId)}</div>
+                          )}
+                        </div>
+                        <span className={statusClass(t)}>{t.status.replace('_', ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {dashboard.taskBoard.openPool.length === 0 && dashboard.myTasks.length === 0 && (
+                <p className={styles.empty}>No open work</p>
               )}
             </Panel>
           )}

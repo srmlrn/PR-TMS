@@ -659,6 +659,9 @@ export function createEndpoints(client: ApiClient) {
     getMyCommitteeTasks: (params?: { committeeId?: string }) =>
       client.get<{ data: CommitteeTask[] }>('/committees/my/tasks', { params }),
 
+    getMyCommitteeBoardTasks: (params?: { committeeId?: string }) =>
+      client.get<{ data: CommitteeTask[] }>('/committees/my/board-tasks', { params }),
+
     getMyCommitteeBlocks: (params?: { committeeId?: string }) =>
       client.get<{ data: CommitteeCalendarBlock[] }>('/committees/my/blocks', { params }),
 

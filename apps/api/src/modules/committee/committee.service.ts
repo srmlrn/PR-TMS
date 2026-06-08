@@ -560,6 +560,36 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
         updatedAt: now,
       });
 
+      this.taskStore.set(`${itCommitteeId}-task-open-001`, {
+        id: `${itCommitteeId}-task-open-001`,
+        tenantId,
+        committeeId: itCommitteeId,
+        title: 'Document AV setup for main hall',
+        description: 'Inventory projectors, microphones, and HDMI routing for priest events.',
+        status: 'todo',
+        priority: 'medium',
+        dueDate: new Date(now.getFullYear(), now.getMonth() + 1, 21).toISOString().slice(0, 10),
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.taskStore.set(`${itCommitteeId}-task-blocked-001`, {
+        id: `${itCommitteeId}-task-blocked-001`,
+        tenantId,
+        committeeId: itCommitteeId,
+        title: 'Website SSL certificate renewal',
+        description: 'Vendor quote pending — blocked until finance approval.',
+        assigneeUserId: committeeUserId,
+        assigneeName: 'Committee Member Priya',
+        status: 'blocked',
+        priority: 'high',
+        dueDate: new Date(now.getFullYear(), now.getMonth(), 30).toISOString().slice(0, 10),
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
       this.taskStore.set(`${eduCommitteeId}-task-demo-001`, {
         id: `${eduCommitteeId}-task-demo-001`,
         tenantId,
@@ -571,6 +601,20 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
         status: 'in_progress',
         priority: 'high',
         dueDate: new Date(now.getFullYear(), now.getMonth(), 25).toISOString().slice(0, 10),
+        createdByUserId: adminUserId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      this.taskStore.set(`${eduCommitteeId}-task-open-001`, {
+        id: `${eduCommitteeId}-task-open-001`,
+        tenantId,
+        committeeId: eduCommitteeId,
+        title: 'Recruit summer camp volunteers',
+        description: 'Reach out to youth group parents and confirm volunteer shifts.',
+        status: 'todo',
+        priority: 'high',
+        dueDate: new Date(now.getFullYear(), now.getMonth() + 1, 5).toISOString().slice(0, 10),
         createdByUserId: adminUserId,
         createdAt: now,
         updatedAt: now,
@@ -1030,12 +1074,21 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       throw new NotFoundException(`Task ${taskId} not found`);
     }
     const isAssignee = existing.assigneeUserId === user.id;
+    const isUnassigned = !existing.assigneeUserId;
+    const isClaiming =
+      isUnassigned && input.assigneeUserId === user.id;
     const canManage = this.isAdmin(user) || this.isChair(tenantId, committeeId, user.id);
-    if (!canManage && !isAssignee) {
+    if (!canManage && !isAssignee && !isClaiming) {
       throw new ForbiddenException('Cannot update this task');
     }
     let patch = input;
-    if (!canManage && isAssignee) {
+    if (!canManage && isClaiming) {
+      patch = {
+        assigneeUserId: user.id,
+        assigneeName: input.assigneeName ?? user.name,
+        status: input.status ?? 'in_progress',
+      };
+    } else if (!canManage && isAssignee) {
       patch = input.status !== undefined ? { status: input.status } : {};
     }
     const updated: TaskRecord = {
@@ -1300,6 +1353,18 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
     const myTasks = allTasks.filter(
       (t) => t.assigneeUserId === user.id && t.status !== 'done',
     );
+    const isAvailable = (t: CommitteeTask) =>
+      !t.assigneeUserId && t.status !== 'done' && t.status !== 'blocked';
+    const taskBoard = {
+      counts: {
+        available: allTasks.filter(isAvailable).length,
+        todo: allTasks.filter((t) => !!t.assigneeUserId && t.status === 'todo').length,
+        in_progress: allTasks.filter((t) => t.status === 'in_progress').length,
+        blocked: allTasks.filter((t) => t.status === 'blocked').length,
+        done: allTasks.filter((t) => t.status === 'done').length,
+      },
+      openPool: allTasks.filter(isAvailable).slice(0, 5),
+    };
     const pendingApprovals = allRequests.filter((r) => {
       if (r.status !== 'pending') return false;
       return this.isAdmin(user) || this.isChair(tenantId, r.committeeId, user.id);
@@ -1316,11 +1381,13 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       pendingApprovals,
       myTasks,
       upcomingBlocks,
+      taskBoard,
       stats: {
         totalCommittees: scopedCommittees.length,
         openTasks: myTasks.length,
         pendingRequests: pendingApprovals.length,
         upcomingBlocks: upcomingBlocks.length,
+        availableTasks: taskBoard.counts.available,
       },
     };
   }
@@ -1338,6 +1405,25 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       );
     }
     return tasks;
+  }
+
+  async findBoardTasks(
+    tenantId: string,
+    user: AuthUser,
+    options?: { committeeId?: string },
+  ): Promise<CommitteeTask[]> {
+    const committeeIds = await this.resolveMyCommitteeIds(tenantId, user, options?.committeeId);
+    const tasks: CommitteeTask[] = [];
+    for (const cid of committeeIds) {
+      tasks.push(...(await this.findTasks(tenantId, cid, user)));
+    }
+    return tasks.sort((a, b) => {
+      const statusOrder = { todo: 0, in_progress: 1, blocked: 2, done: 3 };
+      const sa = statusOrder[a.status] ?? 9;
+      const sb = statusOrder[b.status] ?? 9;
+      if (sa !== sb) return sa - sb;
+      return (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999');
+    });
   }
 
   async findMyBlocks(

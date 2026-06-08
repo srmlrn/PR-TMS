@@ -182,16 +182,29 @@ export interface CommitteeRoster {
   categories: CommitteeRosterCategory[];
 }
 
+export interface CommitteeTaskBoardSummary {
+  counts: {
+    available: number;
+    todo: number;
+    in_progress: number;
+    blocked: number;
+    done: number;
+  };
+  openPool: CommitteeTask[];
+}
+
 export interface CommitteeDashboard {
   committees: Committee[];
   pendingApprovals: CommitteeRequest[];
   myTasks: CommitteeTask[];
   upcomingBlocks: CommitteeCalendarBlock[];
+  taskBoard: CommitteeTaskBoardSummary;
   stats: {
     totalCommittees: number;
     openTasks: number;
     pendingRequests: number;
     upcomingBlocks: number;
+    availableTasks: number;
   };
 }
 

@@ -74,6 +74,7 @@ export function demoCommitteeDashboard(templeName: string): CommitteeDashboard {
       title: 'Review Q2 budget',
       status: 'in_progress',
       priority: 'high',
+      assigneeName: 'Committee Member',
       dueDate: new Date().toISOString().slice(0, 10),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -82,6 +83,19 @@ export function demoCommitteeDashboard(templeName: string): CommitteeDashboard {
       id: 'demo-task-2',
       committeeId: committee.id,
       title: 'Approve festival vendor list',
+      status: 'todo',
+      priority: 'medium',
+      assigneeName: 'Committee Member',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  const openPool: CommitteeTask[] = [
+    {
+      id: 'demo-task-open-1',
+      committeeId: committee.id,
+      title: 'Update volunteer signup form',
       status: 'todo',
       priority: 'medium',
       createdAt: new Date().toISOString(),
@@ -134,11 +148,22 @@ export function demoCommitteeDashboard(templeName: string): CommitteeDashboard {
     myTasks,
     pendingApprovals,
     upcomingBlocks,
+    taskBoard: {
+      counts: {
+        available: openPool.length,
+        todo: 1,
+        in_progress: 1,
+        blocked: 0,
+        done: 0,
+      },
+      openPool,
+    },
     stats: {
       totalCommittees: 1,
       openTasks: myTasks.length,
       pendingRequests: pendingApprovals.length,
       upcomingBlocks: upcomingBlocks.length,
+      availableTasks: openPool.length,
     },
   };
 }

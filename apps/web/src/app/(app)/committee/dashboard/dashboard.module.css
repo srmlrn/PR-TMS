@@ -51,6 +51,48 @@
   color: var(--txt2);
 }
 
+.boardStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.65rem;
+}
+
+.boardChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--rs);
+  border: 1px solid var(--b);
+  background: var(--ink2);
+}
+
+.boardChipCount {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--txt);
+  line-height: 1.1;
+}
+
+.boardChipLabel {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--txt3);
+}
+
+.boardSectionLabel {
+  margin: 0 0 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--txt3);
+}
+
 .overviewSingle {
   display: flex;
   align-items: center;
