@@ -1,0 +1,186 @@
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--rs);
+  border: 1px solid var(--b);
+  background: var(--ink3);
+}
+
+.summaryStats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.summaryStat {
+  font-size: 0.78rem;
+  color: var(--txt2);
+}
+
+.summaryStat strong {
+  color: var(--txt);
+  font-weight: 700;
+}
+
+.categoryNav {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.categoryPill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--b);
+  background: var(--ink2);
+  color: var(--txt2);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.categoryPill:hover {
+  border-color: var(--accent-border);
+  color: var(--txt);
+}
+
+.section {
+  scroll-margin-top: 4.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0 0.5rem;
+  margin-top: 0.25rem;
+  border-bottom: 1px solid var(--b);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--txt2);
+}
+
+.sectionCount {
+  font-size: 0.72rem;
+  color: var(--txt3);
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.5rem 0 0.15rem;
+}
+
+@media (max-width: 1100px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--rs);
+  border: 1px solid var(--b);
+  background: var(--ink3);
+  min-width: 0;
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.cardName {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--txt);
+}
+
+.memberCount {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--txt3);
+  background: var(--ink2);
+  border: 1px solid var(--b);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+}
+
+.cardMeta {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.metaTag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--txt3);
+}
+
+.cardPurpose {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--txt2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.1rem;
+}
+
+.memberChip {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid var(--b);
+  background: var(--ink2);
+  color: var(--txt2);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memberChipLead {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--bl) 12%, var(--ink2));
+  color: var(--txt);
+  font-weight: 600;
+}
