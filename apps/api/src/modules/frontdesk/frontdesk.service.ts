@@ -8,13 +8,11 @@ import {
   DisplayBoardLane,
   IssueTokenInput,
   NowServing,
-  POS_SALES_CATALOG,
   PosCheckoutInput,
   PosCheckoutResult,
   QueueStats,
   QueueToken,
   QueueType,
-  getTenantBranding,
 } from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
@@ -27,6 +25,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentService } from '../payment/payment.service';
 import { PlatformService } from '../platform/platform.service';
 import { SevaCatalogService } from '../booking/seva-catalog.service';
+import { PosCatalogService } from '../settings/pos-catalog.service';
+import { TenantSiteSettingsService } from '../settings/tenant-site-settings.service';
 
 type QueueTokenRecord = QueueToken & TenantEntity;
 
@@ -69,6 +69,8 @@ export class FrontDeskService
     private readonly platformService: PlatformService,
     private readonly paymentService: PaymentService,
     private readonly sevaCatalogService: SevaCatalogService,
+    private readonly posCatalogService: PosCatalogService,
+    private readonly siteSettings: TenantSiteSettingsService,
   ) {
     super();
   }
@@ -432,7 +434,7 @@ export class FrontDeskService
   }
 
   async getDisplayBoard(tenantId: string): Promise<DisplayBoard> {
-    const site = getTenantBranding(tenantId);
+    const site = await this.siteSettings.getBranding(tenantId);
     const stats = await this.getQueueStats(tenantId);
 
     const lanes: DisplayBoardLane[] = [];
@@ -718,9 +720,9 @@ export class FrontDeskService
     }
 
     for (const line of sales) {
-      const item = POS_SALES_CATALOG.find((s) => s.id === line.itemId);
-      if (!item) {
-        throw new BadRequestException(`Unknown sales item ${line.itemId}`);
+      const item = await this.posCatalogService.findOne(tenantId, line.itemId);
+      if (!item.isActive) {
+        throw new BadRequestException(`Sales item ${line.itemId} is not available`);
       }
       grandTotal += item.price * line.quantity;
     }
@@ -800,7 +802,7 @@ export class FrontDeskService
     }
 
     for (const line of sales) {
-      const item = POS_SALES_CATALOG.find((s) => s.id === line.itemId)!;
+      const item = await this.posCatalogService.findOne(tenantId, line.itemId);
       const lineAmount = Math.round(item.price * line.quantity * 100) / 100;
       const purpose = `Counter — Article sale — ${item.name}${line.quantity > 1 ? ` ×${line.quantity}` : ''}`;
       const donation = await this.donationService.createFromPosCheckout(tenantId, {

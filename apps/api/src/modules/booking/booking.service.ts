@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
   OnModuleInit,
+  forwardRef,
 } from '@nestjs/common';
 import {
   Booking,
@@ -14,9 +16,9 @@ import {
   PaginatedResponse,
   PaymentStatus,
   TaxReceipt,
-  getTenantBranding,
 } from '@tms/types';
 import { PaymentService } from '../payment/payment.service';
+import { TenantSiteSettingsService } from '../settings/tenant-site-settings.service';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { BookingEntity } from '../../database/entities/tenant/booking.entity';
@@ -45,6 +47,8 @@ export class BookingService
     private readonly devoteeService: DevoteeService,
     private readonly tenantData: TenantDataService,
     private readonly paymentService: PaymentService,
+    @Inject(forwardRef(() => TenantSiteSettingsService))
+    private readonly siteSettings: TenantSiteSettingsService,
   ) {
     super();
   }
@@ -297,6 +301,7 @@ export class BookingService
 
   async getReceipt(tenantId: string, id: string): Promise<TaxReceipt> {
     const booking = await this.findOne(tenantId, id);
+    const branding = await this.siteSettings.getBranding(tenantId);
     return {
       receiptNumber: booking.receiptNumber ?? `BKG-${booking.id.slice(0, 8)}`,
       amount: booking.amount,
@@ -304,7 +309,7 @@ export class BookingService
       devoteeId: booking.devoteeId,
       purpose: `Seva booking — ${booking.serviceId}`,
       issuedAt: booking.createdAt.toISOString(),
-      templeName: getTenantBranding(tenantId).name,
+      templeName: branding.name,
     };
   }
 
@@ -321,11 +326,13 @@ export class BookingService
     date: string,
   ): Promise<{ serviceId: string; date: string; slots: TimeSlot[] }> {
     const bookedRanges = await this.getBookedRangesForService(tenantId, serviceId, date);
+    const slotWindow = await this.siteSettings.getSlotWindow(tenantId);
     const slots = await this.sevaCatalogService.getSlotsForDate(
       tenantId,
       serviceId,
       date,
       bookedRanges,
+      slotWindow,
     );
 
     return { serviceId, date, slots };

@@ -4,6 +4,7 @@ import { TenantEntity } from './entities/control/tenant.entity';
 import { TenantEnvironmentEntity } from './entities/control/tenant-environment.entity';
 import { UsageMeterEntity } from './entities/control/usage-meter.entity';
 import { TenantPaymentSettingsEntity } from './entities/control/tenant-payment-settings.entity';
+import { TenantSiteSettingsEntity } from './entities/control/tenant-site-settings.entity';
 import { TenantConnectionService } from './tenant-connection.service';
 import { TenantResolverService } from './tenant-resolver.service';
 import { EnvironmentProvisionerService } from './environment-provisioner.service';
@@ -20,11 +21,23 @@ import { TenantDataService } from './tenant-data.service';
       username: process.env.DATABASE_USER ?? 'tms',
       password: process.env.DATABASE_PASSWORD ?? 'tms_dev',
       database: process.env.DATABASE_NAME ?? 'tms_control',
-      entities: [TenantEntity, TenantEnvironmentEntity, UsageMeterEntity, TenantPaymentSettingsEntity],
+      entities: [
+        TenantEntity,
+        TenantEnvironmentEntity,
+        UsageMeterEntity,
+        TenantPaymentSettingsEntity,
+        TenantSiteSettingsEntity,
+      ],
       synchronize: false,
       logging: process.env.DB_LOGGING === 'true',
     }),
-    TypeOrmModule.forFeature([TenantEntity, TenantEnvironmentEntity, UsageMeterEntity, TenantPaymentSettingsEntity]),
+    TypeOrmModule.forFeature([
+      TenantEntity,
+      TenantEnvironmentEntity,
+      UsageMeterEntity,
+      TenantPaymentSettingsEntity,
+      TenantSiteSettingsEntity,
+    ]),
   ],
   providers: [
     TenantConnectionService,

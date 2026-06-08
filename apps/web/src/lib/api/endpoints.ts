@@ -31,6 +31,7 @@ import type {
   RecognitionItem,
   RentalAsset,
   RentalOrder,
+  PosProduct,
   SevaService,
   Sponsor,
   SponsorPipelineStage,
@@ -176,6 +177,8 @@ export function createEndpoints(client: ApiClient) {
     createBooking: (body: CreateBookingInput) => client.post<Booking>('/bookings', body),
 
     getServices: () => client.get<SevaService[]>('/services'),
+
+    getPosProducts: () => client.get<PosProduct[]>('/catalog/products'),
 
     getServiceSlots: (serviceId: string, date: string) =>
       client.get<ServiceSlotsResponse>(`/services/${serviceId}/slots`, {

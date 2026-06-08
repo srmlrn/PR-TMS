@@ -24,6 +24,14 @@ export interface PosSalesItem {
   currency: Currency;
 }
 
+/** Tenant-scoped counter sales article (persisted per temple). */
+export interface PosProduct extends PosSalesItem {
+  tenantId: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 /** Static prasadam / counter article catalog when no sales API exists. */
 export const POS_SALES_CATALOG: PosSalesItem[] = [
   { id: 'sale-laddu', name: 'Laddu (single)', price: 2, currency: Currency.USD },

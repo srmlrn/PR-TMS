@@ -1,8 +1,10 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
   OnModuleInit,
+  forwardRef,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -14,9 +16,9 @@ import {
   PaginatedResponse,
   PaymentStatus,
   TaxReceipt,
-  getTenantBranding,
 } from '@tms/types';
 import { PaymentService } from '../payment/payment.service';
+import { TenantSiteSettingsService } from '../settings/tenant-site-settings.service';
 import { validateTaxId } from '../payment/tax-validation.util';
 import { DonationBillingService } from './donation-billing.service';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
@@ -45,6 +47,8 @@ export class DonationService
     private readonly tenantData: TenantDataService,
     private readonly paymentService: PaymentService,
     private readonly billingService: DonationBillingService,
+    @Inject(forwardRef(() => TenantSiteSettingsService))
+    private readonly siteSettings: TenantSiteSettingsService,
   ) {
     super();
   }
@@ -417,6 +421,7 @@ export class DonationService
   async getReceipt(tenantId: string, id: string): Promise<TaxReceipt> {
     const donation = await this.findDonationById(tenantId, id);
     const tax = this.resolveTaxDoc(donation.currency);
+    const branding = await this.siteSettings.getBranding(tenantId);
     return {
       receiptNumber: donation.receiptNumber,
       amount: donation.amount,
@@ -426,7 +431,7 @@ export class DonationService
       devoteeId: donation.devoteeId,
       purpose: donation.purpose,
       issuedAt: donation.createdAt.toISOString(),
-      templeName: getTenantBranding(tenantId).name,
+      templeName: branding.name,
     };
   }
 

@@ -1,11 +1,24 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { Currency, DEMO_TENANT_IDS, getTenantBranding, GANESHA_TEMPLE_ID, SevaService } from '@tms/types';
+import {
+  CreateSevaServiceInput,
+  Currency,
+  DEMO_TENANT_IDS,
+  getTenantBranding,
+  GANESHA_TEMPLE_ID,
+  SevaService,
+  UpdateSevaServiceInput,
+} from '@tms/types';
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { SevaServiceEntity } from '../../database/entities/tenant/seva-service.entity';
 import { TenantDataService } from '../../database/tenant-data.service';
-
 type SevaServiceRecord = SevaService & TenantEntity;
+
+export interface SlotWindow {
+  startHour: number;
+  endHour: number;
+  intervalMinutes: number;
+}
 
 export interface TimeSlot {
   startTime: string;
@@ -14,12 +27,6 @@ export interface TimeSlot {
 }
 
 const DEMO_TENANT = '00000000-0000-0000-0000-000000000001';
-
-const SLOT_WINDOW = {
-  startHour: 9,
-  endHour: 17,
-  intervalMinutes: 30,
-};
 
 @Injectable()
 export class SevaCatalogService
@@ -45,19 +52,19 @@ export class SevaCatalogService
   }
 
   async findAll(tenantId: string): Promise<SevaServiceRecord[]> {
+    const all = await this.findAllAdmin(tenantId);
+    return all.filter((s) => s.isActive);
+  }
+
+  async findAllAdmin(tenantId: string): Promise<SevaServiceRecord[]> {
     if (this.usePostgres) {
       const repo = await this.tenantData.sevaServices();
-      const rows = await repo.find({
-        where: { isActive: true },
-        order: { name: 'ASC' },
-      });
+      const rows = await repo.find({ order: { name: 'ASC' } });
       return rows.map((r) => this.toSevaService(r));
     }
 
     this.ensureSeeded(tenantId);
-    return this.scoped(tenantId)
-      .filter((s) => s.isActive)
-      .sort((a, b) => a.name.localeCompare(b.name));
+    return this.scoped(tenantId).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async findOne(tenantId: string, id: string): Promise<SevaServiceRecord> {
@@ -78,22 +85,96 @@ export class SevaCatalogService
     return service;
   }
 
+  async create(tenantId: string, input: CreateSevaServiceInput): Promise<SevaServiceRecord> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.sevaServices();
+      const row = await repo.save(
+        repo.create({
+          name: input.name.trim(),
+          deity: input.deity.trim(),
+          description: input.description?.trim(),
+          price: input.price,
+          currency: input.currency ?? Currency.USD,
+          durationMinutes: input.durationMinutes ?? 30,
+          isActive: input.isActive ?? true,
+        }),
+      );
+      return this.toSevaService(row);
+    }
+
+    this.ensureSeeded(tenantId);
+    return this.createEntity(tenantId, {
+      name: input.name.trim(),
+      deity: input.deity.trim(),
+      description: input.description?.trim(),
+      price: input.price,
+      currency: input.currency ?? Currency.USD,
+      durationMinutes: input.durationMinutes ?? 30,
+      isActive: input.isActive ?? true,
+    });
+  }
+
+  async update(
+    tenantId: string,
+    id: string,
+    input: UpdateSevaServiceInput,
+  ): Promise<SevaServiceRecord> {
+    if (this.usePostgres) {
+      const repo = await this.tenantData.sevaServices();
+      const existing = await repo.findOne({ where: { id } });
+      if (!existing) {
+        throw new NotFoundException(`Service ${id} not found`);
+      }
+      const row = await repo.save({
+        ...existing,
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.deity !== undefined ? { deity: input.deity.trim() } : {}),
+        ...(input.description !== undefined
+          ? { description: input.description.trim() || undefined }
+          : {}),
+        ...(input.price !== undefined ? { price: input.price } : {}),
+        ...(input.currency !== undefined ? { currency: input.currency } : {}),
+        ...(input.durationMinutes !== undefined
+          ? { durationMinutes: input.durationMinutes }
+          : {}),
+        ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+      });
+      return this.toSevaService(row);
+    }
+
+    this.ensureSeeded(tenantId);
+    return this.updateEntity(tenantId, id, {
+      ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+      ...(input.deity !== undefined ? { deity: input.deity.trim() } : {}),
+      ...(input.description !== undefined
+        ? { description: input.description.trim() || undefined }
+        : {}),
+      ...(input.price !== undefined ? { price: input.price } : {}),
+      ...(input.currency !== undefined ? { currency: input.currency } : {}),
+      ...(input.durationMinutes !== undefined
+        ? { durationMinutes: input.durationMinutes }
+        : {}),
+      ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+    });
+  }
+
   async getSlotsForDate(
     tenantId: string,
     serviceId: string,
     date: string,
     bookedRanges: Array<{ start: Date; end: Date }>,
+    slotWindow: SlotWindow = { startHour: 9, endHour: 17, intervalMinutes: 30 },
   ): Promise<TimeSlot[]> {
     const service = await this.findOne(tenantId, serviceId);
     const dayStart = this.parseDateOnly(date);
 
     const slots: TimeSlot[] = [];
-    const intervalMs = SLOT_WINDOW.intervalMinutes * 60_000;
+    const intervalMs = slotWindow.intervalMinutes * 60_000;
     const durationMs = service.durationMinutes * 60_000;
 
     for (
-      let cursor = dayStart.getTime() + SLOT_WINDOW.startHour * 3_600_000;
-      cursor + durationMs <= dayStart.getTime() + SLOT_WINDOW.endHour * 3_600_000;
+      let cursor = dayStart.getTime() + slotWindow.startHour * 3_600_000;
+      cursor + durationMs <= dayStart.getTime() + slotWindow.endHour * 3_600_000;
       cursor += intervalMs
     ) {
       const slotStart = new Date(cursor);

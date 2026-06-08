@@ -16,6 +16,7 @@ export { QueueTokenEntity } from './queue-token.entity';
 export { StaffEntity } from './staff.entity';
 export { VolunteerShiftEntity } from './volunteer-shift.entity';
 export { PaymentSessionEntity } from './payment-session.entity';
+export { PosProductEntity } from './pos-product.entity';
 
 import { DevoteeEntity } from './devotee.entity';
 import { SevaServiceEntity } from './seva-service.entity';
@@ -35,6 +36,7 @@ import { QueueTokenEntity } from './queue-token.entity';
 import { StaffEntity } from './staff.entity';
 import { VolunteerShiftEntity } from './volunteer-shift.entity';
 import { PaymentSessionEntity } from './payment-session.entity';
+import { PosProductEntity } from './pos-product.entity';
 
 export const TENANT_ENTITIES = [
   DevoteeEntity,
@@ -55,4 +57,5 @@ export const TENANT_ENTITIES = [
   StaffEntity,
   VolunteerShiftEntity,
   PaymentSessionEntity,
+  PosProductEntity,
 ];

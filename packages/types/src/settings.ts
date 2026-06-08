@@ -53,3 +53,88 @@ export interface ResolvedStripeConfig {
   webhookSecret?: string;
   source: PaymentSettingsSource;
 }
+
+/** Per-tenant cosmetic overrides merged onto platform defaults. */
+export interface TenantBrandingOverrides {
+  name?: string;
+  subtitle?: string;
+  icon?: string;
+  logoSrc?: string;
+  logoBg?: string;
+  deity?: string;
+  location?: string;
+  address?: string;
+  displayAnnouncements?: string[];
+}
+
+export interface TenantBrandingSettingsPublic {
+  tenantId: string;
+  overrides: TenantBrandingOverrides;
+  /** Fully merged branding for preview (defaults + overrides). */
+  branding: import('./tenants').TenantBranding;
+  updatedAt?: string;
+}
+
+export interface UpdateTenantBrandingInput {
+  name?: string;
+  subtitle?: string;
+  icon?: string;
+  logoSrc?: string;
+  logoBg?: string;
+  deity?: string;
+  location?: string;
+  address?: string;
+  /** One announcement per line in admin UI; empty array clears ticker. */
+  displayAnnouncements?: string[];
+}
+
+export interface TenantScheduleSettings {
+  tenantId: string;
+  /** Hour (0–23) when booking slots begin. */
+  openHour: number;
+  /** Hour (0–23) when booking slots end. */
+  closeHour: number;
+  /** Minutes between slot start times. */
+  slotIntervalMinutes: number;
+  updatedAt?: string;
+}
+
+export interface UpdateTenantScheduleInput {
+  openHour?: number;
+  closeHour?: number;
+  slotIntervalMinutes?: number;
+}
+
+export interface CreateSevaServiceInput {
+  name: string;
+  deity: string;
+  description?: string;
+  price: number;
+  currency?: import('./enums').Currency;
+  durationMinutes?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateSevaServiceInput {
+  name?: string;
+  deity?: string;
+  description?: string;
+  price?: number;
+  currency?: import('./enums').Currency;
+  durationMinutes?: number;
+  isActive?: boolean;
+}
+
+export interface CreatePosProductInput {
+  name: string;
+  price: number;
+  currency?: import('./enums').Currency;
+  isActive?: boolean;
+}
+
+export interface UpdatePosProductInput {
+  name?: string;
+  price?: number;
+  currency?: import('./enums').Currency;
+  isActive?: boolean;
+}

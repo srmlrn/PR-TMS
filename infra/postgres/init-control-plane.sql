@@ -55,6 +55,25 @@ CREATE TABLE usage_meters (
 CREATE INDEX idx_tenant_env_tenant ON tenant_environments(tenant_id);
 CREATE INDEX idx_usage_meters_env ON usage_meters(environment_id, period_start);
 
+CREATE TABLE tenant_site_settings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL UNIQUE REFERENCES tenants(id) ON DELETE CASCADE,
+  name VARCHAR(255),
+  subtitle VARCHAR(255),
+  icon VARCHAR(16),
+  logo_src VARCHAR(512),
+  logo_bg VARCHAR(32),
+  deity VARCHAR(128),
+  location VARCHAR(255),
+  address VARCHAR(512),
+  display_announcements JSONB,
+  open_hour SMALLINT NOT NULL DEFAULT 9,
+  close_hour SMALLINT NOT NULL DEFAULT 17,
+  slot_interval_minutes SMALLINT NOT NULL DEFAULT 30,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE tenant_payment_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL UNIQUE REFERENCES tenants(id) ON DELETE CASCADE,

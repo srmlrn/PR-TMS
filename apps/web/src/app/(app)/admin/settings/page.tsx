@@ -214,6 +214,26 @@ export default function SettingsPage() {
         </GlassCard>
       </div>
 
+      <GlassCard title="Site & Operations" className={styles.configCard}>
+        <p className={styles.muted}>
+          Branding, seva catalog, counter products, and temple hours — each tenant manages its own site.
+        </p>
+        <div className={styles.linkGrid}>
+          <Link href="/admin/settings/branding">
+            <Button variant="glass">Branding & Labels</Button>
+          </Link>
+          <Link href="/admin/settings/catalog/services">
+            <Button variant="glass">Seva Catalog</Button>
+          </Link>
+          <Link href="/admin/settings/catalog/products">
+            <Button variant="glass">Counter Products</Button>
+          </Link>
+          <Link href="/admin/settings/schedules">
+            <Button variant="glass">Schedules & Hours</Button>
+          </Link>
+        </div>
+      </GlassCard>
+
       <GlassCard title="Tenant Configuration" className={styles.configCard}>
         <p className={styles.muted}>
           Manage Stripe and other payment provider keys per tenant.

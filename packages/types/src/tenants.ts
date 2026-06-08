@@ -72,6 +72,45 @@ export function getTenantBranding(tenantIdOrSlug: string): TenantBranding {
   return bySlug ?? TENANT_BRANDING[SV_TEMPLE_ID];
 }
 
+/** Merge DB/admin overrides onto static platform defaults. */
+export function mergeTenantBranding(
+  base: TenantBranding,
+  overrides?: Partial<
+    Pick<
+      TenantBranding,
+      | 'name'
+      | 'subtitle'
+      | 'icon'
+      | 'logoSrc'
+      | 'logoBg'
+      | 'deity'
+      | 'location'
+      | 'address'
+      | 'displayAnnouncements'
+    >
+  >,
+): TenantBranding {
+  if (!overrides) {
+    return base;
+  }
+  return {
+    ...base,
+    ...(overrides.name !== undefined && overrides.name !== '' ? { name: overrides.name } : {}),
+    ...(overrides.subtitle !== undefined ? { subtitle: overrides.subtitle } : {}),
+    ...(overrides.icon !== undefined ? { icon: overrides.icon } : {}),
+    ...(overrides.logoSrc !== undefined ? { logoSrc: overrides.logoSrc || undefined } : {}),
+    ...(overrides.logoBg !== undefined ? { logoBg: overrides.logoBg || undefined } : {}),
+    ...(overrides.deity !== undefined && overrides.deity !== ''
+      ? { deity: overrides.deity }
+      : {}),
+    ...(overrides.location !== undefined ? { location: overrides.location } : {}),
+    ...(overrides.address !== undefined ? { address: overrides.address } : {}),
+    ...(overrides.displayAnnouncements !== undefined
+      ? { displayAnnouncements: overrides.displayAnnouncements }
+      : {}),
+  };
+}
+
 export function getTenantSlug(tenantId: string): string {
   return getTenantBranding(tenantId).slug;
 }

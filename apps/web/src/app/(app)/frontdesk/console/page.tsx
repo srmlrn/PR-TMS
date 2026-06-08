@@ -48,6 +48,7 @@ function FrontDeskConsolePageInner() {
 
   const { data: stats, loading, error, refetch } = useApi((ep) => ep.getQueueStats());
   const { data: services } = useApi((ep) => ep.getServices());
+  const { data: products } = useApi((ep) => ep.getPosProducts());
   const {
     data: posData,
     loading: posLoading,
@@ -394,6 +395,7 @@ function FrontDeskConsolePageInner() {
             ep={ep}
             devotee={devotee}
             services={serviceList}
+            products={products ?? []}
             onSuccess={(msg) => {
               setActionMsg(msg);
               refetchPos();

@@ -7,8 +7,8 @@ import {
   Currency,
   deitySelectOptions,
   DONATION_FUND_OPTIONS,
-  POS_SALES_CATALOG,
   type CounterPaymentMethod,
+  type PosProduct,
   type DevoteeLookupResult,
   type PaymentProvider,
   type SevaService,
@@ -48,6 +48,7 @@ interface Props {
   ep: Endpoints;
   devotee: NonNullable<DevoteeLookupResult['devotee']>;
   services: SevaService[];
+  products: PosProduct[];
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
 }
@@ -63,7 +64,7 @@ function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
   return 'cash';
 }
 
-export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Props) {
+export function CounterPosForm({ ep, devotee, services, products, onSuccess, onError }: Props) {
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
   const currency = (services[0]?.currency as Currency) ?? Currency.USD;
@@ -112,10 +113,10 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
   const salesTotal = useMemo(
     () =>
       salesLines.reduce((sum, l) => {
-        const item = POS_SALES_CATALOG.find((s) => s.id === l.itemId);
+        const item = products.find((s) => s.id === l.itemId);
         return sum + (item?.price ?? 0) * l.quantity;
       }, 0),
-    [salesLines],
+    [salesLines, products],
   );
   const grandTotal = Math.round((serviceTotal + donationTotal + salesTotal) * 100) / 100;
 
@@ -177,7 +178,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
   }
 
   function addSalesLine(itemId?: string) {
-    const id = itemId ?? POS_SALES_CATALOG[0]?.id ?? '';
+    const id = itemId ?? products[0]?.id ?? '';
     setSalesLines((rows) => [...rows, { key: nextKey(), itemId: id, quantity: 1 }]);
     setTab('sales');
   }
@@ -477,7 +478,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
                 </thead>
                 <tbody>
                   {salesLines.map((line) => {
-                    const item = POS_SALES_CATALOG.find((s) => s.id === line.itemId);
+                    const item = products.find((s) => s.id === line.itemId);
                     const lineTotal = (item?.price ?? 0) * line.quantity;
                     return (
                       <tr key={line.key}>
@@ -488,7 +489,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
                               updateSalesLine(line.key, { itemId: e.target.value })
                             }
                           >
-                            {POS_SALES_CATALOG.map((s) => (
+                            {products.map((s) => (
                               <option key={s.id} value={s.id}>
                                 {s.name}
                               </option>
@@ -676,7 +677,7 @@ export function CounterPosForm({ ep, devotee, services, onSuccess, onError }: Pr
               </span>
             </button>
           ))}
-          {POS_SALES_CATALOG.slice(0, 3).map((item) => (
+          {products.slice(0, 3).map((item) => (
             <button
               key={item.id}
               type="button"
