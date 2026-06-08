@@ -118,8 +118,9 @@
 
 .approvalRow {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
   padding: 0.35rem 0;
   border-bottom: 1px solid color-mix(in srgb, var(--b) 65%, transparent);
 }
@@ -131,8 +132,9 @@
 
 .approvalActions {
   display: flex;
+  align-items: center;
   gap: 0.35rem;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .statDot {

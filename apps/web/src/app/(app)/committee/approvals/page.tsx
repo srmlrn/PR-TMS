@@ -47,28 +47,24 @@ export default function CommitteeApprovalsPage() {
           </p>
         ) : (
           approvals.map((r) => (
-            <div
-              key={r.id}
-              className="listRow"
-              style={{ flexDirection: 'column', alignItems: 'stretch' }}
-            >
-              <div className="flexBetween" style={{ width: '100%', gap: '0.5rem' }}>
-                <div className="listRowMain" style={{ minWidth: 0 }}>
+            <div key={r.id} className="listRow">
+              <div className="listRowMain">
+                <div className="flexBetween" style={{ gap: '0.5rem', marginBottom: '0.15rem' }}>
                   <div className="listRowTitle">{r.title}</div>
-                  <p className="hint">
-                    {committeeName(r.committeeId)} · {r.type.replace('_', ' ')} ·{' '}
-                    {formatShortDate(r.createdAt)}
-                  </p>
-                  {r.description && <p className="hint">{r.description}</p>}
-                  {r.requestedByName && (
-                    <div style={{ marginTop: '0.35rem' }}>
-                      <PersonRow name={r.requestedByName} subtitle="Requester" />
-                    </div>
-                  )}
+                  <Badge variant="pending">{r.status}</Badge>
                 </div>
-                <Badge variant="pending">{r.status}</Badge>
+                <p className="hint">
+                  {committeeName(r.committeeId)} · {r.type.replace('_', ' ')} ·{' '}
+                  {formatShortDate(r.createdAt)}
+                </p>
+                {r.description && <p className="hint">{r.description}</p>}
+                {r.requestedByName && (
+                  <div style={{ marginTop: '0.35rem' }}>
+                    <PersonRow name={r.requestedByName} subtitle="Requester" />
+                  </div>
+                )}
               </div>
-              <div className="flexRow mt1">
+              <div className="listRowActions">
                 <Button
                   size="sm"
                   disabled={actionId === r.id}
