@@ -12,6 +12,7 @@ import {
   CommitteeDashboard,
   CommitteeLeadershipRecord,
   CommitteeMember,
+  getPersonAvatarUrl,
   CommitteeMessage,
   CommitteeReport,
   CommitteeRequest,
@@ -69,6 +70,7 @@ type MemberRecord = TenantEntity & {
   email?: string;
   role: CommitteeMember['role'];
   displayTitle?: string;
+  photoUrl?: string;
   joinedAt: string;
   isActive: boolean;
 };
@@ -192,7 +194,10 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
 
   private toMember(record: MemberRecord): CommitteeMember {
     const { tenantId: _t, createdAt: _c, updatedAt: _u, ...m } = record;
-    return m;
+    return {
+      ...m,
+      photoUrl: getPersonAvatarUrl(m.name, m.photoUrl),
+    };
   }
 
   private toBlock(record: BlockRecord): CommitteeCalendarBlock {
@@ -725,6 +730,7 @@ export class CommitteeService extends BaseTenantService<CommitteeRecord> impleme
       email: input.email,
       role: input.role,
       displayTitle: input.displayTitle,
+      photoUrl: input.photoUrl,
       joinedAt: this.iso(now),
       isActive: true,
       createdAt: now,

@@ -1,156 +1,527 @@
 'use client';
 
-import type { CommitteeMember, CommitteeRoster, CommitteeRosterCategory } from '@tms/types';
+import { useMemo, useState } from 'react';
+import { Button } from '@tms/ui';
+import {
+  UserRole,
+  type Committee,
+  type CommitteeMember,
+  type CommitteeMemberRole,
+  type CommitteeRoster,
+  type CreateCommitteeMemberInput,
+  type UpdateCommitteeMemberInput,
+} from '@tms/types';
 import { AppPage } from '@/components/AppPage';
+import { PersonRow } from '@/components/PersonAvatar';
+import { createEndpoints } from '@/lib/api/endpoints';
+import { useAuth } from '@/lib/auth-context';
+import { useCommitteeContextOptional } from '@/lib/committee-context';
+import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
 import styles from './directory.module.css';
 
-function memberLabel(member: CommitteeMember): string {
-  const title =
-    member.displayTitle ??
-    (member.role === 'chair' ? 'Chair' : member.role === 'vice_chair' ? 'Co-Chair' : null);
-  return title ? `${member.name} · ${title}` : member.name;
-}
+type RosterEntry = {
+  committee: Committee;
+  members: CommitteeMember[];
+  category: string;
+  categoryLabel: string;
+};
 
-function isLead(member: CommitteeMember): boolean {
-  return member.role === 'chair' || member.role === 'vice_chair';
-}
+const ROLE_FILTER_OPTIONS: Array<{ value: '' | CommitteeMemberRole; label: string }> = [
+  { value: '', label: 'All roles' },
+  { value: 'chair', label: 'Chair' },
+  { value: 'vice_chair', label: 'Co-Chair' },
+  { value: 'secretary', label: 'Secretary' },
+  { value: 'member', label: 'Member' },
+];
 
-function rosterTotals(roster: CommitteeRoster) {
-  let committees = 0;
-  let members = 0;
+function flattenRoster(roster: CommitteeRoster): RosterEntry[] {
+  const entries: RosterEntry[] = [];
   for (const group of roster.categories) {
-    committees += group.committees.length;
-    for (const entry of group.committees) {
-      members += entry.members.length;
+    for (const item of group.committees) {
+      entries.push({
+        committee: item.committee,
+        members: item.members,
+        category: group.category,
+        categoryLabel: group.label,
+      });
     }
   }
-  return { committees, members };
+  return entries;
 }
 
-function CommitteeCard({
-  name,
-  purpose,
-  committeeType,
-  meetingCadence,
-  members,
-}: {
-  name: string;
-  purpose?: string;
-  committeeType: string;
-  meetingCadence?: string;
-  members: CommitteeMember[];
-}) {
+function memberTitle(member: CommitteeMember): string {
   return (
-    <article className={styles.card}>
-      <div className={styles.cardHead}>
-        <h3 className={styles.cardName}>{name}</h3>
-        <span className={styles.memberCount}>{members.length}</span>
-      </div>
-      <div className={styles.cardMeta}>
-        <span className={styles.metaTag}>{committeeType.replace('_', ' ')}</span>
-        {meetingCadence && (
-          <>
-            <span className={styles.metaTag}>·</span>
-            <span className={styles.metaTag}>{meetingCadence.replace('_', ' ')}</span>
-          </>
-        )}
-      </div>
-      {purpose && <p className={styles.cardPurpose}>{purpose}</p>}
-      <div className={styles.members}>
-        {members.map((m) => (
-          <span
-            key={m.id}
-            className={[styles.memberChip, isLead(m) ? styles.memberChipLead : ''].join(' ')}
-            title={memberLabel(m)}
-          >
-            {memberLabel(m)}
-          </span>
-        ))}
-      </div>
-    </article>
+    member.displayTitle ??
+    (member.role === 'chair' ? 'Chair' : member.role === 'vice_chair' ? 'Co-Chair' : member.role)
   );
 }
 
-function RosterSection({ group }: { group: CommitteeRosterCategory }) {
-  return (
-    <section id={`category-${group.category}`} className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>{group.label}</h2>
-        <span className={styles.sectionCount}>
-          {group.committees.length} committee{group.committees.length === 1 ? '' : 's'}
-        </span>
-      </div>
-      <div className={styles.cardGrid}>
-        {group.committees.map(({ committee, members }) => (
-          <CommitteeCard
-            key={committee.id}
-            name={committee.name}
-            purpose={committee.purpose ?? committee.description}
-            committeeType={committee.committeeType}
-            meetingCadence={committee.meetingCadence}
-            members={members}
-          />
-        ))}
-      </div>
-    </section>
-  );
+function emptyMemberForm(): CreateCommitteeMemberInput {
+  return {
+    userId: crypto.randomUUID(),
+    name: '',
+    email: '',
+    role: 'member',
+    displayTitle: '',
+  };
 }
 
 export default function CommitteeDirectoryPage() {
-  const { data, loading, error } = useApi((ep) => ep.getCommitteeRoster());
-  const roster = data;
-  const totals = roster ? rosterTotals(roster) : null;
+  const { user } = useAuth();
+  const { api } = useTenant();
+  const committeeCtx = useCommitteeContextOptional();
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
-  function scrollToCategory(category: string) {
-    document.getElementById(`category-${category}`)?.scrollIntoView({ behavior: 'smooth' });
+  const { data: roster, loading, error, refetch } = useApi((ep) => ep.getCommitteeRoster());
+
+  const entries = useMemo(() => (roster ? flattenRoster(roster) : []), [roster]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [committeeQuery, setCommitteeQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [memberQuery, setMemberQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'' | CommitteeMemberRole>('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [addForm, setAddForm] = useState<CreateCommitteeMemberInput>(emptyMemberForm);
+  const [editForm, setEditForm] = useState<UpdateCommitteeMemberInput>({});
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const categories = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const e of entries) {
+      seen.set(e.category, e.categoryLabel);
+    }
+    return [...seen.entries()].map(([value, label]) => ({ value, label }));
+  }, [entries]);
+
+  const filteredCommittees = useMemo(() => {
+    const q = committeeQuery.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (categoryFilter && e.category !== categoryFilter) return false;
+      if (!q) return true;
+      return (
+        e.committee.name.toLowerCase().includes(q) ||
+        (e.committee.purpose ?? '').toLowerCase().includes(q) ||
+        e.categoryLabel.toLowerCase().includes(q)
+      );
+    });
+  }, [entries, committeeQuery, categoryFilter]);
+
+  const selected =
+    filteredCommittees.find((e) => e.committee.id === selectedId) ??
+    filteredCommittees[0] ??
+    entries.find((e) => e.committee.id === selectedId) ??
+    entries[0] ??
+    null;
+
+  const activeCommitteeId = selected?.committee.id ?? null;
+
+  const canManage = useMemo(() => {
+    if (!activeCommitteeId) return false;
+    if (isAdmin) return true;
+    const c = committeeCtx?.committees.find((x) => x.id === activeCommitteeId);
+    return c?.myRole === 'chair' || c?.myRole === 'vice_chair';
+  }, [activeCommitteeId, isAdmin, committeeCtx?.committees]);
+
+  const filteredMembers = useMemo(() => {
+    if (!selected) return [];
+    const q = memberQuery.trim().toLowerCase();
+    return selected.members.filter((m) => {
+      if (!m.isActive) return false;
+      if (roleFilter && m.role !== roleFilter) return false;
+      if (!q) return true;
+      return (
+        m.name.toLowerCase().includes(q) ||
+        (m.email ?? '').toLowerCase().includes(q) ||
+        memberTitle(m).toLowerCase().includes(q)
+      );
+    });
+  }, [selected, memberQuery, roleFilter]);
+
+  async function runSave(action: () => Promise<void>) {
+    setSaving(true);
+    setMsg(null);
+    try {
+      await action();
+      await refetch();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
   }
+
+  async function handleAdd() {
+    if (!activeCommitteeId || !addForm.name.trim()) {
+      setMsg('Name is required');
+      return;
+    }
+    await runSave(async () => {
+      const ep = createEndpoints(api);
+      await ep.addCommitteeMember(activeCommitteeId, {
+        ...addForm,
+        name: addForm.name.trim(),
+        email: addForm.email?.trim() || undefined,
+        displayTitle: addForm.displayTitle?.trim() || undefined,
+      });
+      setAddForm(emptyMemberForm());
+      setMsg('Member added.');
+    });
+  }
+
+  async function handleUpdate(memberId: string) {
+    if (!activeCommitteeId) return;
+    await runSave(async () => {
+      const ep = createEndpoints(api);
+      await ep.updateCommitteeMember(activeCommitteeId, memberId, {
+        ...editForm,
+        name: editForm.name?.trim(),
+        email: editForm.email?.trim() || undefined,
+        displayTitle: editForm.displayTitle?.trim() || undefined,
+      });
+      setEditingId(null);
+      setEditForm({});
+      setMsg('Member updated.');
+    });
+  }
+
+  function startEdit(member: CommitteeMember) {
+    setEditingId(member.id);
+    setEditForm({
+      name: member.name,
+      email: member.email ?? '',
+      role: member.role,
+      displayTitle: member.displayTitle ?? '',
+    });
+  }
+
+  const totals = roster
+    ? {
+        committees: entries.length,
+        members: entries.reduce((n, e) => n + e.members.length, 0),
+        categories: roster.categories.length,
+      }
+    : null;
 
   return (
     <AppPage
-      subtitle="Temple committees and members, grouped by category"
+      subtitle="Browse committees and manage rosters"
       loading={loading}
       error={error}
       showTenantContext={false}
     >
       {roster && (
-        <>
-          {roster.categories.length === 0 ? (
+        <div className={styles.shell}>
+          {totals && (
+            <div className={styles.summary}>
+              <span>
+                <strong>{totals.committees}</strong> committees
+              </span>
+              <span>
+                <strong>{totals.members}</strong> members
+              </span>
+              <span>
+                <strong>{totals.categories}</strong> categories
+              </span>
+            </div>
+          )}
+
+          {entries.length === 0 ? (
             <p className="hint">No public committee rosters available.</p>
           ) : (
-            <>
-              <div className={styles.summary}>
-                <div className={styles.summaryStats}>
-                  <span className={styles.summaryStat}>
-                    <strong>{totals?.committees ?? 0}</strong> committees
-                  </span>
-                  <span className={styles.summaryStat}>
-                    <strong>{totals?.members ?? 0}</strong> members listed
-                  </span>
-                  <span className={styles.summaryStat}>
-                    <strong>{roster.categories.length}</strong> categories
-                  </span>
+            <div className={styles.split}>
+              <aside className={styles.listPane}>
+                <div className={styles.listTools}>
+                  <input
+                    type="search"
+                    placeholder="Search committees…"
+                    value={committeeQuery}
+                    onChange={(e) => setCommitteeQuery(e.target.value)}
+                    aria-label="Search committees"
+                  />
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    aria-label="Filter by category"
+                  >
+                    <option value="">All categories</option>
+                    {categories.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <nav className={styles.categoryNav} aria-label="Jump to category">
-                  {roster.categories.map((group) => (
-                    <button
-                      key={group.category}
-                      type="button"
-                      className={styles.categoryPill}
-                      onClick={() => scrollToCategory(group.category)}
-                    >
-                      {group.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
+                <div className={styles.listScroll}>
+                  {filteredCommittees.length === 0 ? (
+                    <p className={styles.emptyPane}>No committees match</p>
+                  ) : (
+                    categories
+                      .filter(
+                        (c) =>
+                          !categoryFilter || c.value === categoryFilter,
+                      )
+                      .map((cat) => {
+                        const items = filteredCommittees.filter(
+                          (e) => e.category === cat.value,
+                        );
+                        if (items.length === 0) return null;
+                        return (
+                          <div key={cat.value} className={styles.categoryBlock}>
+                            <div className={styles.categoryLabel}>{cat.label}</div>
+                            {items.map((e) => {
+                              const active =
+                                (selectedId ?? selected?.committee.id) === e.committee.id;
+                              return (
+                                <button
+                                  key={e.committee.id}
+                                  type="button"
+                                  className={[
+                                    styles.committeeBtn,
+                                    active ? styles.committeeBtnActive : '',
+                                  ].join(' ')}
+                                  onClick={() => {
+                                    setSelectedId(e.committee.id);
+                                    setEditingId(null);
+                                    setMemberQuery('');
+                                    setRoleFilter('');
+                                  }}
+                                >
+                                  <span>{e.committee.name}</span>
+                                  <span className={styles.committeeCount}>
+                                    {e.members.length}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              </aside>
 
-              {roster.categories.map((group) => (
-                <RosterSection key={group.category} group={group} />
-              ))}
-            </>
+              <section className={styles.detailPane}>
+                {!selected ? (
+                  <p className={styles.emptyPane}>Select a committee</p>
+                ) : (
+                  <>
+                    <header className={styles.detailHeader}>
+                      <h2 className={styles.detailTitle}>{selected.committee.name}</h2>
+                      <div className={styles.detailMeta}>
+                        <span>{selected.categoryLabel}</span>
+                        <span>·</span>
+                        <span>{selected.committee.committeeType.replace('_', ' ')}</span>
+                        {selected.committee.meetingCadence && (
+                          <>
+                            <span>·</span>
+                            <span>{selected.committee.meetingCadence.replace('_', ' ')}</span>
+                          </>
+                        )}
+                        <span>·</span>
+                        <span>{selected.members.length} members</span>
+                      </div>
+                      {(selected.committee.purpose ?? selected.committee.description) && (
+                        <p className={styles.detailPurpose}>
+                          {selected.committee.purpose ?? selected.committee.description}
+                        </p>
+                      )}
+                    </header>
+
+                    <div className={styles.detailTools}>
+                      <input
+                        type="search"
+                        placeholder="Search members…"
+                        value={memberQuery}
+                        onChange={(e) => setMemberQuery(e.target.value)}
+                        aria-label="Search members"
+                      />
+                      <select
+                        value={roleFilter}
+                        onChange={(e) =>
+                          setRoleFilter(e.target.value as '' | CommitteeMemberRole)
+                        }
+                        aria-label="Filter by role"
+                      >
+                        {ROLE_FILTER_OPTIONS.map((o) => (
+                          <option key={o.label} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className={styles.memberTable}>
+                      {filteredMembers.length === 0 ? (
+                        <p className={styles.emptyPane}>No members match</p>
+                      ) : (
+                        filteredMembers.map((m) => (
+                          <div key={m.id} className={styles.memberRow}>
+                            <PersonRow
+                              name={m.name}
+                              photoUrl={m.photoUrl}
+                              subtitle={m.email ?? '—'}
+                              size="md"
+                            />
+                            <span
+                              className={[
+                                styles.roleTag,
+                                m.role === 'chair' || m.role === 'vice_chair'
+                                  ? styles.roleTagLead
+                                  : '',
+                              ].join(' ')}
+                            >
+                              {memberTitle(m)}
+                            </span>
+                            {canManage && (
+                              <Button size="sm" variant="outline" onClick={() => startEdit(m)}>
+                                Edit
+                              </Button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {msg && <p className={styles.flash}>{msg}</p>}
+
+                    {canManage && editingId && (
+                      <div className={styles.managePanel}>
+                        <h3 className={styles.manageTitle}>Edit member</h3>
+                        <div className={styles.formGrid}>
+                          <label className={styles.formField}>
+                            Name
+                            <input
+                              value={editForm.name ?? ''}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, name: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className={styles.formField}>
+                            Email
+                            <input
+                              value={editForm.email ?? ''}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, email: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className={styles.formField}>
+                            Role
+                            <select
+                              value={editForm.role ?? 'member'}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  role: e.target.value as CommitteeMemberRole,
+                                })
+                              }
+                            >
+                              <option value="chair">Chair</option>
+                              <option value="vice_chair">Co-Chair</option>
+                              <option value="secretary">Secretary</option>
+                              <option value="member">Member</option>
+                            </select>
+                          </label>
+                          <label className={styles.formField}>
+                            Display title
+                            <input
+                              value={editForm.displayTitle ?? ''}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, displayTitle: e.target.value })
+                              }
+                              placeholder="e.g. Chair"
+                            />
+                          </label>
+                        </div>
+                        <div className={styles.formActions}>
+                          <Button
+                            size="sm"
+                            disabled={saving}
+                            onClick={() => void handleUpdate(editingId)}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingId(null);
+                              setEditForm({});
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {canManage && (
+                      <div className={styles.managePanel}>
+                        <h3 className={styles.manageTitle}>Add member</h3>
+                        <div className={styles.formGrid}>
+                          <label className={styles.formField}>
+                            Name
+                            <input
+                              value={addForm.name}
+                              onChange={(e) =>
+                                setAddForm({ ...addForm, name: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className={styles.formField}>
+                            Email
+                            <input
+                              value={addForm.email ?? ''}
+                              onChange={(e) =>
+                                setAddForm({ ...addForm, email: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className={styles.formField}>
+                            Role
+                            <select
+                              value={addForm.role}
+                              onChange={(e) =>
+                                setAddForm({
+                                  ...addForm,
+                                  role: e.target.value as CommitteeMemberRole,
+                                })
+                              }
+                            >
+                              <option value="chair">Chair</option>
+                              <option value="vice_chair">Co-Chair</option>
+                              <option value="secretary">Secretary</option>
+                              <option value="member">Member</option>
+                            </select>
+                          </label>
+                          <label className={styles.formField}>
+                            Display title
+                            <input
+                              value={addForm.displayTitle ?? ''}
+                              onChange={(e) =>
+                                setAddForm({ ...addForm, displayTitle: e.target.value })
+                              }
+                              placeholder="e.g. Chair"
+                            />
+                          </label>
+                        </div>
+                        <div className={styles.formActions}>
+                          <Button size="sm" disabled={saving} onClick={() => void handleAdd()}>
+                            Add member
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
+            </div>
           )}
-        </>
+        </div>
       )}
     </AppPage>
   );

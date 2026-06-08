@@ -10,6 +10,7 @@ import {
   GlassCard,
   ProgressBar,
 } from '@tms/ui';
+import { PersonRow } from '@/components/PersonAvatar';
 import type {
   Committee,
   CommitteeCalendarBlock,
@@ -288,7 +289,18 @@ export default function AdminCommitteeDetailPage() {
             <DataTable<CommitteeMember>
               getRowKey={(m) => m.id}
               columns={[
-                { key: 'name', header: 'Name', render: (m) => m.name },
+                {
+                  key: 'name',
+                  header: 'Name',
+                  render: (m) => (
+                    <PersonRow
+                      name={m.name}
+                      photoUrl={m.photoUrl}
+                      subtitle={m.email}
+                      size="sm"
+                    />
+                  ),
+                },
                 {
                   key: 'title',
                   header: 'Title',

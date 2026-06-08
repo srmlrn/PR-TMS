@@ -13,6 +13,7 @@ import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
+import { PersonRow } from '@/components/PersonAvatar';
 import styles from './devotees.module.css';
 
 const FALLBACK = [
@@ -557,7 +558,18 @@ export default function DevoteesPage() {
         <DataTable
           getRowKey={(row) => row.id}
           columns={[
-            { key: 'name', header: 'Name', render: (row) => row.name },
+            {
+              key: 'name',
+              header: 'Name',
+              render: (row) => (
+                <PersonRow
+                  name={row.name}
+                  photoUrl={'photoUrl' in row ? String(row.photoUrl) : undefined}
+                  subtitle={row.phone}
+                  size="sm"
+                />
+              ),
+            },
             { key: 'phone', header: 'Phone', render: (row) => row.phone },
             { key: 'gotram', header: 'Gotram', render: (row) => row.gotram },
             { key: 'nakshatra', header: 'Nakshatra', render: (row) => row.nakshatra },

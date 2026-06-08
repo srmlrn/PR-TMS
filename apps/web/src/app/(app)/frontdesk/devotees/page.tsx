@@ -9,6 +9,7 @@ import { createEndpoints } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { PageIntro } from '@/components/AppPage';
 import { ApiBanner } from '@/components/ApiBanner';
+import { PersonAvatar } from '@/components/PersonAvatar';
 import { DevoteeProfilePanel } from '@/components/DevoteeProfilePanel';
 import { CountryStateSelect } from '@/components/CountryStateSelect';
 import { RitualSelect } from '@/components/RitualSelect';
@@ -434,13 +435,6 @@ function FrontDeskDevoteesPageInner() {
             <p className={styles.emptyDetail}>No devotees match your filters.</p>
           ) : (
             rows.map((row) => {
-              const initials = row.name
-                .split(' ')
-                .map((part) => part[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase();
-
               return (
                 <div
                   key={row.id}
@@ -460,9 +454,11 @@ function FrontDeskDevoteesPageInner() {
                       selectDevotee(row.id);
                     }}
                   >
-                    <span className={styles.rowAvatar} aria-hidden>
-                      {initials}
-                    </span>
+                    <PersonAvatar
+                      name={row.name}
+                      photoUrl={'photoUrl' in row ? String(row.photoUrl) : undefined}
+                      size="sm"
+                    />
                     <span className={styles.rowInfo}>
                       <span className={styles.rowNameLine}>
                         <strong>{row.name}</strong>

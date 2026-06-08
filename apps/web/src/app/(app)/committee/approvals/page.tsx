@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Badge, Button, GlassCard } from '@tms/ui';
 import type { CommitteeRequest } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
+import { PersonRow } from '@/components/PersonAvatar';
 import { createEndpoints, formatShortDate } from '@/lib/api/endpoints';
 import { useTenant } from '@/lib/tenant-context';
 import { useApi } from '@/lib/api/use-api';
@@ -51,14 +52,19 @@ export default function CommitteeApprovalsPage() {
               className="listRow"
               style={{ flexDirection: 'column', alignItems: 'stretch' }}
             >
-              <div className="flexBetween" style={{ width: '100%' }}>
-                <div className="listRowMain">
+              <div className="flexBetween" style={{ width: '100%', gap: '0.5rem' }}>
+                <div className="listRowMain" style={{ minWidth: 0 }}>
                   <div className="listRowTitle">{r.title}</div>
                   <p className="hint">
                     {committeeName(r.committeeId)} · {r.type.replace('_', ' ')} ·{' '}
-                    {r.requestedByName ?? 'Member'} · {formatShortDate(r.createdAt)}
+                    {formatShortDate(r.createdAt)}
                   </p>
                   {r.description && <p className="hint">{r.description}</p>}
+                  {r.requestedByName && (
+                    <div style={{ marginTop: '0.35rem' }}>
+                      <PersonRow name={r.requestedByName} subtitle="Requester" size="sm" />
+                    </div>
+                  )}
                 </div>
                 <Badge variant="pending">{r.status}</Badge>
               </div>

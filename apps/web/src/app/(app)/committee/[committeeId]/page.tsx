@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { Badge, GlassCard } from '@tms/ui';
 import type { CommitteeRequest, CommitteeTask } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
+import { PersonRow } from '@/components/PersonAvatar';
 import { PageStats } from '@/components/PageStats';
 import { formatShortDate } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
@@ -140,12 +141,13 @@ export default function CommitteeWorkspacePage() {
 
             <GlassCard title="Members" compact>
               {members.slice(0, 8).map((m) => (
-                <div key={m.id} className="listRow">
-                  <div className="listRowMain">
-                    <div className="listRowTitle">{m.name}</div>
-                    <p className="hint">{m.displayTitle ?? m.role.replace('_', ' ')}</p>
-                  </div>
-                </div>
+                <PersonRow
+                  key={m.id}
+                  name={m.name}
+                  photoUrl={m.photoUrl}
+                  subtitle={m.displayTitle ?? m.role.replace('_', ' ')}
+                  size="sm"
+                />
               ))}
               {members.length > 8 && (
                 <p className="hint">+{members.length - 8} more members</p>

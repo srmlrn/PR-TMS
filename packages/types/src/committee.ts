@@ -58,6 +58,7 @@ export interface CommitteeMember {
   email?: string;
   role: CommitteeMemberRole;
   displayTitle?: string;
+  photoUrl?: string;
   joinedAt: string;
   isActive: boolean;
 }
@@ -220,6 +221,7 @@ export interface CreateCommitteeMemberInput {
   email?: string;
   role: CommitteeMemberRole;
   displayTitle?: string;
+  photoUrl?: string;
 }
 
 export interface UpdateCommitteeMemberInput {
@@ -227,6 +229,7 @@ export interface UpdateCommitteeMemberInput {
   email?: string;
   role?: CommitteeMemberRole;
   displayTitle?: string;
+  photoUrl?: string;
   isActive?: boolean;
 }
 

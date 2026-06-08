@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Badge, Button, DataTable, GlassCard } from '@tms/ui';
 import type { CreateStaffInput, Staff, StaffRole, UpdateStaffInput } from '@tms/types';
 import { AppPage } from '@/components/AppPage';
+import { PersonRow } from '@/components/PersonAvatar';
 import { DEMO_STAFF } from '@/lib/demo-fallbacks';
 import { useTenant } from '@/lib/tenant-context';
 import styles from '../people.module.css';
@@ -214,7 +215,13 @@ export default function StaffRosterPage() {
             getRowKey={(row) => row.id}
             data={roster}
             columns={[
-              { key: 'name', header: 'Name', render: (r) => r.name },
+              {
+                key: 'name',
+                header: 'Name',
+                render: (r) => (
+                  <PersonRow name={r.name} subtitle={r.title ?? r.role} size="sm" />
+                ),
+              },
               { key: 'role', header: 'Role', render: (r) => r.role },
               { key: 'title', header: 'Title', render: (r) => r.title ?? '—' },
               { key: 'dept', header: 'Department', render: (r) => r.department ?? '—' },

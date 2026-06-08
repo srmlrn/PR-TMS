@@ -1,0 +1,76 @@
+.avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--b);
+  background: var(--ink2);
+}
+
+.sm {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.md {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.lg {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.fallback {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.sm.fallback {
+  font-size: 0.58rem;
+}
+
+.md.fallback {
+  font-size: 0.68rem;
+}
+
+.lg.fallback {
+  font-size: 0.78rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.rowName {
+  font-weight: 600;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  color: var(--txt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowSub {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: var(--txt3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

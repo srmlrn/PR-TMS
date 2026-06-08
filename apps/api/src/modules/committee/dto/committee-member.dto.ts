@@ -26,6 +26,12 @@ export class CreateCommitteeMemberDto {
   @IsString()
   @MaxLength(64)
   displayTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  photoUrl?: string;
 }
 
 export class UpdateCommitteeMemberDto {
@@ -50,6 +56,12 @@ export class UpdateCommitteeMemberDto {
   @IsString()
   @MaxLength(64)
   displayTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  photoUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
