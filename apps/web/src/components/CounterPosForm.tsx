@@ -339,46 +339,46 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   return (
     <>
       <div className={styles.pos}>
-        <div className={styles.quickLinksBar}>
-          <p className={styles.quickLinksTitle}>Quick links</p>
-          <div className={styles.quickLinksScroll}>
-            {quickLinkServices.map((svc) => (
-              <button
-                key={svc.id}
-                type="button"
-                className={styles.quickLink}
-                onClick={() =>
-                  addServiceLine({
-                    serviceId: svc.id,
-                    location: 'on_site',
-                    unitCost: catalogUnitCost(svc, 'on_site'),
-                  })
-                }
-              >
-                <strong>{svc.name}</strong>
-                <span>
-                  {svc.deity} · On {formatMoney(svc.price, svc.currency)}
-                  {sevaSupportsOffSite(svc) && svc.priceOffSite != null && (
-                    <> · Off {formatMoney(svc.priceOffSite, svc.currency)}</>
-                  )}
-                </span>
-              </button>
-            ))}
-            {quickLinkProducts.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={styles.quickLink}
-                onClick={() => addSalesLine(item.id)}
-              >
-                <strong>{item.name}</strong>
-                <span>{formatMoney(item.price, item.currency)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className={styles.body}>
+          <aside className={styles.quickLinksBar}>
+            <p className={styles.quickLinksTitle}>Quick links</p>
+            <div className={styles.quickLinksScroll}>
+              {quickLinkServices.map((svc) => (
+                <button
+                  key={svc.id}
+                  type="button"
+                  className={styles.quickLink}
+                  onClick={() =>
+                    addServiceLine({
+                      serviceId: svc.id,
+                      location: 'on_site',
+                      unitCost: catalogUnitCost(svc, 'on_site'),
+                    })
+                  }
+                >
+                  <strong>{svc.name}</strong>
+                  <span>
+                    {svc.deity} · On {formatMoney(svc.price, svc.currency)}
+                    {sevaSupportsOffSite(svc) && svc.priceOffSite != null && (
+                      <> · Off {formatMoney(svc.priceOffSite, svc.currency)}</>
+                    )}
+                  </span>
+                </button>
+              ))}
+              {quickLinkProducts.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={styles.quickLink}
+                  onClick={() => addSalesLine(item.id)}
+                >
+                  <strong>{item.name}</strong>
+                  <span>{formatMoney(item.price, item.currency)}</span>
+                </button>
+              ))}
+            </div>
+          </aside>
+
           <div className={styles.main}>
           <div className={styles.sankalpaRow}>
             <div className="formGroup">
