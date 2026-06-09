@@ -1,6 +1,59 @@
 .console {
   --fd-gap: 0.55rem;
-  max-width: 1200px;
+  max-width: 1600px;
+}
+
+.statsWrap {
+  margin-bottom: var(--fd-gap);
+}
+
+.statsToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.38rem 0.6rem;
+  border: 1px solid var(--b2);
+  border-radius: var(--rs);
+  background: var(--ink3);
+  color: var(--txt2);
+  font-size: 0.72rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.statsToggle:hover {
+  border-color: color-mix(in srgb, var(--amber) 30%, var(--b2));
+  background: var(--glass);
+}
+
+.statsToggle[aria-expanded='true'] {
+  border-radius: var(--rs) var(--rs) 0 0;
+  border-bottom-color: transparent;
+}
+
+.statsToggleIcon {
+  font-size: 0.65rem;
+  color: var(--txt3);
+  flex-shrink: 0;
+}
+
+.statsToggleLabel {
+  font-weight: 600;
+  color: var(--txt);
+  flex-shrink: 0;
+}
+
+.statsToggleSummary {
+  color: var(--txt2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .statsStrip {
@@ -8,10 +61,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.75rem;
-  margin-bottom: var(--fd-gap);
   padding: 0.4rem 0.65rem;
   border: 1px solid var(--b2);
-  border-radius: var(--rs);
+  border-top: none;
+  border-radius: 0 0 var(--rs) var(--rs);
   background: var(--ink3);
   font-size: 0.72rem;
   color: var(--txt2);
@@ -34,6 +87,16 @@
   user-select: none;
 }
 
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 0;
+  max-height: calc(100vh - 11rem);
+  overflow: hidden;
+}
+
 .topPanel {
   display: flex;
   flex-direction: column;
@@ -43,11 +106,12 @@
   border: 1px solid var(--b);
   border-radius: var(--r);
   background: var(--glass);
+  flex-shrink: 0;
 }
 
 .lookupStrip {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) auto auto;
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) auto;
   gap: 0.4rem;
   align-items: end;
 }
@@ -65,28 +129,16 @@
 .lookupStrip :global(.formGroup) select {
   padding: 0.38rem 0.55rem;
   font-size: 0.78rem;
+  width: 100%;
 }
 
-.tokenInline {
+.topPanelMeta {
   display: flex;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.tokenInline :global(.formGroup) {
-  margin-bottom: 0;
-  min-width: 6.5rem;
-}
-
-.vipCheck {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.68rem;
-  color: var(--txt3);
-  cursor: pointer;
-  padding-bottom: 0.38rem;
-  white-space: nowrap;
+  gap: 0.4rem 0.65rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--b2);
 }
 
 .guestBar {
@@ -94,7 +146,9 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem 0.65rem;
-  padding: 0.4rem 0.5rem;
+  flex: 1;
+  min-width: min(100%, 280px);
+  padding: 0.4rem 0.55rem;
   border-radius: var(--rs);
   background: color-mix(in srgb, var(--gr) 8%, var(--ink3));
   border: 1px solid color-mix(in srgb, var(--gr) 22%, var(--b2));
@@ -122,7 +176,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  width: 100%;
   font-size: 0.68rem;
   color: var(--txt2);
 }
@@ -160,16 +213,33 @@
 }
 
 .posPanel {
-  margin-bottom: var(--fd-gap);
+  flex: 1;
+  margin-bottom: 0;
+  font-size: 0.8rem;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.posPanel :global([class*='GlassCard_body']) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .emptyState {
-  padding: 2.5rem 1rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
   text-align: center;
   border: 1px dashed var(--b2);
   border-radius: var(--r);
   color: var(--txt3);
   font-size: 0.82rem;
+  min-height: 320px;
 }
 
 .hint {
@@ -180,7 +250,7 @@
 }
 
 .statusMsg {
-  margin: 0.35rem 0 0;
+  margin: 0;
   font-size: 0.72rem;
   color: var(--txt2);
 }
@@ -200,9 +270,17 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .tokenInline {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
+  .mainColumn {
+    min-height: 240px;
+  }
+
+  .emptyState {
+    min-height: 200px;
+  }
+
+  .guestActions {
+    margin-left: 0;
+    width: 100%;
   }
 }
 
@@ -211,8 +289,7 @@
     grid-template-columns: 1fr;
   }
 
-  .guestActions {
-    margin-left: 0;
-    width: 100%;
+  .statsToggleSummary {
+    display: none;
   }
 }

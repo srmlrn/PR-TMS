@@ -5,7 +5,7 @@ import { Button } from '@tms/ui';
 import { useTheme } from '@/lib/theme-context';
 import styles from './ThemeToggle.module.css';
 
-export function ThemeToggle() {
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -25,7 +25,7 @@ export function ThemeToggle() {
         disabled
       >
         <span aria-hidden>🌙</span>
-        <span className={styles.label}>Dark</span>
+        {!compact && <span className={styles.label}>Dark</span>}
       </Button>
     );
   }
@@ -41,7 +41,9 @@ export function ThemeToggle() {
       title={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
     >
       <span aria-hidden>{theme === 'light' ? '🌙' : '☀️'}</span>
-      <span className={styles.label}>{theme === 'light' ? 'Dark' : 'Light'}</span>
+      {!compact && (
+        <span className={styles.label}>{theme === 'light' ? 'Dark' : 'Light'}</span>
+      )}
     </Button>
   );
 }

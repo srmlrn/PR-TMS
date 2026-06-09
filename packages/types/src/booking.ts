@@ -32,6 +32,24 @@ export function sevaSupportsOffSite(service: Pick<SevaService, 'priceOffSite'>):
   return service.priceOffSite != null;
 }
 
+/** Prefer the location with a non-zero catalog price when the other is zero. */
+export function defaultSevaServiceLocation(
+  service: Pick<SevaService, 'price' | 'priceOffSite'>,
+): SevaServiceLocation {
+  if (!sevaSupportsOffSite(service)) {
+    return 'on_site';
+  }
+  const onPrice = service.price ?? 0;
+  const offPrice = service.priceOffSite ?? 0;
+  if (onPrice === 0 && offPrice > 0) {
+    return 'off_site';
+  }
+  if (offPrice === 0 && onPrice > 0) {
+    return 'on_site';
+  }
+  return 'on_site';
+}
+
 export interface Booking extends TenantScoped, Timestamps {
   id: string;
   devoteeId: string;

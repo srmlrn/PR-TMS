@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@tms/ui';
 import {
@@ -13,6 +13,7 @@ import {
   type PaymentProvider,
   type SevaService,
   type ServiceLocation,
+  defaultSevaServiceLocation,
   resolveSevaUnitPrice,
   sevaSupportsOffSite,
 } from '@tms/types';
@@ -57,10 +58,21 @@ interface Props {
   onError: (message: string) => void;
 }
 
+const QUICK_LINKS_COLLAPSED_KEY = 'tms-pos-quick-links-collapsed';
+
 let lineKey = 0;
 function nextKey(): string {
   lineKey += 1;
   return `line-${lineKey}`;
+}
+
+function readQuickLinksCollapsed(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(QUICK_LINKS_COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
@@ -83,21 +95,21 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   );
 
   const [tab, setTab] = useState<PosTab>('services');
-  const [serviceLines, setServiceLines] = useState<ServiceLine[]>(() =>
-    services[0]
-      ? [
-          {
-            key: nextKey(),
-            serviceId: services[0].id,
-            deity: services[0].deity,
-            date: today,
-            location: 'on_site',
-            quantity: 1,
-            unitCost: catalogUnitCost(services[0], 'on_site'),
-          },
-        ]
-      : [],
-  );
+  const [serviceLines, setServiceLines] = useState<ServiceLine[]>(() => {
+    if (!services[0]) return [];
+    const location = defaultSevaServiceLocation(services[0]);
+    return [
+      {
+        key: nextKey(),
+        serviceId: services[0].id,
+        deity: services[0].deity,
+        date: today,
+        location,
+        quantity: 1,
+        unitCost: catalogUnitCost(services[0], location),
+      },
+    ];
+  });
   const [donationLines, setDonationLines] = useState<DonationLine[]>([]);
   const [salesLines, setSalesLines] = useState<SalesLine[]>([]);
   const [gotram, setGotram] = useState(devotee.gotram ?? '');
@@ -108,6 +120,15 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   const [checkNumber, setCheckNumber] = useState('');
   const [totalPaid, setTotalPaid] = useState<number | ''>('');
   const [busy, setBusy] = useState(false);
+  const [quickLinksOpen, setQuickLinksOpen] = useState(() => !readQuickLinksCollapsed());
+
+  useLayoutEffect(() => {
+    try {
+      localStorage.setItem(QUICK_LINKS_COLLAPSED_KEY, quickLinksOpen ? '0' : '1');
+    } catch {
+      /* ignore */
+    }
+  }, [quickLinksOpen]);
 
   const getPayer = useCallback(
     () => ({ name: devotee.name, phone: devotee.phone }),
@@ -138,6 +159,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   function addServiceLine(prefill?: Partial<ServiceLine>) {
     const svc = services.find((s) => s.id === prefill?.serviceId) ?? services[0];
     if (!svc) return;
+    const location = prefill?.location ?? defaultSevaServiceLocation(svc);
     setServiceLines((rows) => [
       ...rows,
       {
@@ -145,11 +167,9 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
         serviceId: svc.id,
         deity: prefill?.deity ?? svc.deity,
         date: prefill?.date ?? today,
-        location: prefill?.location ?? 'on_site',
+        location,
         quantity: prefill?.quantity ?? 1,
-        unitCost:
-          prefill?.unitCost ??
-          catalogUnitCost(svc, prefill?.location ?? 'on_site'),
+        unitCost: prefill?.unitCost ?? catalogUnitCost(svc, location),
       },
     ]);
     setTab('services');
@@ -166,11 +186,11 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
             next.deity = svc.deity;
           }
           let location = next.location;
-          if (patch.serviceId && !sevaSupportsOffSite(svc)) {
-            location = 'on_site';
-            next.location = 'on_site';
+          if (patch.serviceId && patch.location === undefined) {
+            location = defaultSevaServiceLocation(svc);
+            next.location = location;
           }
-          if (patch.location === 'off_site' && !sevaSupportsOffSite(svc)) {
+          if (!sevaSupportsOffSite(svc)) {
             location = 'on_site';
             next.location = 'on_site';
           }
@@ -218,21 +238,21 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   }
 
   function handleCancel() {
-    setServiceLines(
-      services[0]
-        ? [
-            {
-              key: nextKey(),
-              serviceId: services[0].id,
-              deity: services[0].deity,
-              date: today,
-              location: 'on_site',
-              quantity: 1,
-              unitCost: catalogUnitCost(services[0], 'on_site'),
-            },
-          ]
-        : [],
-    );
+    setServiceLines(() => {
+      if (!services[0]) return [];
+      const location = defaultSevaServiceLocation(services[0]);
+      return [
+        {
+          key: nextKey(),
+          serviceId: services[0].id,
+          deity: services[0].deity,
+          date: today,
+          location,
+          quantity: 1,
+          unitCost: catalogUnitCost(services[0], location),
+        },
+      ];
+    });
     setDonationLines([]);
     setSalesLines([]);
     setComment('');
@@ -340,46 +360,12 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
     <>
       <div className={styles.pos}>
         <div className={styles.body}>
-          <aside className={styles.quickLinksBar}>
-            <p className={styles.quickLinksTitle}>Quick links</p>
-            <div className={styles.quickLinksScroll}>
-              {quickLinkServices.map((svc) => (
-                <button
-                  key={svc.id}
-                  type="button"
-                  className={styles.quickLink}
-                  onClick={() =>
-                    addServiceLine({
-                      serviceId: svc.id,
-                      location: 'on_site',
-                      unitCost: catalogUnitCost(svc, 'on_site'),
-                    })
-                  }
-                >
-                  <strong>{svc.name}</strong>
-                  <span>
-                    {svc.deity} · On {formatMoney(svc.price, svc.currency)}
-                    {sevaSupportsOffSite(svc) && svc.priceOffSite != null && (
-                      <> · Off {formatMoney(svc.priceOffSite, svc.currency)}</>
-                    )}
-                  </span>
-                </button>
-              ))}
-              {quickLinkProducts.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={styles.quickLink}
-                  onClick={() => addSalesLine(item.id)}
-                >
-                  <strong>{item.name}</strong>
-                  <span>{formatMoney(item.price, item.currency)}</span>
-                </button>
-              ))}
-            </div>
-          </aside>
-
+          <div
+            className={styles.workArea}
+            data-quick-links-collapsed={quickLinksOpen ? 'false' : 'true'}
+          >
           <div className={styles.main}>
+          <div className={styles.mainScroll}>
           <div className={styles.sankalpaRow}>
             <div className="formGroup">
               <label htmlFor="posGotram">Gotram</label>
@@ -421,7 +407,17 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
 
           {tab === 'services' && (
             <div className={styles.tableWrap}>
-              <table className={styles.table}>
+              <table className={`${styles.table} ${styles.tableServices}`}>
+                <colgroup>
+                  <col className={styles.colService} />
+                  <col className={styles.colDeity} />
+                  <col className={styles.colLocation} />
+                  <col className={styles.colDate} />
+                  <col className={styles.colCost} />
+                  <col className={styles.colQty} />
+                  <col className={styles.colTotal} />
+                  <col className={styles.colAction} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Service</th>
@@ -662,7 +658,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
           </div>
 
           <aside className={styles.checkoutPanel}>
-            <div className="formGroup">
+            <div className={`formGroup ${styles.checkoutComment}`}>
               <label htmlFor="posComment">Comment / notes</label>
               <input
                 id="posComment"
@@ -671,7 +667,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
                 placeholder="Optional notes for receipt"
               />
             </div>
-            <div className="formGroup">
+            <div className={`formGroup ${styles.checkoutField}`}>
               <label htmlFor="posPayment">Payment type</label>
               <select
                 id="posPayment"
@@ -684,7 +680,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
               </select>
             </div>
             {paymentMethod === 'check' && (
-              <div className="formGroup">
+              <div className={`formGroup ${styles.checkoutField}`}>
                 <label htmlFor="posCheck">Check number</label>
                 <input
                   id="posCheck"
@@ -694,7 +690,7 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
                 />
               </div>
             )}
-            <div className="formGroup">
+            <div className={`formGroup ${styles.checkoutField}`}>
               <label htmlFor="posPaid">Total paid</label>
               <input
                 id="posPaid"
@@ -717,6 +713,81 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
               </Button>
             </div>
           </aside>
+
+          </div>
+
+          <aside
+            className={[
+              styles.quickLinksBar,
+              quickLinksOpen ? '' : styles.quickLinksCollapsed,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <div className={styles.quickLinksHeader}>
+              {quickLinksOpen && <p className={styles.quickLinksTitle}>Quick links</p>}
+              <button
+                type="button"
+                className={styles.quickLinksToggle}
+                onClick={() => setQuickLinksOpen((open) => !open)}
+                aria-label={quickLinksOpen ? 'Collapse quick links' : 'Expand quick links'}
+                aria-expanded={quickLinksOpen}
+                title={quickLinksOpen ? 'Collapse quick links' : 'Expand quick links'}
+              >
+                <svg
+                  className={[
+                    styles.quickLinksChevron,
+                    quickLinksOpen ? '' : styles.quickLinksChevronCollapsed,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+            </div>
+            {quickLinksOpen && (
+            <div className={styles.quickLinksScroll}>
+              {quickLinkServices.map((svc) => (
+                <button
+                  key={svc.id}
+                  type="button"
+                  className={styles.quickLink}
+                  onClick={() =>
+                    addServiceLine({ serviceId: svc.id })
+                  }
+                >
+                  <strong>{svc.name}</strong>
+                  <span>
+                    {svc.deity} · On {formatMoney(svc.price, svc.currency)}
+                    {sevaSupportsOffSite(svc) && svc.priceOffSite != null && (
+                      <> · Off {formatMoney(svc.priceOffSite, svc.currency)}</>
+                    )}
+                  </span>
+                </button>
+              ))}
+              {quickLinkProducts.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={styles.quickLink}
+                  onClick={() => addSalesLine(item.id)}
+                >
+                  <strong>{item.name}</strong>
+                  <span>{formatMoney(item.price, item.currency)}</span>
+                </button>
+              ))}
+            </div>
+            )}
+          </aside>
+          </div>
         </div>
       </div>
       {livePaymentModal}

@@ -34,7 +34,7 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  flex-shrink: 1;
+  flex-shrink: 0;
   min-width: 0;
   flex-wrap: nowrap;
 }
@@ -48,18 +48,12 @@
   border-radius: 999px;
   padding: 0.35rem 0.9rem;
   min-width: 0;
-  width: min(200px, 22vw);
+  width: min(240px, 28vw);
   flex-shrink: 1;
 }
 
 @media (max-width: 960px) {
   .searchPill {
-    display: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .right .select {
     display: none;
   }
 }
@@ -106,4 +100,190 @@
   font-size: 0.7rem;
   font-weight: 800;
   flex-shrink: 0;
+  color: #fff;
+}
+
+.userMenu {
+  position: relative;
+}
+
+.userMenuTrigger {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.15rem;
+  border: 1px solid var(--b);
+  border-radius: 999px;
+  background: var(--glass2);
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.userMenuTrigger:hover {
+  border-color: color-mix(in srgb, var(--amber) 35%, var(--b));
+  background: var(--nav-active-bg);
+}
+
+.userMenuTrigger[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--b));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 12%, transparent);
+}
+
+.userMenuChevron {
+  font-size: 0.65rem;
+  color: var(--txt3);
+  line-height: 1;
+  padding-right: 0.25rem;
+}
+
+.userMenuPanel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 200;
+  width: min(17.5rem, calc(100vw - 1.5rem));
+  border: 1px solid var(--b2);
+  border-radius: calc(var(--rs) + 2px);
+  background: var(--dock-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--card-shadow);
+  animation: menuIn 0.16s ease both;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.userMenuHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid var(--b);
+}
+
+.userMenuHeaderAvatar {
+  width: 36px;
+  height: 36px;
+  font-size: 0.78rem;
+}
+
+.userMenuHeaderText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.userMenuRole {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.userMenuSection {
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.menuRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0.35rem;
+  border-radius: var(--rs);
+}
+
+.menuRowLabel {
+  font-size: 0.78rem;
+  color: var(--txt2);
+  white-space: nowrap;
+}
+
+.menuRowControl {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.menuSelect {
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.33rem 0.55rem;
+  color: var(--txt);
+  font-size: 0.78rem;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 5.5rem;
+}
+
+.menuExtras {
+  padding: 0.25rem 0.35rem 0.15rem;
+}
+
+.menuExtras label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--txt2);
+}
+
+.menuExtras select {
+  width: 100%;
+  background: var(--ink3);
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  padding: 0.38rem 0.55rem;
+  color: var(--txt);
+  font-size: 0.78rem;
+  font-family: inherit;
+}
+
+.menuExtras :global(.flexRow) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem !important;
+}
+
+.signOutAction {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: none;
+  border-top: 1px solid var(--b);
+  background: transparent;
+  color: var(--crimson);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0 0 calc(var(--rs) + 2px) calc(var(--rs) + 2px);
+  transition: background 0.15s;
+}
+
+.signOutAction:hover {
+  background: color-mix(in srgb, var(--crimson) 8%, transparent);
+}
+
+.userMenuFooter {
+  padding: 0;
 }

@@ -19,8 +19,10 @@ export function PageIntro({
 
   if (!resolvedSubtitle && !actions) return null;
 
+  const actionsOnly = !resolvedSubtitle && Boolean(actions);
+
   return (
-    <div className="pageIntro">
+    <div className={actionsOnly ? 'pageIntro pageIntroActionsOnly' : 'pageIntro'}>
       {resolvedSubtitle && <p className="pageIntroSubtitle">{resolvedSubtitle}</p>}
       {actions && <div className="pageIntroActions">{actions}</div>}
     </div>

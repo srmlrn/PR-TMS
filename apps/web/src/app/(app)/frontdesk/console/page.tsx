@@ -8,8 +8,6 @@ import {
   Currency,
   type DevoteeLookupMatch,
   type DevoteeLookupResult,
-  type QueueToken,
-  type QueueType,
 } from '@tms/types';
 import { PageIntro } from '@/components/AppPage';
 import { useTenant } from '@/lib/tenant-context';
@@ -40,12 +38,9 @@ function FrontDeskConsolePageInner() {
   const [matches, setMatches] = useState<DevoteeLookupMatch[]>([]);
   const [selectedDevoteeId, setSelectedDevoteeId] = useState<string | null>(null);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
-  const [lastToken, setLastToken] = useState<QueueToken | null>(null);
-  const [tokenResult, setTokenResult] = useState<string | null>(null);
-  const [priorityToken, setPriorityToken] = useState(false);
-  const [queueType, setQueueType] = useState<QueueType>('darshan');
   const [busy, setBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [statsOpen, setStatsOpen] = useState(true);
 
   const { data: stats, loading, error, refetch } = useApi((ep) => ep.getQueueStats());
   const { data: services } = useApi((ep) => ep.getServices());
@@ -97,8 +92,6 @@ function FrontDeskConsolePageInner() {
     setPhone('');
     setName('');
     setLookupMessage(null);
-    setTokenResult(null);
-    setLastToken(null);
   }
 
   useEffect(() => {
@@ -162,8 +155,6 @@ function FrontDeskConsolePageInner() {
     setMatches([]);
     setSelectedDevoteeId(null);
     setLookupMessage(null);
-    setTokenResult(null);
-    setLastToken(null);
     setActionMsg(null);
     try {
       const result = await refreshLookup();
@@ -197,31 +188,6 @@ function FrontDeskConsolePageInner() {
     }
   }
 
-  async function handleIssueToken() {
-    setBusy(true);
-    setTokenResult(null);
-    try {
-      const ep = createEndpoints(api);
-      const token = await ep.issueToken({
-        devoteeId: lookup?.devotee?.id,
-        devoteeName: lookup?.devotee?.name ?? 'Walk-in guest',
-        queueType: priorityToken ? 'priority' : queueType,
-        priority: priorityToken,
-      });
-      setLastToken(token);
-      setTokenResult(`#${token.tokenNumber} · ~${token.estimatedWaitMinutes}m`);
-      refetch();
-      const guestName = encodeURIComponent(lookup?.devotee?.name ?? 'Walk-in guest');
-      router.push(
-        `/frontdesk/token-print?token=${encodeURIComponent(token.tokenNumber)}&position=${token.position}&wait=${token.estimatedWaitMinutes}&name=${guestName}`,
-      );
-    } catch (err) {
-      setTokenResult(err instanceof Error ? err.message : 'Token failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const devotee = lookup?.devotee;
   const activeDevoteeId = selectedDevoteeId ?? devotee?.id ?? null;
   const ep = createEndpoints(api);
@@ -230,7 +196,6 @@ function FrontDeskConsolePageInner() {
   return (
     <div className={styles.console}>
       <PageIntro
-        subtitle="Look up a guest, then book or checkout"
         actions={
           <div className={styles.actionBar}>
             <Button size="sm" variant="outline" onClick={() => router.push('/frontdesk/devotees')}>
@@ -246,26 +211,47 @@ function FrontDeskConsolePageInner() {
 
       <ApiBanner loading={loading || posLoading} error={error ?? posError} />
 
-      <div className={styles.statsStrip}>
-        <span className={styles.statItem}>
-          🎫 <strong>{stats?.inQueue ?? 0}</strong> waiting
-        </span>
-        <span className={styles.statDivider}>·</span>
-        <span className={styles.statItem}>
-          ⏱ <strong>{stats?.averageWaitMinutes ?? 0}m</strong> avg
-        </span>
-        <span className={styles.statDivider}>·</span>
-        <span className={styles.statItem}>
-          ✅ <strong>{stats?.servedToday ?? 0}</strong> served
-        </span>
-        <span className={styles.statDivider}>·</span>
-        <span className={styles.statItem}>
-          🧾 <strong>{formatMoney(posTotal, posCurrency)}</strong> POS today
-        </span>
-        <span className={styles.statDivider}>·</span>
-        <Link href="/frontdesk/display" className={styles.hint}>
-          Display board →
-        </Link>
+      <div className={styles.statsWrap}>
+        <button
+          type="button"
+          className={styles.statsToggle}
+          onClick={() => setStatsOpen((open) => !open)}
+          aria-expanded={statsOpen}
+        >
+          <span className={styles.statsToggleIcon} aria-hidden>
+            {statsOpen ? '▾' : '▸'}
+          </span>
+          <span className={styles.statsToggleLabel}>Queue &amp; POS</span>
+          {!statsOpen && (
+            <span className={styles.statsToggleSummary}>
+              🎫 {stats?.inQueue ?? 0} waiting · ⏱ {stats?.averageWaitMinutes ?? 0}m avg · ✅{' '}
+              {stats?.servedToday ?? 0} served
+            </span>
+          )}
+        </button>
+        {statsOpen && (
+          <div className={styles.statsStrip}>
+            <span className={styles.statItem}>
+              🎫 <strong>{stats?.inQueue ?? 0}</strong> waiting
+            </span>
+            <span className={styles.statDivider}>·</span>
+            <span className={styles.statItem}>
+              ⏱ <strong>{stats?.averageWaitMinutes ?? 0}m</strong> avg
+            </span>
+            <span className={styles.statDivider}>·</span>
+            <span className={styles.statItem}>
+              ✅ <strong>{stats?.servedToday ?? 0}</strong> served
+            </span>
+            <span className={styles.statDivider}>·</span>
+            <span className={styles.statItem}>
+              🧾 <strong>{formatMoney(posTotal, posCurrency)}</strong> POS today
+            </span>
+            <span className={styles.statDivider}>·</span>
+            <Link href="/frontdesk/display" className={styles.hint}>
+              Display board →
+            </Link>
+          </div>
+        )}
       </div>
 
       <section className={styles.topPanel}>
@@ -292,57 +278,36 @@ function FrontDeskConsolePageInner() {
           <Button size="sm" onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
             Look up
           </Button>
-          <div className={styles.tokenInline}>
-            <div className="formGroup">
-              <label htmlFor="queueType">Token</label>
-              <select
-                id="queueType"
-                value={queueType}
-                onChange={(e) => setQueueType(e.target.value as QueueType)}
-                disabled={priorityToken}
-              >
-                <option value="darshan">Darshan</option>
-                <option value="seva">Seva</option>
-              </select>
-            </div>
-            <Button size="sm" variant="outline" onClick={handleIssueToken} disabled={busy}>
-              Issue
-            </Button>
-            <label className={styles.vipCheck}>
-              <input
-                type="checkbox"
-                checked={priorityToken}
-                onChange={(e) => setPriorityToken(e.target.checked)}
-              />
-              VIP
-            </label>
-          </div>
         </div>
 
-        {lookupMessage && (
-          <p className={[styles.statusMsg, devotee ? styles.statusMsgOk : ''].filter(Boolean).join(' ')}>
-            {lookupMessage}
-          </p>
-        )}
-        {tokenResult && <p className={styles.statusMsg}>{tokenResult}</p>}
-
-        {matches.length > 1 && (
-          <div className={styles.matchList}>
-            {matches.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={`${styles.matchItem} ${activeDevoteeId === m.id ? styles.matchItemActive : ''}`}
-                onClick={() => selectMatch(m, lookup ?? undefined)}
+        {(lookupMessage || matches.length > 1 || (activeDevoteeId && devotee)) && (
+          <div className={styles.topPanelMeta}>
+            {lookupMessage && (
+              <p
+                className={[styles.statusMsg, devotee ? styles.statusMsgOk : '']
+                  .filter(Boolean)
+                  .join(' ')}
               >
-                {m.name}
-              </button>
-            ))}
-          </div>
-        )}
+                {lookupMessage}
+              </p>
+            )}
+            {matches.length > 1 && (
+              <div className={styles.matchList}>
+                {matches.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className={`${styles.matchItem} ${activeDevoteeId === m.id ? styles.matchItemActive : ''}`}
+                    onClick={() => selectMatch(m, lookup ?? undefined)}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
-        {activeDevoteeId && devotee && (
-          <div className={styles.guestBar}>
+            {activeDevoteeId && devotee && (
+              <div className={styles.guestBar}>
             <div>
               <strong>{devotee.name}</strong>
               <div className={styles.guestMeta}>
@@ -386,31 +351,37 @@ function FrontDeskConsolePageInner() {
                 Clear
               </Button>
             </div>
+              </div>
+            )}
           </div>
         )}
       </section>
 
-      {devotee && serviceList.length > 0 ? (
-        <GlassCard compact title="Counter POS" className={styles.posPanel}>
-          <CounterPosForm
-            ep={ep}
-            devotee={devotee}
-            services={serviceList}
-            products={products ?? []}
-            onSuccess={(msg) => {
-              setActionMsg(msg);
-              refetchPos();
-            }}
-            onError={(msg) => setActionMsg(msg)}
-          />
-        </GlassCard>
-      ) : (
-        <div className={styles.emptyState}>
-          Look up a devotee to open booking, sales, and donations.
-        </div>
-      )}
+      <div className={styles.mainColumn}>
+          {devotee && serviceList.length > 0 ? (
+            <GlassCard compact title="Counter POS" className={styles.posPanel}>
+              <CounterPosForm
+                ep={ep}
+                devotee={devotee}
+                services={serviceList}
+                products={products ?? []}
+                onSuccess={(msg) => {
+                  setActionMsg(msg);
+                  refetchPos();
+                }}
+                onError={(msg) => setActionMsg(msg)}
+              />
+            </GlassCard>
+          ) : (
+            <div className={styles.emptyState}>
+              Look up a devotee to open booking, sales, and donations.
+            </div>
+          )}
 
-      {actionMsg && <p className={[styles.statusMsg, styles.statusMsgOk].join(' ')}>{actionMsg}</p>}
+        {actionMsg && (
+          <p className={[styles.statusMsg, styles.statusMsgOk].join(' ')}>{actionMsg}</p>
+        )}
+      </div>
     </div>
   );
 }

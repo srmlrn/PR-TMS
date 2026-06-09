@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { DockNav, TopBar, Button } from '@tms/ui';
+import { DockNav, TopBar } from '@tms/ui';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { TenantProvider, useTenant } from '@/lib/tenant-context';
 import { canAccessPath } from '@/lib/route-access';
@@ -17,15 +17,6 @@ import { CommitteeSwitcher } from '@/components/CommitteeSwitcher';
 import { CommitteeProvider } from '@/lib/committee-context';
 import { useTenantSite } from '@/lib/tenant-site';
 import { UserRole } from '@tms/types';
-
-function RoleBadge({ role }: { role: AppRole }) {
-  const config = getRoleConfigForUser(role);
-  return (
-    <span className="tms-t3" style={{ marginRight: '0.5rem' }}>
-      {config.label}
-    </span>
-  );
-}
 
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -82,16 +73,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     environment === 'prod' ? 'prod' : environment === 'uat' ? 'uat' : 'dev';
   const isCommitteeRole = role === UserRole.COMMITTEE;
 
-  const roleSwitcher = (
-    <div className="topBarRoleSwitcher">
-      {isCommitteeRole && <CommitteeSwitcher />}
-      <RoleBadge role={role} />
-      <Button size="sm" variant="outline" onClick={logout}>
-        Sign out
-      </Button>
-    </div>
-  );
-
   const shell = (
     <div className={isKiosk ? 'kioskMode' : 'appShell'}>
       {!isKiosk && (
@@ -110,8 +91,10 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
               envLabel={environment.toUpperCase()}
               envVariant={envVariant}
               avatarInitials={config.avatarInitials}
-              themeToggle={<ThemeToggle />}
-              roleSwitcher={roleSwitcher}
+              roleLabel={config.label}
+              themeToggle={<ThemeToggle compact />}
+              menuExtras={isCommitteeRole ? <CommitteeSwitcher layout="stacked" /> : undefined}
+              onSignOut={logout}
             />
           )}
           <main className="appPageBody compactUi">{children}</main>
