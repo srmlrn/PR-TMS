@@ -1612,5 +1612,17 @@
     "name": "Yearly One Day Sponsor ($251)",
     "priceUsd": 251,
     "type": "donation"
+  },
+  {
+    "id": 270,
+    "name": "Lakshmi Pooja ($31)",
+    "priceUsd": 31,
+    "type": "seva"
+  },
+  {
+    "id": 271,
+    "name": "Abhishekam on New Years Day ($101)",
+    "priceUsd": 101,
+    "type": "seva"
   }
 ]

@@ -10,7 +10,7 @@ export function resolvePosQuickLinkServices(
   services: SevaService[],
 ): SevaService[] {
   if (tenantId === GANESHA_TEMPLE_ID) {
-    return pickPosQuickLinkServices(services, 14);
+    return pickPosQuickLinkServices(services);
   }
   return services.slice(0, 6);
 }

@@ -1,23 +1,12 @@
 import {
+  applyWebsitePosPricing,
+  findWebsitePosService,
   GANESHA_TEMPLE_ID,
   ganeshaSevaSeedRows,
   type GaneshaSevaSeedInput,
 } from '@tms/types';
 import type { Repository } from 'typeorm';
 import type { SevaServiceEntity } from './entities/tenant/seva-service.entity';
-
-function applyCorePricing(row: GaneshaSevaSeedInput): GaneshaSevaSeedInput {
-  if (row.name === 'Archana') {
-    return { ...row, price: 25, priceOffSite: 51, durationMinutes: 30 };
-  }
-  if (row.name === 'Abhishekam ($125)') {
-    return { ...row, price: 101, priceOffSite: 151, durationMinutes: 60 };
-  }
-  if (row.name === 'Homa') {
-    return { ...row, price: 251, priceOffSite: 401, durationMinutes: 90 };
-  }
-  return row;
-}
 
 async function ensureCounterExtras(
   repo: Repository<SevaServiceEntity>,
@@ -42,25 +31,26 @@ async function ensureCounterExtras(
   }
 }
 
+function toEntityRow(row: GaneshaSevaSeedInput) {
+  const priced = applyWebsitePosPricing(row);
+  return {
+    name: priced.name,
+    deity: priced.deity,
+    description: priced.description,
+    price: priced.price,
+    priceOffSite: priced.priceOffSite,
+    currency: 'USD',
+    durationMinutes: priced.durationMinutes,
+    isActive: true,
+  };
+}
+
 export async function seedGaneshaSevaCatalog(
   repo: Repository<SevaServiceEntity>,
   deity = 'Lord Ganesha',
 ): Promise<SevaServiceEntity[]> {
-  const rows = ganeshaSevaSeedRows(deity).map(applyCorePricing);
-  const saved = await repo.save(
-    rows.map((row) =>
-      repo.create({
-        name: row.name,
-        deity: row.deity,
-        description: row.description,
-        price: row.price,
-        priceOffSite: row.priceOffSite,
-        currency: 'USD',
-        durationMinutes: row.durationMinutes,
-        isActive: true,
-      }),
-    ),
-  );
+  const rows = ganeshaSevaSeedRows(deity);
+  const saved = await repo.save(rows.map((row) => repo.create(toEntityRow(row))));
   await ensureCounterExtras(repo, deity);
   return saved;
 }
@@ -75,26 +65,49 @@ export async function syncGaneshaSevaCatalogIfNeeded(
 
   const existing = await repo.find();
   const existingNames = new Set(existing.map((s) => s.name.trim().toLowerCase()));
-  const rows = ganeshaSevaSeedRows(deity).map(applyCorePricing);
+  const rows = ganeshaSevaSeedRows(deity);
   const missing = rows.filter((row) => !existingNames.has(row.name.trim().toLowerCase()));
 
-  if (missing.length === 0) return 0;
-
-  await repo.save(
-    missing.map((row) =>
-      repo.create({
-        name: row.name,
-        deity: row.deity,
-        description: row.description,
-        price: row.price,
-        priceOffSite: row.priceOffSite,
-        currency: 'USD',
-        durationMinutes: row.durationMinutes,
-        isActive: true,
-      }),
-    ),
-  );
-  await ensureCounterExtras(repo, deity);
+  if (missing.length > 0) {
+    await repo.save(missing.map((row) => repo.create(toEntityRow(row))));
+    await ensureCounterExtras(repo, deity);
+  }
 
   return missing.length;
+}
+
+/** Apply published website pricing to existing seva rows (Archana $15, Abhishekam $125, etc.). */
+export async function syncGaneshaWebsitePricing(
+  repo: Repository<SevaServiceEntity>,
+  tenantId: string,
+): Promise<number> {
+  if (tenantId !== GANESHA_TEMPLE_ID) return 0;
+
+  const existing = await repo.find();
+  const toSave: SevaServiceEntity[] = [];
+
+  for (const svc of existing) {
+    const website = findWebsitePosService(svc.name);
+    if (!website) continue;
+
+    const nextPrice = website.price;
+    const nextOffSite = website.priceOffSite;
+    const priceChanged = svc.price !== nextPrice;
+    const offSiteChanged =
+      nextOffSite !== undefined && svc.priceOffSite !== nextOffSite;
+
+    if (priceChanged || offSiteChanged) {
+      svc.price = nextPrice;
+      if (nextOffSite !== undefined) {
+        svc.priceOffSite = nextOffSite;
+      }
+      toSave.push(svc);
+    }
+  }
+
+  if (toSave.length > 0) {
+    await repo.save(toSave);
+  }
+
+  return toSave.length;
 }

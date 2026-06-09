@@ -58,7 +58,8 @@ export interface UpdateStaffInput {
 }
 
 export interface CreateStaffLeaveInput {
-  staffId: string;
+  /** Required for admin requests; omitted for priest self-service (resolved server-side). */
+  staffId?: string;
   type: StaffLeaveType;
   startDate: string;
   endDate: string;

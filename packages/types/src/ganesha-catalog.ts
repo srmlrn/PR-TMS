@@ -1,5 +1,10 @@
 import type { SevaService } from './booking';
 import catalogData from './data/ganesha-seva-catalog.json';
+import {
+  applyWebsitePosPricing,
+  GANESHA_WEBSITE_QUICK_LINK_ORDER,
+  websiteServiceMatchesName,
+} from './ganesha-website-services';
 
 export type GaneshaCatalogType =
   | 'seva'
@@ -21,29 +26,8 @@ export interface GaneshaCatalogItem {
 export const GANESHA_SEVA_CATALOG: readonly GaneshaCatalogItem[] =
   catalogData as GaneshaCatalogItem[];
 
-/** Core pujas for counter POS quick links (from SGT reports catalog doc). */
-export const GANESHA_POS_QUICK_LINK_NAMES: readonly string[] = [
-  'Archana',
-  'Abhishekam ($125)',
-  'Abhishekam',
-  'Satyanarayana Pooja',
-  'Satyanarayana Pooja - All Day ($501)',
-  'Gruhapravesam - All Day ($501)',
-  'Wedding - All Day ($501)',
-  'Car Pooja ($75)',
-  'Navagraha Puja',
-  'Homa - All Day ($501)',
-  'Annaprasanam',
-  'Namakarnam',
-  'Upanayanam',
-  'Shraddha',
-  'Sri Venkateswara Kalyana Utsavam ($201)',
-  'Padi Pooja',
-  'Sahasranama ($51)',
-  'Chalisa ($31)',
-  'New Born Baby Blessings ($51)',
-  'VIP Darshan',
-];
+/** Counter POS quick links — mirrors ganeshatemple.org/our-services-2/. */
+export const GANESHA_POS_QUICK_LINK_NAMES: readonly string[] = GANESHA_WEBSITE_QUICK_LINK_ORDER;
 
 export function ganeshaCatalogByType(type: GaneshaCatalogType): GaneshaCatalogItem[] {
   return GANESHA_SEVA_CATALOG.filter((item) => item.type === type);
@@ -79,62 +63,34 @@ export interface GaneshaSevaSeedInput {
 export function ganeshaSevaSeedRows(deity = 'Lord Ganesha'): GaneshaSevaSeedInput[] {
   return ganeshaCatalogByType('seva').map((item) => {
     const base = item.priceUsd ?? 0;
-    const offSiteDefaults: Record<string, number> = {
-      Archana: 51,
-      Abhishekam: 151,
-      Homam: 401,
-    };
-    const shortName = item.name.replace(/\s*\(\$[\d,]+\)\s*$/, '').trim();
-    const priceOffSite = offSiteDefaults[shortName];
-
-    return {
+    const row: GaneshaSevaSeedInput = {
       name: item.name,
       deity,
       description: `SGT catalog #${item.id} · type: seva${item.priceUsd == null ? ' · variable pricing' : ''}`,
       price: base,
-      ...(priceOffSite !== undefined ? { priceOffSite } : {}),
       durationMinutes: catalogDurationMinutes(item.name),
     };
+    return applyWebsitePosPricing(row);
   });
 }
 
-function normalizeName(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, ' ').trim();
-}
-
-function matchesQuickLinkName(serviceName: string, quickName: string): boolean {
-  const s = normalizeName(serviceName);
-  const q = normalizeName(quickName);
-  if (s === q) return true;
-  const qBase = q.replace(/\s*\(\$[\d,]+\)\s*$/, '').trim();
-  return s === qBase || s.startsWith(`${qBase} `) || s.startsWith(`${qBase}(`);
-}
-
-/** Pick counter POS quick-link services (prioritize temple core pujas). */
+/** Pick counter POS quick-link services (ganeshatemple.org published list). */
 export function pickPosQuickLinkServices(
   services: SevaService[],
-  max = 12,
+  max = GANESHA_POS_QUICK_LINK_NAMES.length,
 ): SevaService[] {
   const picked: SevaService[] = [];
   const used = new Set<string>();
 
   for (const quickName of GANESHA_POS_QUICK_LINK_NAMES) {
     const match = services.find(
-      (s) => !used.has(s.id) && matchesQuickLinkName(s.name, quickName),
+      (s) => !used.has(s.id) && websiteServiceMatchesName(s.name, quickName),
     );
     if (match) {
       picked.push(match);
       used.add(match.id);
     }
     if (picked.length >= max) return picked;
-  }
-
-  for (const svc of services) {
-    if (picked.length >= max) break;
-    if (!used.has(svc.id)) {
-      picked.push(svc);
-      used.add(svc.id);
-    }
   }
 
   return picked;

@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 import type { StaffLeaveType } from '@tms/types';
 
 export class CreateStaffLeaveDto {
-  @ApiProperty()
-  @IsUUID()
-  staffId!: string;
+  @ApiPropertyOptional({ description: 'Required for admin; resolved from login for priests' })
+  @IsOptional()
+  @IsString()
+  staffId?: string;
 
   @ApiProperty({ enum: ['annual', 'sick', 'personal', 'festival', 'other'] })
   @IsEnum(['annual', 'sick', 'personal', 'festival', 'other'])

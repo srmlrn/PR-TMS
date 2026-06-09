@@ -38,16 +38,22 @@ export class TenantSeedService {
     if (ctx.tenantId !== GANESHA_TEMPLE_ID) return 0;
     const ds = await this.connections.getDataSource(ctx);
     const sevaRepo = ds.getRepository(SevaServiceEntity);
-    const { syncGaneshaSevaCatalogIfNeeded } = await import('./ganesha-catalog.seed');
+    const { syncGaneshaSevaCatalogIfNeeded, syncGaneshaWebsitePricing } = await import(
+      './ganesha-catalog.seed'
+    );
     const added = await syncGaneshaSevaCatalogIfNeeded(
       sevaRepo,
       ctx.tenantId,
       'Lord Ganesha',
     );
+    const priced = await syncGaneshaWebsitePricing(sevaRepo, ctx.tenantId);
     if (added > 0) {
       this.logger.log(`Synced ${added} SGT catalog sevas into ${ctx.dbName}`);
     }
-    return added;
+    if (priced > 0) {
+      this.logger.log(`Updated ${priced} seva prices from ganeshatemple.org into ${ctx.dbName}`);
+    }
+    return added + priced;
   }
 
   async seedIfEmpty(ctx: TenantContext): Promise<void> {
@@ -622,6 +628,7 @@ export class TenantSeedService {
         name: 'Sri Murugan',
         role: 'priest',
         email: 'priest@sgtemple.org',
+        title: 'Head Priest',
         isActive: true,
       }),
     );

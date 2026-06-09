@@ -68,17 +68,19 @@ export default function PriestLeavePage() {
   const error = staffError ?? leaveError;
 
   async function handleSubmit() {
-    if (!form?.staffId) return;
+    if (!form || !myStaff) return;
     setSaving(true);
     setMessage(null);
     try {
       await api.post('/staff/leaves', {
-        ...form,
+        type: form.type,
+        startDate: form.startDate,
+        endDate: form.endDate,
         reason: form.reason?.trim() || undefined,
       });
       setMessage('Leave request submitted. Admin will review it.');
       setMessageOk(true);
-      setForm(emptyForm(form.staffId));
+      setForm(emptyForm(myStaff.id));
       await refetch();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Failed to submit leave');

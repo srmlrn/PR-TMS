@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -98,14 +99,20 @@ export class StaffLeaveService extends BaseTenantService<StaffLeaveRecord> {
     input: CreateStaffLeaveInput,
     user: AuthUser,
   ): Promise<StaffLeave> {
-    await this.staffService.findOne(tenantId, input.staffId);
+    let staffId = input.staffId?.trim();
 
     if (user.role === UserRole.PRIEST) {
-      const ownStaffId = await this.staffService.resolveStaffIdForUser(tenantId, user);
-      if (ownStaffId !== input.staffId) {
-        throw new ForbiddenException('Priests may only request leave for themselves');
+      staffId = await this.staffService.resolveStaffIdForUser(tenantId, user);
+      if (!staffId) {
+        throw new BadRequestException(
+          'Your login is not linked to a priest staff record. Contact temple admin.',
+        );
       }
+    } else if (!staffId) {
+      throw new BadRequestException('staffId is required');
     }
+
+    await this.staffService.findOne(tenantId, staffId);
 
     if (input.endDate < input.startDate) {
       throw new ForbiddenException('End date must be on or after start date');
@@ -117,7 +124,7 @@ export class StaffLeaveService extends BaseTenantService<StaffLeaveRecord> {
       const repo = await this.tenantData.staffLeaves();
       const row = await repo.save(
         repo.create({
-          staffId: input.staffId,
+          staffId,
           type: input.type,
           startDate: input.startDate,
           endDate: input.endDate,
@@ -131,7 +138,7 @@ export class StaffLeaveService extends BaseTenantService<StaffLeaveRecord> {
     }
 
     const record = this.createEntity(tenantId, {
-      staffId: input.staffId,
+      staffId,
       type: input.type,
       startDate: input.startDate,
       endDate: input.endDate,

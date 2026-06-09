@@ -1,11 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 import type { StaffLeaveStatus } from '@tms/types';
 
 export class StaffLeaveQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsString()
   staffId?: string;
 
   @ApiPropertyOptional({ enum: ['pending', 'approved', 'rejected', 'cancelled'] })
