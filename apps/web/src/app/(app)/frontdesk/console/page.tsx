@@ -15,7 +15,11 @@ import { createEndpoints, formatMoney } from '@/lib/api/endpoints';
 import { useApi } from '@/lib/api/use-api';
 import { ApiBanner } from '@/components/ApiBanner';
 import { CounterPosForm } from '@/components/CounterPosForm';
+import { isFrontDeskFeatureEnabled } from '@/lib/frontdesk-features';
 import styles from './console.module.css';
+
+const queueEnabled = isFrontDeskFeatureEnabled('queueManager');
+const displayBoardEnabled = isFrontDeskFeatureEnabled('displayBoard');
 
 function isToday(value: string | Date): boolean {
   const d = typeof value === 'string' ? new Date(value) : value;
@@ -42,7 +46,10 @@ function FrontDeskConsolePageInner() {
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [statsOpen, setStatsOpen] = useState(true);
 
-  const { data: stats, loading, error, refetch } = useApi((ep) => ep.getQueueStats());
+  const { data: stats, loading, error, refetch } = useApi(
+    (ep) => (queueEnabled ? ep.getQueueStats() : Promise.resolve(null)),
+    [queueEnabled],
+  );
   const { data: services } = useApi((ep) => ep.getServices());
   const { data: products } = useApi((ep) => ep.getPosProducts());
   const {
@@ -201,9 +208,11 @@ function FrontDeskConsolePageInner() {
             <Button size="sm" variant="outline" onClick={() => router.push('/frontdesk/devotees')}>
               Devotees
             </Button>
-            <Button size="sm" variant="outline" onClick={() => router.push('/frontdesk/queue')}>
-              Queue
-            </Button>
+            {queueEnabled && (
+              <Button size="sm" variant="outline" onClick={() => router.push('/frontdesk/queue')}>
+                Queue
+              </Button>
+            )}
           </div>
         }
         showTenantContext={false}
@@ -221,35 +230,50 @@ function FrontDeskConsolePageInner() {
           <span className={styles.statsToggleIcon} aria-hidden>
             {statsOpen ? '▾' : '▸'}
           </span>
-          <span className={styles.statsToggleLabel}>Queue &amp; POS</span>
+          <span className={styles.statsToggleLabel}>
+            {queueEnabled ? 'Queue & POS' : 'POS'}
+          </span>
           {!statsOpen && (
             <span className={styles.statsToggleSummary}>
-              🎫 {stats?.inQueue ?? 0} waiting · ⏱ {stats?.averageWaitMinutes ?? 0}m avg · ✅{' '}
-              {stats?.servedToday ?? 0} served
+              {queueEnabled && (
+                <>
+                  🎫 {stats?.inQueue ?? 0} waiting · ⏱ {stats?.averageWaitMinutes ?? 0}m avg · ✅{' '}
+                  {stats?.servedToday ?? 0} served ·{' '}
+                </>
+              )}
+              🧾 {formatMoney(posTotal, posCurrency)} POS today
             </span>
           )}
         </button>
         {statsOpen && (
           <div className={styles.statsStrip}>
-            <span className={styles.statItem}>
-              🎫 <strong>{stats?.inQueue ?? 0}</strong> waiting
-            </span>
-            <span className={styles.statDivider}>·</span>
-            <span className={styles.statItem}>
-              ⏱ <strong>{stats?.averageWaitMinutes ?? 0}m</strong> avg
-            </span>
-            <span className={styles.statDivider}>·</span>
-            <span className={styles.statItem}>
-              ✅ <strong>{stats?.servedToday ?? 0}</strong> served
-            </span>
-            <span className={styles.statDivider}>·</span>
+            {queueEnabled && (
+              <>
+                <span className={styles.statItem}>
+                  🎫 <strong>{stats?.inQueue ?? 0}</strong> waiting
+                </span>
+                <span className={styles.statDivider}>·</span>
+                <span className={styles.statItem}>
+                  ⏱ <strong>{stats?.averageWaitMinutes ?? 0}m</strong> avg
+                </span>
+                <span className={styles.statDivider}>·</span>
+                <span className={styles.statItem}>
+                  ✅ <strong>{stats?.servedToday ?? 0}</strong> served
+                </span>
+                <span className={styles.statDivider}>·</span>
+              </>
+            )}
             <span className={styles.statItem}>
               🧾 <strong>{formatMoney(posTotal, posCurrency)}</strong> POS today
             </span>
-            <span className={styles.statDivider}>·</span>
-            <Link href="/frontdesk/display" className={styles.hint}>
-              Display board →
-            </Link>
+            {displayBoardEnabled && (
+              <>
+                <span className={styles.statDivider}>·</span>
+                <Link href="/frontdesk/display" className={styles.hint}>
+                  Display board →
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

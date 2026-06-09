@@ -1,4 +1,5 @@
 import { UserRole } from '@tms/types';
+import { isFrontDeskFeatureEnabled } from './frontdesk-features';
 import type { AppRole } from './roles';
 
 export function roleToAppRole(role: UserRole): AppRole {
@@ -47,6 +48,18 @@ export function canAccessPath(role: AppRole, pathname: string): boolean {
   }
 
   if (role === UserRole.FRONT_DESK) {
+    if (
+      !isFrontDeskFeatureEnabled('queueManager') &&
+      pathname.startsWith('/frontdesk/queue')
+    ) {
+      return false;
+    }
+    if (
+      !isFrontDeskFeatureEnabled('displayBoard') &&
+      pathname.startsWith('/frontdesk/display')
+    ) {
+      return false;
+    }
     return (
       pathname.startsWith('/frontdesk') ||
       pathname.startsWith('/kiosk') ||

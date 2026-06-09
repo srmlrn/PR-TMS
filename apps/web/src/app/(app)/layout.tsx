@@ -16,6 +16,7 @@ import { PublicThemeBar } from '@/components/PublicThemeBar';
 import { CommitteeSwitcher } from '@/components/CommitteeSwitcher';
 import { CommitteeProvider } from '@/lib/committee-context';
 import { useTenantSite } from '@/lib/tenant-site';
+import { filterFrontDeskNav } from '@/lib/frontdesk-features';
 import { UserRole } from '@tms/types';
 
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
@@ -77,7 +78,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     <div className={isKiosk ? 'kioskMode' : 'appShell'}>
       {!isKiosk && (
         <DockNav
-          items={config.nav}
+          items={filterFrontDeskNav(config.nav)}
           variant="sidebar"
           brandLabel={site.name}
           brandIcon={site.icon}
