@@ -22,6 +22,36 @@
   flex: 1;
 }
 
+.templeBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  flex-shrink: 1;
+  max-width: min(220px, 32vw);
+}
+
+.templeIcon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.templeName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--txt2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titleDivider {
+  color: var(--txt3);
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
 .title {
   font-size: 0.95rem;
   font-weight: 700;

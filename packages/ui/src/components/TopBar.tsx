@@ -1,11 +1,38 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { EnvBadge, type EnvBadgeVariant } from './Badge';
 import styles from './TopBar.module.css';
 
+function readDockCollapsed(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.dataset.dockCollapsed === 'true';
+}
+
+function useDockCollapsed(): boolean {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useLayoutEffect(() => {
+    setCollapsed(readDockCollapsed());
+
+    const observer = new MutationObserver(() => {
+      setCollapsed(readDockCollapsed());
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-dock-collapsed'],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  return collapsed;
+}
+
 export interface TopBarProps {
   title: string;
+  /** Shown in the top bar when the sidebar is collapsed (hidden when expanded). */
+  templeName?: string;
+  templeIcon?: string;
   envLabel?: string;
   envVariant?: EnvBadgeVariant;
   avatarInitials?: string;
@@ -22,6 +49,8 @@ export interface TopBarProps {
 
 export function TopBar({
   title,
+  templeName,
+  templeIcon,
   envLabel = 'PROD',
   envVariant = 'prod',
   avatarInitials = 'RK',
@@ -59,10 +88,25 @@ export function TopBar({
   }, [menuOpen]);
 
   const useLegacyBar = Boolean(roleSwitcher && !onSignOut && !menuExtras);
+  const sidebarCollapsed = useDockCollapsed();
+  const showTempleBrand = Boolean(templeName && sidebarCollapsed);
 
   return (
     <header className={styles.topbar}>
       <div className={styles.left}>
+        {showTempleBrand && (
+          <span className={styles.templeBrand} title={templeName}>
+            {templeIcon && (
+              <span className={styles.templeIcon} aria-hidden>
+                {templeIcon}
+              </span>
+            )}
+            <span className={styles.templeName}>{templeName}</span>
+            <span className={styles.titleDivider} aria-hidden>
+              ·
+            </span>
+          </span>
+        )}
         <span className={styles.title}>{title}</span>
         <EnvBadge variant={envVariant}>{envLabel}</EnvBadge>
       </div>

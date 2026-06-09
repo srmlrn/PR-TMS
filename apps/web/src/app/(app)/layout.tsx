@@ -88,6 +88,8 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           {!isFullscreenPage && (
             <TopBar
               title={title}
+              templeName={site.name}
+              templeIcon={site.icon}
               envLabel={environment.toUpperCase()}
               envVariant={envVariant}
               avatarInitials={config.avatarInitials}
