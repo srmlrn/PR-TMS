@@ -1,3 +1,23 @@
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.presetsLabel {
+  font-size: 0.72rem;
+  color: var(--t2);
+  margin-right: 0.15rem;
+}
+
+.helpText {
+  color: var(--t2);
+  margin: 0;
+  line-height: 1.45;
+}
+
 .kanban {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

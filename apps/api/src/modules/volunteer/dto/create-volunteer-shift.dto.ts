@@ -5,7 +5,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -74,7 +73,8 @@ export class CreateVolunteerShiftDto {
 
   @ApiPropertyOptional({ example: 'evt-brahmotsavam-2026' })
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @MaxLength(64)
   eventId?: string;
 
   @ApiPropertyOptional({ example: 'Brahmotsavam 2026' })

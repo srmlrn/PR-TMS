@@ -9,6 +9,7 @@ import {
 import {
   AuthUser,
   GenerateEventShiftsResult,
+  NotifyEventVolunteersResult,
   UserRole,
   VolunteerCategory,
   VolunteerOpportunity,
@@ -20,6 +21,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateVolunteerShiftDto } from './dto/create-volunteer-shift.dto';
+import { NotifyEventVolunteersDto } from './dto/notify-event-volunteers.dto';
 import { UpdateVolunteerPreferencesDto } from './dto/update-volunteer-preferences.dto';
 import { VolunteerService } from './volunteer.service';
 
@@ -129,6 +131,22 @@ export class VolunteerController {
     @CurrentUser() user: AuthUser,
   ): Promise<GenerateEventShiftsResult> {
     return this.volunteerService.generateEventShifts(tenantId, eventId, user);
+  }
+
+  @Post('events/:eventId/notify')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Notify volunteers about an event (invite or roster reminder)' })
+  @ApiOkResponse({ description: 'Notification delivery counts' })
+  async notifyEventVolunteers(
+    @TenantId() tenantId: string,
+    @Param('eventId') eventId: string,
+    @Body() dto: NotifyEventVolunteersDto,
+  ): Promise<NotifyEventVolunteersResult> {
+    return this.volunteerService.notifyEventVolunteers(
+      tenantId,
+      eventId,
+      dto.audience ?? 'interested',
+    );
   }
 
   @Post('shifts/:id/signup')

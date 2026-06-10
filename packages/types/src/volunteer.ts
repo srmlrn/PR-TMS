@@ -104,6 +104,16 @@ export interface GenerateEventShiftsResult {
   created: VolunteerShift[];
 }
 
+export type VolunteerNotifyAudience = 'interested' | 'assigned';
+
+export interface NotifyEventVolunteersResult {
+  eventId: string;
+  audience: VolunteerNotifyAudience;
+  notified: number;
+  inApp: number;
+  email: number;
+}
+
 export interface VolunteerStats {
   hoursThisQuarter: number;
   hoursYtd: number;

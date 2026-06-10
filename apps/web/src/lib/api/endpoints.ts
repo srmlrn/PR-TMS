@@ -62,6 +62,9 @@ import type {
   VolunteerCategory,
   VolunteerPreferences,
   GenerateEventShiftsResult,
+  NotifyEventVolunteersResult,
+  VolunteerNotifyAudience,
+  VolunteerRoleNeed,
   InAppNotification,
   NotificationTemplate,
   SendNotificationInput,
@@ -276,6 +279,9 @@ export function createEndpoints(client: ApiClient) {
       revenueTarget?: number;
       clientName?: string;
       clientContact?: string;
+      volunteerCategory?: VolunteerCategory;
+      volunteersNeeded?: number;
+      volunteerRoles?: VolunteerRoleNeed[];
     }) => client.post<TempleEvent>('/events', body),
 
     getEvent: (id: string) => client.get<TempleEvent>(`/events/${id}`),
@@ -521,6 +527,9 @@ export function createEndpoints(client: ApiClient) {
 
     generateEventVolunteerShifts: (eventId: string) =>
       client.post<GenerateEventShiftsResult>(`/volunteer/events/${eventId}/generate-shifts`, {}),
+
+    notifyEventVolunteers: (eventId: string, body?: { audience?: VolunteerNotifyAudience }) =>
+      client.post<NotifyEventVolunteersResult>(`/volunteer/events/${eventId}/notify`, body ?? {}),
 
     signupVolunteerShift: (id: string) =>
       client.post<VolunteerShift>(`/volunteer/shifts/${id}/signup`, {}),

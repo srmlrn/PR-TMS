@@ -12,8 +12,11 @@ import {
   EventLifecycleStage,
   GANESHA_TEMPLE_ID,
   GenerateEventShiftsResult,
+  NotifyEventVolunteersResult,
   SV_TEMPLE_ID,
   TempleEvent,
+  UserRole,
+  VolunteerNotifyAudience,
   VolunteerBadgeTier,
   VolunteerCategory,
   VolunteerOpportunity,
@@ -28,6 +31,7 @@ import {
 import { BaseTenantService, TenantEntity } from '../../common/base/base-tenant.service';
 import { VolunteerShiftEntity } from '../../database/entities/tenant/volunteer-shift.entity';
 import { TenantDataService } from '../../database/tenant-data.service';
+import { DEMO_USERS } from '../auth/demo-users';
 import { NotificationsService } from '../notifications/notifications.service';
 
 type VolunteerShiftRecord = VolunteerShift & TenantEntity;
@@ -677,6 +681,141 @@ export class VolunteerService
     }
 
     return { eventId, created };
+  }
+
+  async notifyEventVolunteers(
+    tenantId: string,
+    eventId: string,
+    audience: VolunteerNotifyAudience = 'interested',
+  ): Promise<NotifyEventVolunteersResult> {
+    const event = await this.loadEvent(tenantId, eventId);
+    const category = eventCategory(event);
+    const shifts = await this.findByEvent(tenantId, eventId);
+
+    if (audience === 'interested' && shifts.length === 0) {
+      throw new BadRequestException(
+        'Add volunteer shifts for this event before inviting volunteers.',
+      );
+    }
+
+    let slotsTotal = 0;
+    let slotsFilled = 0;
+    let shiftsOpen = 0;
+    for (const shift of shifts) {
+      slotsTotal += shift.slots;
+      const filled = confirmedSignups(shift.signups).length;
+      slotsFilled += filled;
+      if (filled < shift.slots) {
+        shiftsOpen += 1;
+      }
+    }
+    const slotsRemaining = Math.max(0, slotsTotal - slotsFilled);
+
+    let targetUserIds: string[];
+
+    if (audience === 'assigned') {
+      const ids = new Set<string>();
+      for (const shift of shifts) {
+        for (const signup of shift.signups) {
+          if (signupStatus(signup) === 'confirmed') {
+            ids.add(signup.userId);
+          }
+        }
+      }
+      targetUserIds = [...ids];
+      if (targetUserIds.length === 0) {
+        throw new BadRequestException('No confirmed volunteers on the roster for this event.');
+      }
+    } else {
+      targetUserIds = DEMO_USERS.filter(
+        (u) => u.tenantId === tenantId && u.role === UserRole.VOLUNTEER,
+      )
+        .filter((u) => {
+          const prefs = this.getPreferences(tenantId, u.id);
+          if (!prefs.notifyNewOpportunities) return false;
+          if (prefs.categories.length === 0) return true;
+          return prefs.categories.includes(category);
+        })
+        .map((u) => u.id);
+    }
+
+    let inApp = 0;
+    let email = 0;
+
+    for (const userId of targetUserIds) {
+      const user = DEMO_USERS.find((u) => u.id === userId);
+      if (!user) continue;
+
+      if (audience === 'assigned') {
+        const userShifts = shifts.filter((s) =>
+          s.signups.some(
+            (sg) => sg.userId === userId && signupStatus(sg) === 'confirmed',
+          ),
+        );
+        const shiftList = userShifts
+          .map((s) => `${s.title} (${s.date} ${s.startTime})`)
+          .join('; ');
+
+        this.notifications.createInApp(
+          tenantId,
+          userId,
+          'volunteer_shift_reminder',
+          `Reminder — ${event.name}`,
+          `You are confirmed for: ${shiftList}. Please check in when you arrive.`,
+          { eventId },
+        );
+        inApp += 1;
+
+        const first = userShifts[0];
+        if (first && user.email) {
+          this.notifications.send({
+            channel: 'sms',
+            to: user.email,
+            templateId: 'volunteer-shift-reminder',
+            metadata: {
+              shift: first.title,
+              date: first.date,
+              time: first.startTime,
+              location: first.location ?? 'Temple',
+            },
+          });
+          email += 1;
+        }
+      } else {
+        this.notifications.createInApp(
+          tenantId,
+          userId,
+          'volunteer_new_opportunity',
+          `Volunteers needed — ${event.name}`,
+          `${slotsRemaining} slots open across ${shiftsOpen || shifts.length} shifts. Sign up under Volunteering.`,
+          { eventId },
+        );
+        inApp += 1;
+
+        if (user.email) {
+          this.notifications.send({
+            channel: 'email',
+            to: user.email,
+            templateId: 'volunteer-new-opportunity',
+            metadata: {
+              name: user.name,
+              event: event.name,
+              slotsRemaining: String(slotsRemaining),
+              shiftsOpen: String(shiftsOpen || shifts.length),
+            },
+          });
+          email += 1;
+        }
+      }
+    }
+
+    return {
+      eventId,
+      audience,
+      notified: targetUserIds.length,
+      inApp,
+      email,
+    };
   }
 
   async signup(tenantId: string, shiftId: string, user: AuthUser): Promise<VolunteerShift> {

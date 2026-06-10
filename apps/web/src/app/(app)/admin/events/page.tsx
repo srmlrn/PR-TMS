@@ -10,7 +10,12 @@ import {
   GlassCard,
   ProgressBar,
 } from '@tms/ui';
-import { EventLifecycleStage, type TempleEvent } from '@tms/types';
+import {
+  EventLifecycleStage,
+  type TempleEvent,
+  type VolunteerCategory,
+  type VolunteerRoleNeed,
+} from '@tms/types';
 import {
   createEndpoints,
   formatMoney,
@@ -117,6 +122,60 @@ const STAGE_BADGE: Record<EventLifecycleStage, 'pending' | 'info' | 'ok'> = {
   [EventLifecycleStage.CANCELLED]: 'pending',
 };
 
+const CATEGORY_LABELS: Record<VolunteerCategory, string> = {
+  festival: 'Festival',
+  pooja: 'Pooja',
+  annadanam: 'Annadanam',
+  setup: 'Setup / Cleanup',
+  cultural: 'Cultural',
+  general: 'General',
+};
+
+type EventPreset = {
+  label: string;
+  name: string;
+  type: TempleEvent['type'];
+  volunteerCategory: VolunteerCategory;
+  volunteersNeeded: number;
+  venues: string;
+  volunteerRoles?: VolunteerRoleNeed[];
+};
+
+const EVENT_PRESETS: EventPreset[] = [
+  {
+    label: 'Spring cleanup',
+    name: 'Spring Seva Cleanup',
+    type: 'community',
+    volunteerCategory: 'setup',
+    volunteersNeeded: 12,
+    venues: 'Temple Grounds',
+    volunteerRoles: [
+      { role: 'general', slotsNeeded: 6, description: 'Grounds cleanup' },
+      { role: 'setup', slotsNeeded: 6, description: 'Teardown and storage' },
+    ],
+  },
+  {
+    label: 'Festival',
+    name: '',
+    type: 'festival',
+    volunteerCategory: 'festival',
+    volunteersNeeded: 36,
+    venues: 'Main Hall, Open Ground',
+  },
+  {
+    label: 'Annadanam',
+    name: '',
+    type: 'community',
+    volunteerCategory: 'annadanam',
+    volunteersNeeded: 14,
+    venues: 'Community Kitchen, Dining Hall',
+    volunteerRoles: [
+      { role: 'kitchen', slotsNeeded: 8, description: 'Kitchen prep and serving' },
+      { role: 'general', slotsNeeded: 4, description: 'Cleanup crew' },
+    ],
+  },
+];
+
 const KANBAN_STAGES = [
   EventLifecycleStage.ENQUIRY,
   EventLifecycleStage.QUOTATION,
@@ -190,7 +249,9 @@ export default function AdminEventsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stageMsg, setStageMsg] = useState<string | null>(null);
   const [volunteerMsg, setVolunteerMsg] = useState<string | null>(null);
+  const [volunteerMsgOk, setVolunteerMsgOk] = useState(true);
   const [generatingShifts, setGeneratingShifts] = useState(false);
+  const [notifying, setNotifying] = useState(false);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
@@ -200,6 +261,11 @@ export default function AdminEventsPage() {
     venues: 'Main Hall',
     clientName: '',
     expectedFootfall: 0,
+    volunteerCategory: 'festival' as VolunteerCategory,
+    volunteersNeeded: 0,
+    volunteerRoles: undefined as VolunteerRoleNeed[] | undefined,
+    autoGenerateShifts: true,
+    notifyVolunteers: false,
   });
 
   const { data: pipeline, loading, error, refetch } = useApi((ep) => ep.getEventPipeline());
@@ -239,12 +305,24 @@ export default function AdminEventsPage() {
     [selectedIdForApi],
   );
 
+  function applyPreset(preset: EventPreset) {
+    setForm((prev) => ({
+      ...prev,
+      name: preset.name || prev.name,
+      type: preset.type,
+      venues: preset.venues,
+      volunteerCategory: preset.volunteerCategory,
+      volunteersNeeded: preset.volunteersNeeded,
+      volunteerRoles: preset.volunteerRoles,
+    }));
+  }
+
   async function handleCreate() {
     setSaving(true);
     setFormMsg(null);
     try {
       const ep = createEndpoints(api);
-      await ep.createEvent({
+      const created = await ep.createEvent({
         name: form.name,
         type: form.type,
         startDate: form.startDate,
@@ -252,10 +330,29 @@ export default function AdminEventsPage() {
         venues: form.venues.split(',').map((v) => v.trim()).filter(Boolean),
         clientName: form.clientName || undefined,
         expectedFootfall: form.expectedFootfall || undefined,
+        volunteerCategory: form.volunteerCategory,
+        volunteersNeeded: form.volunteersNeeded || undefined,
+        volunteerRoles: form.volunteerRoles,
       });
+
+      let followUp = '';
+      if (form.autoGenerateShifts) {
+        const shiftResult = await ep.generateEventVolunteerShifts(created.id);
+        if (shiftResult.created.length > 0) {
+          followUp = ` ${shiftResult.created.length} volunteer shift(s) added.`;
+        }
+        if (form.notifyVolunteers && shiftResult.created.length > 0) {
+          const notifyResult = await ep.notifyEventVolunteers(created.id, {
+            audience: 'interested',
+          });
+          followUp += ` ${notifyResult.notified} volunteer(s) notified.`;
+        }
+      }
+
       setShowForm(false);
       setFormOk(true);
-      setFormMsg(`Event "${form.name}" created.`);
+      setFormMsg(`Event "${form.name}" created.${followUp}`);
+      setSelectedId(created.id);
       refetch();
     } catch (err) {
       setFormOk(false);
@@ -272,6 +369,7 @@ export default function AdminEventsPage() {
     try {
       const ep = createEndpoints(api);
       const result = await ep.generateEventVolunteerShifts(selectedIdForApi);
+      setVolunteerMsgOk(true);
       setVolunteerMsg(
         result.created.length > 0
           ? `Created ${result.created.length} volunteer shift(s).`
@@ -279,9 +377,33 @@ export default function AdminEventsPage() {
       );
       refetchEventShifts();
     } catch (err) {
+      setVolunteerMsgOk(false);
       setVolunteerMsg(err instanceof Error ? err.message : 'Could not generate shifts');
     } finally {
       setGeneratingShifts(false);
+    }
+  }
+
+  async function handleNotifyVolunteers(audience: 'interested' | 'assigned') {
+    if (!selectedIdForApi) return;
+    setNotifying(true);
+    setVolunteerMsg(null);
+    try {
+      const ep = createEndpoints(api);
+      const result = await ep.notifyEventVolunteers(selectedIdForApi, { audience });
+      setVolunteerMsgOk(true);
+      const channel =
+        audience === 'assigned'
+          ? `Reminded ${result.notified} assigned volunteer(s)`
+          : `Invited ${result.notified} volunteer(s)`;
+      setVolunteerMsg(
+        `${channel} (${result.inApp} in-app, ${result.email} email/SMS queued).`,
+      );
+    } catch (err) {
+      setVolunteerMsgOk(false);
+      setVolunteerMsg(err instanceof Error ? err.message : 'Could not notify volunteers');
+    } finally {
+      setNotifying(false);
     }
   }
 
@@ -411,14 +533,60 @@ export default function AdminEventsPage() {
 
       {showForm && (
         <GlassCard title="New event" className="mb2">
-          <div className="formGrid">
+          <p className={`tms-t3 ${styles.helpText}`}>
+            Create an event, optionally generate volunteer shifts (cleanup, festival, annadanam), and
+            invite matching volunteers in one step.
+          </p>
+          <div className={styles.presets}>
+            <span className={styles.presetsLabel}>Quick start:</span>
+            {EVENT_PRESETS.map((preset) => (
+              <Button key={preset.label} size="sm" variant="outline" onClick={() => applyPreset(preset)}>
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+          <div className="formGrid mt1">
             <div className="formGroup">
               <label>Name</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div className="formGroup">
+              <label>Event type</label>
+              <select
+                value={form.type}
+                onChange={(e) =>
+                  setForm({ ...form, type: e.target.value as TempleEvent['type'] })
+                }
+              >
+                <option value="festival">Festival</option>
+                <option value="cultural">Cultural</option>
+                <option value="community">Community seva</option>
+                <option value="corporate">Corporate</option>
+                <option value="wedding">Wedding</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            <div className="formGroup">
               <label>Client name</label>
               <input value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} />
+            </div>
+            <div className="formGroup">
+              <label>Seva category</label>
+              <select
+                value={form.volunteerCategory}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    volunteerCategory: e.target.value as VolunteerCategory,
+                  })
+                }
+              >
+                {(Object.keys(CATEGORY_LABELS) as VolunteerCategory[]).map((cat) => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_LABELS[cat]}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="formGroup">
               <label>Start date</label>
@@ -429,6 +597,15 @@ export default function AdminEventsPage() {
               <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
             </div>
             <div className="formGroup">
+              <label>Volunteers needed</label>
+              <input
+                type="number"
+                min={0}
+                value={form.volunteersNeeded || ''}
+                onChange={(e) => setForm({ ...form, volunteersNeeded: Number(e.target.value) })}
+              />
+            </div>
+            <div className="formGroup">
               <label>Expected footfall</label>
               <input
                 type="number"
@@ -436,12 +613,35 @@ export default function AdminEventsPage() {
                 onChange={(e) => setForm({ ...form, expectedFootfall: Number(e.target.value) })}
               />
             </div>
-            <div className="formGroup">
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
               <label>Venues (comma-separated)</label>
               <input value={form.venues} onChange={(e) => setForm({ ...form, venues: e.target.value })} />
             </div>
             <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <Button onClick={handleCreate} disabled={saving || !form.name}>{saving ? 'Saving…' : 'Create event'}</Button>
+              <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.autoGenerateShifts}
+                  onChange={(e) => setForm({ ...form, autoGenerateShifts: e.target.checked })}
+                />
+                Auto-generate volunteer shifts from seva playbook
+              </label>
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.notifyVolunteers}
+                  disabled={!form.autoGenerateShifts}
+                  onChange={(e) => setForm({ ...form, notifyVolunteers: e.target.checked })}
+                />
+                Notify matching volunteers after shifts are created
+              </label>
+            </div>
+            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+              <Button onClick={handleCreate} disabled={saving || !form.name}>
+                {saving ? 'Saving…' : 'Create event'}
+              </Button>
             </div>
           </div>
         </GlassCard>
@@ -659,7 +859,12 @@ export default function AdminEventsPage() {
               </div>
             )}
             {volunteerMsg && (
-              <p className="tms-t3 mt1" style={{ color: 'var(--gr)' }}>{volunteerMsg}</p>
+              <p
+                className="tms-t3 mt1"
+                style={{ color: volunteerMsgOk ? 'var(--gr)' : 'var(--red)' }}
+              >
+                {volunteerMsg}
+              </p>
             )}
             <div className="flexRow flexWrap mt1">
               <Button
@@ -670,14 +875,27 @@ export default function AdminEventsPage() {
               >
                 {generatingShifts ? 'Generating…' : 'Add volunteer shifts'}
               </Button>
+              <Button
+                size="sm"
+                onClick={() => handleNotifyVolunteers('interested')}
+                disabled={notifying || !selectedIdForApi || !(eventShifts?.data?.length)}
+              >
+                {notifying ? 'Sending…' : 'Invite volunteers'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleNotifyVolunteers('assigned')}
+                disabled={notifying || !selectedIdForApi}
+              >
+                Remind roster
+              </Button>
             </div>
-            <div className="divider" />
-            <div className="flexRow flexWrap">
-              <Button variant="primary" size="sm">View Full Plan</Button>
-              <Button size="sm">Budget Tracker</Button>
-              <Button size="sm">Send Invites</Button>
-              <Button size="sm">Post-Event Report</Button>
-            </div>
+            <p className={`tms-t3 mt1 ${styles.helpText}`}>
+              1. Add shifts from the seva playbook · 2. Invite volunteers matching seva preferences ·
+              3. Remind confirmed roster before the event. Volunteers see shifts on{' '}
+              <strong>Volunteering → Shifts</strong>.
+            </p>
           </GlassCard>
         </BentoItem>
         <BentoItem span={4}>
