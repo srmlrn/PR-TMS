@@ -6,7 +6,6 @@ import {
   Button,
   GlassCard,
   ProgressBar,
-  StatTile,
 } from '@tms/ui';
 import type {
   CreateVolunteerShiftInput,
@@ -149,7 +148,6 @@ export default function VolunteerShiftsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
-  const [showPreferences, setShowPreferences] = useState(false);
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsMsg, setPrefsMsg] = useState<string | null>(null);
   const [prefsForm, setPrefsForm] = useState<Pick<VolunteerPreferences, 'categories' | 'roles' | 'notifyNewOpportunities'>>({
@@ -464,10 +462,10 @@ export default function VolunteerShiftsPage() {
     const waitlistCount = shift.signups.filter((s) => signupStatus(s) === 'waitlisted').length;
 
     return (
-      <div key={shift.id} className={styles.shift}>
-        <div className={styles.shiftMain}>
-          <strong>{shift.title}</strong>
-          <p className="tms-t3">
+      <article key={shift.id} className={styles.shiftCard}>
+        <div className={styles.shiftCardMain}>
+          <strong className={styles.shiftCardTitle}>{shift.title}</strong>
+          <p className={styles.shiftCardTime}>
             {formatShortDate(shift.date)} · {shiftHours(shift)}
             {shift.eventName ? ` · ${shift.eventName}` : ''}
           </p>
@@ -481,10 +479,10 @@ export default function VolunteerShiftsPage() {
             )}
           </div>
           {shift.description && (
-            <p className={`tms-t3 ${styles.shiftDesc}`}>{shift.description}</p>
+            <p className={styles.shiftDesc}>{shift.description}</p>
           )}
           <div className={styles.capacity}>
-            <span className={`tms-t3 ${styles.capacityLabel}`}>
+            <span className={styles.capacityLabel}>
               {filled}/{shift.slots} filled
               {waitlistCount > 0 ? ` · ${waitlistCount} waitlisted` : ''}
             </span>
@@ -492,7 +490,7 @@ export default function VolunteerShiftsPage() {
           </div>
         </div>
         {renderShiftActions(shift)}
-      </div>
+      </article>
     );
   }
 
@@ -531,8 +529,12 @@ export default function VolunteerShiftsPage() {
 
   const badgeLabel = stats ? BADGE_LABELS[stats.badgeTier] : '—';
   const recognitionDetail = stats?.nextBadgeAtHours
-    ? `${badgeLabel} seva badge · Next: ${stats.nextBadgeAtHours} hours`
-    : `${badgeLabel} seva badge · Top tier reached`;
+    ? `Next tier at ${stats.nextBadgeAtHours} hours`
+    : 'Top tier reached';
+  const prefsSummary =
+    prefsForm.categories.length > 0 || prefsForm.roles.length > 0
+      ? `${prefsForm.categories.length} categories · ${prefsForm.roles.length} roles`
+      : 'Set seva interests';
 
   return (
     <>
@@ -542,115 +544,45 @@ export default function VolunteerShiftsPage() {
       />
       <ApiBanner loading={loading} error={error} />
 
-      <div className={styles.stats}>
-        <StatTile
-          compact
-          accent="blue"
-          label="Hours this quarter"
-          value={stats ? String(stats.hoursThisQuarter) : '—'}
-          icon="⏱️"
-        />
-        <StatTile
-          compact
-          accent="amber"
-          label="Upcoming shifts"
-          value={stats ? String(stats.upcomingShifts) : '—'}
-          icon="📅"
-        />
-        <StatTile
-          compact
-          accent="green"
-          label="Badge tier"
-          value={badgeLabel}
-          icon="🌟"
-          change={stats ? `${stats.completedShifts} completed` : undefined}
-        />
-        <StatTile
-          compact
-          accent="blue"
-          label="Waitlisted"
-          value={stats ? String(stats.waitlistedShifts) : '—'}
-          icon="⏳"
-        />
-      </div>
+      <div className={styles.page}>
+        <div className={styles.statsStrip}>
+          <span className={styles.statItem}>
+            ⏱️ <strong>{stats ? stats.hoursThisQuarter : '—'}</strong> hrs this quarter
+          </span>
+          <span className={styles.statDivider}>·</span>
+          <span className={styles.statItem}>
+            📅 <strong>{stats ? stats.upcomingShifts : '—'}</strong> upcoming
+          </span>
+          <span className={styles.statDivider}>·</span>
+          <span className={styles.statItem}>
+            🌟 <strong>{badgeLabel}</strong>
+            {stats ? ` · ${stats.completedShifts} done` : ''}
+          </span>
+          <span className={styles.statDivider}>·</span>
+          <span className={styles.statItem}>
+            ⏳ <strong>{stats ? stats.waitlistedShifts : '—'}</strong> waitlisted
+          </span>
+        </div>
 
-      <div className={styles.categoryBar}>
-        <span className="tms-t3">Filter by seva type:</span>
-        {(
-          ['all', 'festival', 'pooja', 'annadanam', 'setup', 'cultural', 'general'] as const
-        ).map((cat) => (
-          <Button
-            key={cat}
-            size="sm"
-            variant={categoryFilter === cat ? 'primary' : 'outline'}
-            onClick={() => setCategoryFilter(cat)}
-          >
-            {cat === 'all' ? 'All' : CATEGORY_LABELS[cat]}
-          </Button>
-        ))}
-      </div>
-
-      <GlassCard title="My preferences" className="mb2">
-        <Button size="sm" variant="outline" onClick={() => setShowPreferences((v) => !v)}>
-          {showPreferences ? 'Hide preferences' : 'Show preferences'}
-        </Button>
-        {showPreferences && (
-          <div className={`${styles.formGrid} mt1`}>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <label>Seva categories</label>
-              <div className={styles.roleChips}>
-                {(Object.keys(CATEGORY_LABELS) as VolunteerCategory[]).map((cat) => (
-                  <label key={cat} className="flexRow" style={{ gap: '0.35rem', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={prefsForm.categories.includes(cat)}
-                      onChange={() => toggleCategory(cat)}
-                    />
-                    {CATEGORY_LABELS[cat]}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <label>Preferred roles</label>
-              <div className={styles.roleChips}>
-                {(Object.keys(ROLE_LABELS) as VolunteerShiftRole[]).map((role) => (
-                  <label key={role} className="flexRow" style={{ gap: '0.35rem', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={prefsForm.roles.includes(role)}
-                      onChange={() => toggleRole(role)}
-                    />
-                    {ROLE_LABELS[role]}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={prefsForm.notifyNewOpportunities}
-                  onChange={(e) =>
-                    setPrefsForm({ ...prefsForm, notifyNewOpportunities: e.target.checked })
-                  }
-                />
-                Notify me about new volunteer opportunities
-              </label>
-            </div>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <Button onClick={handleSavePreferences} disabled={prefsSaving}>
-                {prefsSaving ? 'Saving…' : 'Save preferences'}
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarGroup}>
+            <span className={styles.toolbarLabel}>Seva type</span>
+            {(
+              ['all', 'festival', 'pooja', 'annadanam', 'setup', 'cultural', 'general'] as const
+            ).map((cat) => (
+              <Button
+                key={cat}
+                size="sm"
+                variant={categoryFilter === cat ? 'primary' : 'outline'}
+                onClick={() => setCategoryFilter(cat)}
+              >
+                {cat === 'all' ? 'All' : CATEGORY_LABELS[cat]}
               </Button>
-              {prefsMsg && <p className="tms-t3 mt1">{prefsMsg}</p>}
-            </div>
+            ))}
           </div>
-        )}
-      </GlassCard>
-
-      <div className={styles.grid}>
-        <GlassCard title="Shifts">
-          <div className={styles.tabs}>
+          <div className={styles.toolbarDivider} aria-hidden />
+          <div className={styles.toolbarGroup}>
+            <span className={styles.toolbarLabel}>Show</span>
             {(
               [
                 ['all', 'All'],
@@ -670,205 +602,300 @@ export default function VolunteerShiftsPage() {
               </Button>
             ))}
           </div>
-          {visibleShifts.length === 0 ? (
-            <p className={`tms-t3 ${styles.emptyState}`}>
-              {filter === 'open'
-                ? 'No open shifts right now.'
-                : filter === 'my'
-                  ? 'You have no upcoming shifts.'
-                  : filter === 'waitlist'
-                    ? 'You are not on any waitlists.'
-                    : filter === 'past'
-                      ? 'No past shifts on record.'
-                      : 'No shifts scheduled yet.'}
-            </p>
-          ) : (
-            <div className={styles.shifts}>{visibleShifts.map(renderShiftCard)}</div>
-          )}
-          {(actionMsg || actionError) && (
-            <p
-              className="tms-t3 mt1"
-              style={actionError ? { color: 'var(--red)' } : undefined}
+        </div>
+
+        <div className={styles.workspace}>
+          <section className={styles.shiftsColumn}>
+            <GlassCard
+              title="Shifts"
+              headerRight={
+                <span className={styles.shiftCount}>
+                  {visibleShifts.length} {visibleShifts.length === 1 ? 'shift' : 'shifts'}
+                </span>
+              }
             >
-              {actionError ?? actionMsg}
-            </p>
-          )}
-        </GlassCard>
-
-        <GlassCard title="Upcoming Events Needing Volunteers">
-          {opportunities.length === 0 ? (
-            <p className={`tms-t3 ${styles.emptyState}`}>
-              No confirmed events with volunteer needs right now.
-            </p>
-          ) : (
-            opportunities.map(renderOpportunity)
-          )}
-        </GlassCard>
-
-        <GlassCard
-          title="Notifications"
-          headerRight={
-            unreadCount > 0 ? (
-              <Badge variant="info">{unreadCount} new</Badge>
-            ) : undefined
-          }
-        >
-          {notifications.length === 0 ? (
-            <p className={`tms-t3 ${styles.emptyState}`}>
-              Sign up for shifts to receive confirmations and reminders here.
-            </p>
-          ) : (
-            <div className={styles.notifications}>
-              {notifications.slice(0, 8).map((n) => (
-                <button
-                  key={n.id}
-                  type="button"
-                  className={[styles.notifItem, n.read ? styles.notifRead : ''].join(' ')}
-                  onClick={() => handleMarkRead(n)}
+              {visibleShifts.length === 0 ? (
+                <p className={styles.emptyState}>
+                  {filter === 'open'
+                    ? 'No open shifts right now.'
+                    : filter === 'my'
+                      ? 'You have no upcoming shifts.'
+                      : filter === 'waitlist'
+                        ? 'You are not on any waitlists.'
+                        : filter === 'past'
+                          ? 'No past shifts on record.'
+                          : 'No shifts scheduled yet.'}
+                </p>
+              ) : (
+                <div className={styles.shiftsList}>
+                  {visibleShifts.map(renderShiftCard)}
+                </div>
+              )}
+              {(actionMsg || actionError) && (
+                <p
+                  className={[
+                    styles.actionMsg,
+                    actionError ? styles.actionMsgError : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
-                  <strong>{n.title}</strong>
-                  <span className="tms-t3">{n.body}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </GlassCard>
+                  {actionError ?? actionMsg}
+                </p>
+              )}
+            </GlassCard>
+          </section>
 
-        <GlassCard title="Recognition">
-          {stats ? (
-            <>
-              <p className="tms-t2">🌟 {stats.hoursThisQuarter} hours logged this quarter</p>
-              <p className="tms-t3">{recognitionDetail}</p>
-              <ProgressBar
-                value={stats.progressToNextBadge}
-                color={stats.badgeTier === 'platinum' ? 'green' : 'silver'}
-                className="mt1"
-              />
-              <p className="tms-t3 mt1">{stats.hoursYtd} hours year-to-date</p>
-            </>
-          ) : (
-            <p className="tms-t3">Loading recognition stats…</p>
-          )}
-        </GlassCard>
+          <aside className={styles.sidebar}>
+            <GlassCard title="Recognition" className={styles.sidebarCompact}>
+              {stats ? (
+                <>
+                  <p className={styles.recognitionHours}>
+                    🌟 {stats.hoursThisQuarter} hours this quarter
+                  </p>
+                  <p className={styles.recognitionDetail}>
+                    {badgeLabel} badge · {recognitionDetail}
+                  </p>
+                  <ProgressBar
+                    value={stats.progressToNextBadge}
+                    color={stats.badgeTier === 'platinum' ? 'green' : 'silver'}
+                  />
+                  <p className={styles.recognitionYtd}>{stats.hoursYtd} hours year-to-date</p>
+                </>
+              ) : (
+                <p className={styles.emptyState}>Loading recognition stats…</p>
+              )}
+            </GlassCard>
 
-        {templates.length > 0 && (
-          <GlassCard title="Weekly Seva Templates" className={styles.fullWidth}>
-            <p className={`tms-t3 ${styles.emptyState}`}>
-              Recurring seva slots — sign up each week for ongoing annadanam and pooja support.
-            </p>
-            <div className={styles.shifts}>
-              {templates.map(renderShiftCard)}
-            </div>
-          </GlassCard>
-        )}
-      </div>
+            <GlassCard title="Upcoming events" className={styles.sidebarCompact}>
+              {opportunities.length === 0 ? (
+                <p className={styles.emptyState}>
+                  No confirmed events with volunteer needs right now.
+                </p>
+              ) : (
+                opportunities.map(renderOpportunity)
+              )}
+            </GlassCard>
 
-      {isAdmin && (
-        <GlassCard title="Create shift" className={`${styles.mt1} ${styles.mb2}`}>
-          <Button size="sm" variant="outline" onClick={() => setShowCreate((v) => !v)}>
-            {showCreate ? 'Hide form' : 'Show form'}
-          </Button>
-          {showCreate && (
-            <div className={`${styles.formGrid} mt1`}>
-              <div className="formGroup">
-                <label>Title</label>
-                <input
-                  value={createForm.title}
-                  onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label>Event name</label>
-                <input
-                  value={createForm.eventName ?? ''}
-                  onChange={(e) => setCreateForm({ ...createForm, eventName: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label>Date</label>
-                <input
-                  type="date"
-                  value={createForm.date}
-                  onChange={(e) => setCreateForm({ ...createForm, date: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label>Role</label>
-                <select
-                  value={createForm.role ?? 'general'}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      role: e.target.value as VolunteerShiftRole,
-                    })
-                  }
-                >
-                  {Object.entries(ROLE_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
+            <GlassCard
+              title="Notifications"
+              className={styles.sidebarCompact}
+              headerRight={
+                unreadCount > 0 ? (
+                  <Badge variant="info">{unreadCount} new</Badge>
+                ) : undefined
+              }
+            >
+              {notifications.length === 0 ? (
+                <p className={styles.emptyState}>
+                  Sign up for shifts to receive confirmations and reminders here.
+                </p>
+              ) : (
+                <div className={styles.notifications}>
+                  {notifications.slice(0, 8).map((n) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      className={[styles.notifItem, n.read ? styles.notifRead : ''].join(' ')}
+                      onClick={() => handleMarkRead(n)}
+                    >
+                      <strong>{n.title}</strong>
+                      <span className="tms-t3">{n.body}</span>
+                    </button>
                   ))}
-                </select>
+                </div>
+              )}
+            </GlassCard>
+
+            <details className={styles.prefsDetails}>
+              <summary className={styles.prefsSummary}>
+                My preferences
+                <span className={styles.prefsHint}>{prefsSummary}</span>
+              </summary>
+              <div className={styles.prefsBody}>
+                <div className={styles.formGrid}>
+                  <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+                    <label>Seva categories</label>
+                    <div className={styles.roleChips}>
+                      {(Object.keys(CATEGORY_LABELS) as VolunteerCategory[]).map((cat) => (
+                        <label
+                          key={cat}
+                          className="flexRow"
+                          style={{ gap: '0.35rem', cursor: 'pointer' }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={prefsForm.categories.includes(cat)}
+                            onChange={() => toggleCategory(cat)}
+                          />
+                          {CATEGORY_LABELS[cat]}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+                    <label>Preferred roles</label>
+                    <div className={styles.roleChips}>
+                      {(Object.keys(ROLE_LABELS) as VolunteerShiftRole[]).map((role) => (
+                        <label
+                          key={role}
+                          className="flexRow"
+                          style={{ gap: '0.35rem', cursor: 'pointer' }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={prefsForm.roles.includes(role)}
+                            onChange={() => toggleRole(role)}
+                          />
+                          {ROLE_LABELS[role]}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+                    <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={prefsForm.notifyNewOpportunities}
+                        onChange={(e) =>
+                          setPrefsForm({ ...prefsForm, notifyNewOpportunities: e.target.checked })
+                        }
+                      />
+                      Notify me about new volunteer opportunities
+                    </label>
+                  </div>
+                  <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+                    <Button onClick={handleSavePreferences} disabled={prefsSaving}>
+                      {prefsSaving ? 'Saving…' : 'Save preferences'}
+                    </Button>
+                    {prefsMsg && <p className="tms-t3 mt1">{prefsMsg}</p>}
+                  </div>
+                </div>
               </div>
-              <div className="formGroup">
-                <label>Start time</label>
-                <input
-                  value={createForm.startTime}
-                  onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })}
-                />
+            </details>
+          </aside>
+        </div>
+
+        <div className={styles.bottomSection}>
+          {templates.length > 0 && (
+            <GlassCard title="Weekly seva templates">
+              <p className={styles.emptyState}>
+                Recurring seva slots — sign up each week for ongoing annadanam and pooja support.
+              </p>
+              <div className={styles.shiftsList}>
+                {templates.map(renderShiftCard)}
               </div>
-              <div className="formGroup">
-                <label>End time</label>
-                <input
-                  value={createForm.endTime}
-                  onChange={(e) => setCreateForm({ ...createForm, endTime: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label>Slots</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={createForm.slots}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, slots: Number(e.target.value) || 1 })
-                  }
-                />
-              </div>
-              <div className="formGroup">
-                <label>Location</label>
-                <input
-                  value={createForm.location ?? ''}
-                  onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
-                />
-              </div>
-              <div className="formGroup">
-                <label>Coordinator</label>
-                <input
-                  value={createForm.coordinator ?? ''}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, coordinator: e.target.value })
-                  }
-                />
-              </div>
-              <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-                <label>Description</label>
-                <input
-                  value={createForm.description ?? ''}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, description: e.target.value })
-                  }
-                />
-              </div>
-              <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-                <Button onClick={handleCreate} disabled={creating || !createForm.title.trim()}>
-                  {creating ? 'Creating…' : 'Create shift'}
-                </Button>
-              </div>
-            </div>
+            </GlassCard>
           )}
-        </GlassCard>
-      )}
+
+          {isAdmin && (
+            <GlassCard title="Create shift">
+              <Button size="sm" variant="outline" onClick={() => setShowCreate((v) => !v)}>
+                {showCreate ? 'Hide form' : 'Show form'}
+              </Button>
+              {showCreate && (
+                <div className={`${styles.formGrid} mt1`}>
+                  <div className="formGroup">
+                    <label>Title</label>
+                    <input
+                      value={createForm.title}
+                      onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                    />
+                  </div>
+                  <div className="formGroup">
+                    <label>Event name</label>
+                    <input
+                      value={createForm.eventName ?? ''}
+                      onChange={(e) => setCreateForm({ ...createForm, eventName: e.target.value })}
+                    />
+                  </div>
+                  <div className="formGroup">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={createForm.date}
+                      onChange={(e) => setCreateForm({ ...createForm, date: e.target.value })}
+                    />
+                  </div>
+                  <div className="formGroup">
+                    <label>Role</label>
+                    <select
+                      value={createForm.role ?? 'general'}
+                      onChange={(e) =>
+                        setCreateForm({
+                          ...createForm,
+                          role: e.target.value as VolunteerShiftRole,
+                        })
+                      }
+                    >
+                      {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="formGroup">
+                    <label>Start time</label>
+                    <input
+                      value={createForm.startTime}
+                      onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })}
+                    />
+                  </div>
+                  <div className="formGroup">
+                    <label>End time</label>
+                    <input
+                      value={createForm.endTime}
+                      onChange={(e) => setCreateForm({ ...createForm, endTime: e.target.value })}
+                    />
+                  </div>
+                  <div className="formGroup">
+                    <label>Slots</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={createForm.slots}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, slots: Number(e.target.value) || 1 })
+                      }
+                    />
+                  </div>
+                  <div className="formGroup">
+                    <label>Location</label>
+                    <input
+                      value={createForm.location ?? ''}
+                      onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
+                    />
+                  </div>
+                  <div className="formGroup">
+                    <label>Coordinator</label>
+                    <input
+                      value={createForm.coordinator ?? ''}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, coordinator: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+                    <label>Description</label>
+                    <input
+                      value={createForm.description ?? ''}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, description: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
+                    <Button onClick={handleCreate} disabled={creating || !createForm.title.trim()}>
+                      {creating ? 'Creating…' : 'Create shift'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </GlassCard>
+          )}
+        </div>
+      </div>
     </>
   );
 }
