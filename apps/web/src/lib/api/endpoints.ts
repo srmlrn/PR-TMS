@@ -41,6 +41,7 @@ import type {
   SponsorTier,
   TaxComplianceStatus,
   TaxReceipt,
+  DevoteeTaxStatement,
   TempleEvent,
   Tenant,
   TenantEnvironmentRecord,
@@ -410,6 +411,12 @@ export function createEndpoints(client: ApiClient) {
 
     getDonationReceipt: (id: string) =>
       client.get<TaxReceipt>(`/donations/${id}/receipt`),
+
+    getDevoteeAnnualTaxStatement: (devoteeId: string, year?: number) =>
+      client.get<DevoteeTaxStatement>(
+        `/donations/devotee/${devoteeId}/annual-statement`,
+        { params: year ? { year } : undefined },
+      ),
 
     getDonationSubscriptions: (params?: { devoteeId?: string; status?: string }) =>
       client.get<{ data: DonationSubscription[] }>('/donations/subscriptions', { params }),

@@ -1,0 +1,135 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.intro {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--t2);
+  line-height: 1.45;
+}
+
+.taxCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.taxRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  background: var(--ink3);
+}
+
+.taxMain strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.taxMeta {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--t2);
+}
+
+.taxActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.receiptList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.receiptRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  background: var(--ink3);
+}
+
+.receiptType {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+.receiptMain strong {
+  font-size: 0.84rem;
+}
+
+.receiptSub {
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  color: var(--t2);
+}
+
+.receiptAmount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.receiptActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--t2);
+}
+
+@media (max-width: 720px) {
+  .receiptRow {
+    grid-template-columns: 1fr auto;
+  }
+
+  .receiptType {
+    grid-column: 1;
+  }
+
+  .receiptAmount {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .receiptMain {
+    grid-column: 1 / -1;
+  }
+
+  .receiptActions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}

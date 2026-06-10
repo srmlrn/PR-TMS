@@ -1,21 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import {
-  BentoGrid,
-  BentoItem,
-  Button,
-  Chip,
-  DataTable,
-  GlassCard,
-  StatTile,
-} from '@tms/ui';
-import type { Booking, Devotee, Donation, SevaSubscription } from '@tms/types';
+import { Badge, Button, GlassCard } from '@tms/ui';
+import type { Booking, Donation, SevaSubscription } from '@tms/types';
 import { BookingStatus } from '@tms/types';
 import { formatMoney, formatShortDate, formatTime } from '@/lib/api/endpoints';
 import { useAuth } from '@/lib/auth-context';
 import { PageIntro } from '@/components/AppPage';
+import { ApiBanner } from '@/components/ApiBanner';
 import { useTenantSite } from '@/lib/tenant-site';
 import { useApi } from '@/lib/api/use-api';
 import styles from './home.module.css';
@@ -26,362 +18,251 @@ const SERVICE_LABELS: Record<string, string> = {
   'svc-homam': 'Homam',
 };
 
-function ApiBanner({ loading, error }: { loading: boolean; error: string | null }) {
-  if (!loading && !error) return null;
-  return (
-    <div className="apiBanner">
-      {loading && 'Loading live data…'}
-      {!loading && error && `Using demo data — ${error}`}
-    </div>
-  );
-}
-
 export default function DevoteeHomePage() {
   const { user } = useAuth();
   const site = useTenantSite();
-  const [view, setView] = useState<'desktop' | 'mobile'>('desktop');
+  const taxYear = new Date().getFullYear();
 
   type HomeData = {
-    devotee: Devotee | null;
     bookings: { data: Booking[] };
-    recentDonations: Donation[];
-    donationsUnavailable: boolean;
+    donations: { data: Donation[] };
     sevaSubscriptions: SevaSubscription[];
-  };
-
-  const emptyHome: HomeData = {
-    devotee: null,
-    bookings: { data: [] },
-    recentDonations: [],
-    donationsUnavailable: false,
-    sevaSubscriptions: [],
+    taxReady: boolean;
   };
 
   const { data, loading, error } = useApi<HomeData>(
     async (ep) => {
       if (!user?.devoteeId) {
-        return emptyHome;
+        return { bookings: { data: [] }, donations: { data: [] }, sevaSubscriptions: [], taxReady: false };
       }
-      const [devotee, bookings, donations, sevaSubscriptions] = await Promise.all([
-        ep.getDevotee(user.devoteeId),
-        ep.getBookings({ devoteeId: user.devoteeId, limit: 5 }),
-        ep.getDonations({ devoteeId: user.devoteeId, limit: 5 }).catch(
-          () => ({ data: [] as Donation[], meta: { total: 0, page: 1, limit: 5, totalPages: 0 } }),
-        ),
-        ep.getSevaSubscriptions({ devoteeId: user.devoteeId, status: 'active' }).catch(
-          () => ({ data: [] as SevaSubscription[] }),
-        ),
+      const [bookings, donations, sevaSubscriptions] = await Promise.all([
+        ep.getBookings({ devoteeId: user.devoteeId, limit: 8 }),
+        ep.getDonations({ devoteeId: user.devoteeId, limit: 8 }).catch(() => ({
+          data: [] as Donation[],
+          meta: { total: 0, page: 1, limit: 8, totalPages: 0 },
+        })),
+        ep.getSevaSubscriptions({ devoteeId: user.devoteeId, status: 'active' }).catch(() => ({
+          data: [] as SevaSubscription[],
+        })),
       ]);
+
+      let taxReady = donations.data.length > 0;
+      if (!taxReady) {
+        try {
+          await ep.getDevoteeAnnualTaxStatement(user.devoteeId, taxYear);
+          taxReady = true;
+        } catch {
+          taxReady = false;
+        }
+      }
+
       return {
-        devotee,
         bookings,
-        recentDonations: donations.data,
-        donationsUnavailable: donations.data.length === 0,
+        donations,
         sevaSubscriptions: sevaSubscriptions.data,
+        taxReady,
       };
     },
-    [user?.devoteeId],
+    [user?.devoteeId, taxYear],
   );
 
-  const devotee = data?.devotee;
   const recentBookings = data?.bookings?.data ?? [];
+  const recentDonations = data?.donations?.data ?? [];
   const activeSevaSubs = data?.sevaSubscriptions ?? [];
+
   const nextBooking = recentBookings.find(
-    (b: Booking) => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING,
+    (b) => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.PENDING,
   );
 
-  const welcomeName = devotee ? `${devotee.firstName}` : 'Rajan';
-  const nakshatra = devotee?.nakshatra ?? 'Rohini';
-  const ytdDonations = devotee?.ytdDonations
-    ? formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)
-    : '$1,850';
-  const membership = devotee?.membershipTier ?? 'Patron';
-  const membershipRenewal = devotee?.membershipExpiresAt
-    ? `Renews ${formatShortDate(devotee.membershipExpiresAt)}`
-    : 'Renews Dec 2026';
+  const nakshatra = 'Rohini';
+  const ytdDonations =
+    recentDonations.reduce((sum, d) => sum + d.amount, 0) > 0
+      ? formatMoney(
+          recentDonations.reduce((sum, d) => sum + d.amount, 0),
+          recentDonations[0]?.currency,
+        )
+      : '$1,850';
 
   const bookingService = nextBooking
     ? SERVICE_LABELS[nextBooking.serviceId] ?? nextBooking.serviceId.replace('svc-', '')
     : 'Archana';
-  const bookingDate = nextBooking
+  const bookingWhen = nextBooking
     ? `${formatShortDate(nextBooking.scheduledAt)} · ${formatTime(nextBooking.scheduledAt)}`
-    : '7 Jun · 9:00 AM';
-  const bookingLabel = nextBooking
-    ? `${bookingService} · ${formatShortDate(nextBooking.scheduledAt)}`
-    : 'Archana · 7 Jun';
-  const bookingStatus =
-    nextBooking?.status === BookingStatus.CONFIRMED ? 'Confirmed' : 'Pending';
+    : 'Jun 7 · 4:00 AM';
+
+  const receiptCount = recentBookings.length + recentDonations.length;
 
   return (
-    <div className="pageShell">
+    <>
       <PageIntro
         subtitle={`${site.name} · ${site.deity} · ⭐ ${nakshatra} Nakshatra today`}
-        actions={
-          <div className="flexRow">
-            <Button size="sm" variant={view === 'desktop' ? 'primary' : 'glass'} onClick={() => setView('desktop')}>
-              🖥 Desktop
-            </Button>
-            <Button size="sm" variant={view === 'mobile' ? 'primary' : 'glass'} onClick={() => setView('mobile')}>
-              📱 Mobile
-            </Button>
-          </div>
-        }
         showTenantContext={false}
       />
-
       <ApiBanner loading={loading} error={error} />
 
-      {view === 'desktop' ? (
-        <>
-          <BentoGrid className="mb2">
-            <BentoItem span={3}>
-              <StatTile
-                icon="📅"
-                label="Next Booking"
-                value={bookingLabel}
-                valueSize="sm"
-                change={`${bookingDate.split('·')[1]?.trim() ?? '9:00 AM'} · ${bookingStatus}`}
-                changeTone="neutral"
-                accent="amber"
-              />
-            </BentoItem>
-            <BentoItem span={3}>
-              <StatTile
-                icon="💰"
-                label="YTD Donations"
-                value={ytdDonations}
-                change="↑ IRS statement ready"
-                changeTone="up"
-                accent="green"
-              />
-            </BentoItem>
-            <BentoItem span={3}>
-              <StatTile
-                icon="🏅"
-                label="Membership"
-                value={membership}
-                valueSize="sm"
-                change={membershipRenewal}
-                changeTone="neutral"
-                accent="blue"
-              />
-            </BentoItem>
-            <BentoItem span={3}>
-              <StatTile
-                icon="📺"
-                label="Live Now"
-                value="Evening Aarti"
-                valueSize="sm"
-                change="● 418 watching"
-                changeTone="up"
-                accent="red"
-              />
-            </BentoItem>
-          </BentoGrid>
+      <div className={styles.page}>
+        <div className={styles.statsStrip}>
+          <span className={styles.statItem}>
+            📅 <strong>{bookingService}</strong> · {bookingWhen}
+          </span>
+          <span className={styles.statDivider}>·</span>
+          <span className={styles.statItem}>
+            💰 <strong>{ytdDonations}</strong> YTD
+          </span>
+          <span className={styles.statDivider}>·</span>
+          <span className={styles.statItem}>
+            🏅 <strong>Patron</strong> · Renews Dec 2026
+          </span>
+          <span className={styles.statDivider}>·</span>
+          <span className={styles.statItem}>
+            📄 <Link href="/devotee/documents" className={styles.statLink}>
+              {receiptCount} receipts
+            </Link>
+          </span>
+        </div>
 
-          <BentoGrid className="mb2">
-            <BentoItem span={6}>
-              <GlassCard title="Recent Bookings" noBodyPadding>
-                {recentBookings.length > 0 ? (
-                  <DataTable
-                    getRowKey={(row) => row.id}
-                    columns={[
-                      {
-                        key: 'service',
-                        header: 'Seva',
-                        render: (row) =>
-                          SERVICE_LABELS[row.serviceId] ?? row.serviceId.replace('svc-', ''),
-                      },
-                      {
-                        key: 'when',
-                        header: 'When',
-                        render: (row) =>
-                          `${formatShortDate(row.scheduledAt)} · ${formatTime(row.scheduledAt)}`,
-                      },
-                      {
-                        key: 'status',
-                        header: 'Status',
-                        render: (row) => row.status,
-                      },
-                      {
-                        key: 'receipt',
-                        header: '',
-                        align: 'right',
-                        render: (row) => (
-                          <Link href={`/devotee/receipt/booking/${row.id}`} target="_blank">
-                            Receipt
-                          </Link>
-                        ),
-                      },
-                    ]}
-                    data={recentBookings as Booking[]}
-                  />
-                ) : (
-                  <p className="tms-t2" style={{ padding: '1rem' }}>
-                    No bookings yet. <Link href="/devotee/book">Book seva</Link>
-                  </p>
-                )}
-              </GlassCard>
-            </BentoItem>
-            <BentoItem span={6}>
-              <GlassCard title="Recent Donations">
-                {(data?.recentDonations?.length ?? 0) > 0 ? (
-                  <ul className={styles.recentList}>
-                    {data!.recentDonations!.map((d) => (
-                      <li key={d.id} className={styles.recentItem}>
-                        <span>
-                          {formatMoney(d.amount, d.currency)} — {d.purpose}
-                        </span>
-                        <Link href={`/devotee/receipt/donation/${d.id}`} target="_blank">
-                          Receipt
+        <div className={styles.workspace}>
+          <section className={styles.mainCol}>
+            <GlassCard
+              title="Recent activity"
+              headerRight={
+                <Link href="/devotee/documents">
+                  <Button size="sm" variant="outline">
+                    All receipts
+                  </Button>
+                </Link>
+              }
+            >
+              {recentBookings.length === 0 && recentDonations.length === 0 ? (
+                <p className={styles.empty}>
+                  No activity yet. <Link href="/devotee/book">Book seva</Link> or{' '}
+                  <Link href="/devotee/donate">donate</Link>.
+                </p>
+              ) : (
+                <div className={styles.activityList}>
+                  {recentBookings.map((b) => (
+                    <article key={b.id} className={styles.activityRow}>
+                      <div className={styles.activityMain}>
+                        <strong>
+                          {SERVICE_LABELS[b.serviceId] ?? b.serviceId.replace('svc-', '')}
+                        </strong>
+                        <p className={styles.activitySub}>
+                          {formatShortDate(b.scheduledAt)} · {formatTime(b.scheduledAt)} · {b.status}
+                        </p>
+                      </div>
+                      <div className={styles.activityActions}>
+                        <Link href={`/devotee/receipt/booking/${b.id}`} target="_blank">
+                          <Button size="sm" variant="outline">
+                            View
+                          </Button>
                         </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="tms-t2">
-                    {devotee?.ytdDonations
-                      ? `YTD: ${formatMoney(devotee.ytdDonations.amount, devotee.ytdDonations.currency)}`
-                      : 'No recent donations.'}{' '}
-                    <Link href="/devotee/donate">Donate</Link>
-                    {data?.donationsUnavailable && (
-                      <span className="tms-t3"> (full history requires devotee donations API)</span>
-                    )}
-                  </p>
-                )}
-              </GlassCard>
-            </BentoItem>
-          </BentoGrid>
+                      </div>
+                    </article>
+                  ))}
+                  {recentDonations.map((d) => (
+                    <article key={d.id} className={styles.activityRow}>
+                      <div className={styles.activityMain}>
+                        <strong>{d.purpose}</strong>
+                        <p className={styles.activitySub}>
+                          {formatMoney(d.amount, d.currency)} · #{d.receiptNumber}
+                        </p>
+                      </div>
+                      <div className={styles.activityActions}>
+                        <Link href={`/devotee/receipt/donation/${d.id}`} target="_blank">
+                          <Button size="sm" variant="outline">
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
 
-          <BentoGrid className="mb2">
-            <BentoItem span={12}>
-              <GlassCard title="My recurring sevas">
-                {activeSevaSubs.length > 0 ? (
-                  <ul className={styles.recentList}>
-                    {activeSevaSubs.map((sub) => (
-                      <li key={sub.id} className={styles.recentItem}>
-                        <span>
-                          {SERVICE_LABELS[sub.serviceId] ?? sub.serviceId.replace('svc-', '')}
-                          {' · '}
-                          {sub.frequency} · next {formatShortDate(sub.nextDate)}
-                          {sub.sankalpa?.sponsorName ? ` · ${sub.sankalpa.sponsorName}` : ''}
-                        </span>
-                        <Chip>{sub.status}</Chip>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="tms-t2">
-                    No active recurring sevas.{' '}
-                    <Link href="/devotee/book">Book seva</Link> or ask temple admin to set one up.
-                  </p>
-                )}
-              </GlassCard>
-            </BentoItem>
-          </BentoGrid>
+            <GlassCard title="My recurring sevas">
+              {activeSevaSubs.length > 0 ? (
+                <ul className={styles.subList}>
+                  {activeSevaSubs.map((sub) => (
+                    <li key={sub.id} className={styles.subItem}>
+                      <span>
+                        {SERVICE_LABELS[sub.serviceId] ?? sub.serviceId.replace('svc-', '')}
+                        {' · '}
+                        {sub.frequency} · next {formatShortDate(sub.nextDate)}
+                      </span>
+                      <Badge variant="ok">{sub.status}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={styles.empty}>
+                  No active recurring sevas.{' '}
+                  <Link href="/devotee/book">Book seva</Link>
+                </p>
+              )}
+            </GlassCard>
+          </section>
 
-          <BentoGrid>
-            <BentoItem span={6}>
-              <GlassCard title="Quick Actions">
-                <div className={`flexRow flexWrap ${styles.quickActions}`}>
-                  <Link href="/devotee/book"><Button variant="primary">🙏 Book Seva</Button></Link>
-                  <Link href="/devotee/donate"><Button variant="primary">💝 Donate</Button></Link>
-                  <Link href="/devotee/profile"><Button>👤 My Profile</Button></Link>
-                  <Button>📺 Watch Live</Button>
+          <aside className={styles.sideCol}>
+            {data?.taxReady && (
+              <GlassCard title="Tax documents">
+                <div className={styles.taxPromo}>
+                  <strong>✓ {taxYear} tax letter ready</strong>
+                  <p>
+                    Download your annual giving statement (IRS 501(c)(3), 80G, or CRA) plus individual
+                    donation receipts.
+                  </p>
+                  <Link href="/devotee/documents">
+                    <Button size="sm" variant="primary">
+                      Receipts & tax letters
+                    </Button>
+                  </Link>
                 </div>
               </GlassCard>
-            </BentoItem>
-            <BentoItem span={6}>
-              <GlassCard title={`Suggested for ${nakshatra} Star Day`} headerRight={<Chip>Personalised</Chip>}>
-                <div className={`flexRowLg ${styles.suggestion}`}>
-                  <span className={styles.suggestionEmoji} aria-hidden>
-                    🪔
-                  </span>
-                  <div>
-                    <strong>{nakshatra} Archana</strong>
-                    <div className="tms-t2">$25 · Available Sat–Mon</div>
-                  </div>
-                  <Button variant="primary" size="sm" className={styles.suggestionAction}>
+            )}
+
+            <GlassCard title="Quick actions">
+              <div className={styles.quickGrid}>
+                <Link href="/devotee/book" className={styles.quickBtnPrimary}>
+                  🙏 Book Seva
+                </Link>
+                <Link href="/devotee/donate" className={styles.quickBtnPrimary}>
+                  💝 Donate
+                </Link>
+                <Link href="/devotee/documents" className={styles.quickBtn}>
+                  📄 Receipts
+                </Link>
+                <Link href="/devotee/profile" className={styles.quickBtn}>
+                  👤 Profile
+                </Link>
+              </div>
+            </GlassCard>
+
+            <GlassCard title={`Suggested for ${nakshatra}`} headerRight={<Badge variant="info">Star day</Badge>}>
+              <div className={styles.suggestion}>
+                <span className={styles.suggestionEmoji}>🪔</span>
+                <div>
+                  <strong>{nakshatra} Archana</strong>
+                  <div className="tms-t3">$25 · Sat–Mon</div>
+                </div>
+                <Link href="/devotee/book" className={styles.suggestionAction}>
+                  <Button size="sm" variant="primary">
                     Book
                   </Button>
-                </div>
-                <div className="divider" />
-                <div className={`flexRowLg ${styles.suggestion}`}>
-                  <span className={styles.suggestionEmoji} aria-hidden>
-                    🛁
-                  </span>
-                  <div>
-                    <strong>Special Abhishekam</strong>
-                    <div className="tms-t2">$101 · Sunday 10 AM</div>
-                  </div>
-                  <Button size="sm" className={styles.suggestionAction}>
-                    View
-                  </Button>
-                </div>
-              </GlassCard>
-            </BentoItem>
-          </BentoGrid>
-        </>
-      ) : (
-        <div className={styles.phoneWrap}>
-          <div className={styles.phoneShell}>
-            <div className={styles.phoneNotch} />
-            <div className={styles.phoneHead}>
-              <div className={styles.phoneTempleIcon}>{site.icon}</div>
-              <h3>{site.name}</h3>
-              <p>{site.location} · PROD</p>
-            </div>
-            <div className={styles.phoneBody}>
-              <div className={styles.phoneHeroCard}>
-                <div className={styles.phoneHeroLabel}>Next Booking</div>
-                <div className={styles.phoneHeroValue}>
-                  {bookingService} · {bookingDate}
-                </div>
-                <Button size="sm" className={styles.phoneHeroBtn}>
-                  View QR Pass
-                </Button>
+                </Link>
               </div>
-              <div className={styles.phoneSectionLabel}>Services</div>
-              <div className={styles.phoneGrid}>
-                {[
-                  { emoji: '🙏', label: 'Book Seva' },
-                  { emoji: '💝', label: 'Donate' },
-                  { emoji: '📺', label: 'Live' },
-                  { emoji: '📄', label: 'Receipts' },
-                  { emoji: '🎫', label: 'My Token' },
-                  { emoji: '🛁', label: 'Special' },
-                ].map((item) => (
-                  <div key={item.label} className={styles.phoneMini}>
-                    <span className={styles.phoneMiniEmoji}>{item.emoji}</span>
-                    {item.label}
-                  </div>
-                ))}
-              </div>
-              <div className={styles.phoneLiveCard}>
-                <div className={styles.phoneLiveLabel}>● LIVE NOW</div>
-                <div className={styles.phoneLiveValue}>Evening Aarti · 418 watching</div>
-              </div>
-            </div>
-            <div className={styles.phoneNav}>
-              {[
-                { emoji: '🏠', label: 'Home', active: true },
-                { emoji: '🙏', label: 'Seva' },
-                { emoji: '💝', label: 'Donate' },
-                { emoji: '📄', label: 'Docs' },
-                { emoji: '👤', label: 'Me' },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className={[styles.phoneNavItem, item.active ? styles.phoneNavActive : ''].filter(Boolean).join(' ')}
-                >
-                  <span className={styles.phoneNavEmoji}>{item.emoji}</span>
-                  {item.label}
-                </div>
-              ))}
-            </div>
-          </div>
+            </GlassCard>
+
+            <GlassCard title="Live darshan">
+              <p className={styles.empty}>
+                <strong style={{ color: 'var(--gr)' }}>● Evening Aarti</strong>
+                <br />
+                418 watching · <Button size="sm">Watch</Button>
+              </p>
+            </GlassCard>
+          </aside>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

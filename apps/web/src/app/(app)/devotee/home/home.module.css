@@ -1,198 +1,214 @@
-.recentList {
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.statsStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--b2);
+  border-radius: var(--rs);
+  background: var(--ink3);
+  font-size: 0.72rem;
+  color: var(--t2);
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.statItem strong {
+  color: var(--txt);
+  font-weight: 700;
+}
+
+.statDivider {
+  color: var(--txt3);
+  user-select: none;
+}
+
+.statLink {
+  color: var(--amber);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.statLink:hover {
+  text-decoration: underline;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr);
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.mainCol,
+.sideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.activityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  background: var(--ink3);
+}
+
+.activityMain strong {
+  font-size: 0.84rem;
+}
+
+.activitySub {
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  color: var(--t2);
+}
+
+.activityActions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.taxPromo {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--success-border-soft);
+  border-radius: var(--rs);
+  background: var(--success-bg-soft);
+}
+
+.taxPromo strong {
+  display: block;
+  font-size: 0.84rem;
+  color: var(--gr);
+}
+
+.taxPromo p {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.72rem;
+  color: var(--t2);
+}
+
+.quickGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.quickBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.5rem;
+  border: 1px solid var(--b);
+  border-radius: var(--rs);
+  background: var(--ink3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+
+.quickBtn:hover {
+  border-color: var(--accent-border);
+}
+
+.quickBtnPrimary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.5rem;
+  border: 1px solid var(--accent-border-soft);
+  border-radius: var(--rs);
+  background: var(--glass);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+
+.quickBtnPrimary:hover {
+  border-color: var(--accent-border);
+}
+
+.subList {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
-.recentItem {
+.subItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 0;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
   border-bottom: 1px solid var(--b);
+  font-size: 0.78rem;
 }
 
-.quickActions {
-  gap: 0.5rem;
+.subItem:last-child {
+  border-bottom: none;
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--t2);
 }
 
 .suggestion {
-  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0;
 }
 
 .suggestionEmoji {
-  font-size: 2.2rem;
+  font-size: 1.6rem;
 }
 
 .suggestionAction {
   margin-left: auto;
 }
 
-.phoneWrap {
-  width: 310px;
-  margin: 0 auto;
-}
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
 
-.phoneShell {
-  background: var(--device-shell-bg);
-  border: 9px solid var(--device-shell-border);
-  border-radius: 34px;
-  overflow: hidden;
-  box-shadow: var(--card-shadow), 0 40px 80px var(--overlay-bg);
+  .statDivider:nth-of-type(2),
+  .statDivider:nth-of-type(4) {
+    display: none;
+  }
 }
-
-.phoneNotch {
-  height: 26px;
-  background: var(--device-notch-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.phoneNotch::after {
-  content: '';
-  width: 72px;
-  height: 10px;
-  background: var(--device-notch-pill);
-  border-radius: 0 0 7px 7px;
-}
-
-.phoneHead {
-  background: linear-gradient(135deg, var(--crimson) 0%, #7a1828 40%, rgba(200, 80, 0, 0.6) 100%);
-  padding: 1.1rem 1rem 0.9rem;
-  text-align: center;
-}
-
-.phoneTempleIcon {
-  font-size: 1.7rem;
-}
-
-.phoneHead h3 {
-  font-size: 0.95rem;
-  font-weight: 800;
-  margin: 0.2rem 0;
-}
-
-.phoneHead p {
-  font-size: 0.72rem;
-  opacity: 0.8;
-}
-
-.phoneBody {
-  background: var(--ink2);
-  padding: 0.75rem;
-  min-height: 440px;
-}
-
-.phoneHeroCard {
-  background: linear-gradient(135deg, var(--crimson), var(--adim));
-  border-radius: 10px;
-  padding: 0.75rem;
-  margin-bottom: 0.6rem;
-  border: none;
-}
-
-.phoneHeroLabel {
-  font-size: 0.72rem;
-  opacity: 0.85;
-}
-
-.phoneHeroValue {
-  font-size: 0.95rem;
-  font-weight: 800;
-  margin: 0.2rem 0;
-}
-
-.phoneHeroBtn {
-  background: rgba(255, 255, 255, 0.18) !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 6px !important;
-  margin-top: 0.4rem;
-}
-
-.phoneSectionLabel {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--txt3);
-  margin: 0.75rem 0 0.5rem;
-}
-
-.phoneGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.phoneMini {
-  background: var(--ink3);
-  border: 1px solid var(--b);
-  border-radius: 8px;
-  padding: 0.7rem 0.4rem;
-  text-align: center;
-  font-size: 0.68rem;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.phoneMini:hover {
-  border-color: var(--accent-border-soft);
-}
-
-.phoneMiniEmoji {
-  font-size: 1.3rem;
-  display: block;
-  margin-bottom: 0.2rem;
-}
-
-.phoneLiveCard {
-  margin-top: 0.65rem;
-  background: var(--success-bg-soft);
-  border: 1px solid var(--success-border-soft);
-  border-radius: 10px;
-  padding: 0.75rem;
-}
-
-.phoneLiveLabel {
-  font-size: 0.68rem;
-  color: var(--gr);
-  font-weight: 700;
-}
-
-.phoneLiveValue {
-  font-size: 0.82rem;
-  font-weight: 700;
-  margin: 0.15rem 0;
-}
-
-.phoneNav {
-  background: var(--device-nav-bg);
-  display: flex;
-  justify-content: space-around;
-  padding: 0.6rem 0.5rem;
-  border-top: 1px solid var(--b);
-}
-
-.phoneNavItem {
-  text-align: center;
-  font-size: 0.6rem;
-  color: var(--txt3);
-  cursor: pointer;
-  flex: 1;
-  padding: 0.15rem;
-}
-
-.phoneNavActive {
-  color: var(--amber);
-  font-weight: 700;
-}
-
-.phoneNavEmoji {
-  font-size: 1.1rem;
-  display: block;
-  margin-bottom: 2px;
-}
-

@@ -15,8 +15,10 @@ import {
   DonationFrequency,
   PaginatedResponse,
   PaymentStatus,
+  DevoteeTaxStatement,
   TaxReceipt,
 } from '@tms/types';
+import { DevoteeService } from '../devotee/devotee.service';
 import { PaymentService } from '../payment/payment.service';
 import { TenantSiteSettingsService } from '../settings/tenant-site-settings.service';
 import { validateTaxId } from '../payment/tax-validation.util';
@@ -51,6 +53,7 @@ export class DonationService
     private readonly tenantData: TenantDataService,
     private readonly paymentService: PaymentService,
     private readonly billingService: DonationBillingService,
+    private readonly devoteeService: DevoteeService,
     @Inject(forwardRef(() => TenantSiteSettingsService))
     private readonly siteSettings: TenantSiteSettingsService,
   ) {
@@ -442,6 +445,73 @@ export class DonationService
       purpose: donation.purpose,
       issuedAt: donation.createdAt.toISOString(),
       templeName: branding.name,
+    };
+  }
+
+  async getAnnualTaxStatement(
+    tenantId: string,
+    devoteeId: string,
+    year?: number,
+  ): Promise<DevoteeTaxStatement> {
+    const taxYear = year ?? new Date().getFullYear();
+    const devotee = await this.devoteeService.findOne(tenantId, devoteeId);
+    const branding = await this.siteSettings.getBranding(tenantId);
+    const currency = (branding.baseCurrency as Currency) ?? Currency.USD;
+    const tax = this.resolveTaxDoc(currency);
+    if (!tax.taxDocType) {
+      throw new BadRequestException('Tax statements are not available for this temple currency.');
+    }
+
+    const { data: donations } = await this.findDonations(tenantId, 1, 500, { devoteeId });
+    const yearDonations = donations.filter(
+      (d) =>
+        !d.isInKind &&
+        d.paymentStatus === PaymentStatus.PAID &&
+        new Date(d.createdAt).getFullYear() === taxYear,
+    );
+
+    let lines = yearDonations.map((d) => ({
+      date: d.createdAt.toISOString().slice(0, 10),
+      receiptNumber: d.receiptNumber,
+      purpose: d.purpose,
+      amount: d.amount,
+      currency: d.currency,
+    }));
+
+    let totalAmount = lines.reduce((sum, l) => sum + l.amount, 0);
+
+    if (lines.length === 0 && devotee.ytdDonations?.amount && taxYear === new Date().getFullYear()) {
+      totalAmount = devotee.ytdDonations.amount;
+      lines = [
+        {
+          date: `${taxYear}-12-31`,
+          receiptNumber: `YTD-${taxYear}`,
+          purpose: 'Year-to-date charitable giving (summary)',
+          amount: totalAmount,
+          currency: devotee.ytdDonations.currency ?? currency,
+        },
+      ];
+    }
+
+    if (totalAmount <= 0) {
+      throw new NotFoundException(`No tax-deductible donations found for ${taxYear}.`);
+    }
+
+    const devoteeName = [devotee.firstName, devotee.lastName].filter(Boolean).join(' ');
+
+    return {
+      statementNumber: `TAX-${taxYear}-${devoteeId.slice(-6).toUpperCase()}`,
+      devoteeId,
+      devoteeName,
+      taxId: devotee.taxId,
+      year: taxYear,
+      totalAmount: Math.round(totalAmount * 100) / 100,
+      currency: lines[0]?.currency ?? currency,
+      taxDocType: tax.taxDocType,
+      templeName: branding.name,
+      templeAddress: branding.address,
+      issuedAt: new Date().toISOString(),
+      donations: lines,
     };
   }
 

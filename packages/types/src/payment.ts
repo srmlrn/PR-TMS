@@ -58,3 +58,26 @@ export interface TaxReceipt {
   issuedAt: string;
   templeName: string;
 }
+
+export interface DevoteeTaxStatementLine {
+  date: string;
+  receiptNumber: string;
+  purpose: string;
+  amount: number;
+  currency: Currency;
+}
+
+export interface DevoteeTaxStatement {
+  statementNumber: string;
+  devoteeId: string;
+  devoteeName: string;
+  taxId?: string;
+  year: number;
+  totalAmount: number;
+  currency: Currency;
+  taxDocType: 'irs_501c3' | '80g' | 'cra';
+  templeName: string;
+  templeAddress?: string;
+  issuedAt: string;
+  donations: DevoteeTaxStatementLine[];
+}

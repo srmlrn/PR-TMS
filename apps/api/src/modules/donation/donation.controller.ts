@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { Response } from 'express';
 import {
   ApiBearerAuth,
@@ -8,7 +18,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserRole } from '@tms/types';
+import { AuthUser, UserRole } from '@tms/types';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateDonationDto } from './dto/create-donation.dto';
@@ -19,6 +30,7 @@ import {
   PaginatedDonationsDto,
 } from './dto/donation-response.dto';
 import { generateReceiptPdf } from '../../common/utils/receipt-pdf.util';
+import { generateTaxStatementPdf } from '../../common/utils/tax-statement-pdf.util';
 import { DonationBillingService } from './donation-billing.service';
 import { UpdateDonationSubscriptionDto } from './dto/update-donation-subscription.dto';
 import { DonationService } from './donation.service';
@@ -87,6 +99,52 @@ export class DonationController {
     @Body() dto: UpdateDonationSubscriptionDto,
   ) {
     return this.donationBillingService.updateSubscription(tenantId, id, dto);
+  }
+
+  @Get('donations/devotee/:devoteeId/annual-statement/file.pdf')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.DEVOTEE, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Download annual tax giving statement as PDF' })
+  async getAnnualStatementPdf(
+    @TenantId() tenantId: string,
+    @Param('devoteeId') devoteeId: string,
+    @Query('year') year: string | undefined,
+    @CurrentUser() user: AuthUser,
+    @Res() res: Response,
+  ): Promise<void> {
+    if (user.role === UserRole.DEVOTEE && user.devoteeId !== devoteeId) {
+      throw new ForbiddenException('You can only access your own tax statements');
+    }
+    const statement = await this.donationService.getAnnualTaxStatement(
+      tenantId,
+      devoteeId,
+      year ? Number(year) : undefined,
+    );
+    const pdf = await generateTaxStatementPdf(statement);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="tax-statement-${statement.year}.pdf"`,
+    );
+    res.send(pdf);
+  }
+
+  @Get('donations/devotee/:devoteeId/annual-statement')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.DEVOTEE, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Annual tax giving statement for a devotee' })
+  async getAnnualStatement(
+    @TenantId() tenantId: string,
+    @Param('devoteeId') devoteeId: string,
+    @Query('year') year: string | undefined,
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (user.role === UserRole.DEVOTEE && user.devoteeId !== devoteeId) {
+      throw new ForbiddenException('You can only access your own tax statements');
+    }
+    return this.donationService.getAnnualTaxStatement(
+      tenantId,
+      devoteeId,
+      year ? Number(year) : undefined,
+    );
   }
 
   @Get('donations/:id/receipt')
