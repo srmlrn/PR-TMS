@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, GlassCard, Chip } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
 import { Currency, type PaymentProvider } from '@tms/types';
 import { useAuth } from '@/lib/auth-context';
 import { useTenant } from '@/lib/tenant-context';
@@ -17,7 +17,31 @@ import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay, defaultPaymentProvider } from '@/lib/payment-flow';
 import { kioskStrings, parseKioskLang } from '@/lib/kiosk-i18n';
 import { useTenantSite } from '@/lib/tenant-site';
+import { RitualSelect } from '@/components/RitualSelect';
 import styles from './book.module.css';
+
+function formatSlotLabel(startTime: string): string {
+  if (startTime.includes('T')) {
+    const parsed = new Date(startTime);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+  }
+  const [hours, minutes] = startTime.split(':');
+  if (hours != null && minutes != null) {
+    const d = new Date();
+    d.setHours(Number(hours), Number(minutes), 0, 0);
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return startTime;
+}
+
+function slotToScheduledAt(date: string, startTime: string): string {
+  if (startTime.includes('T')) {
+    return new Date(startTime).toISOString();
+  }
+  return new Date(`${date}T${startTime}`).toISOString();
+}
 
 export default function BookSevaPage() {
   const { user } = useAuth();
@@ -69,11 +93,43 @@ export default function BookSevaPage() {
     [services, serviceId],
   );
 
+  const availableSlots = useMemo(
+    () => (slotsData?.slots ?? []).filter((s) => s.available),
+    [slotsData?.slots],
+  );
+
+  useEffect(() => {
+    if (!services?.length || serviceId) return;
+    setServiceId(services[0].id);
+  }, [services, serviceId]);
+
+  useEffect(() => {
+    if (!user?.devoteeId) return;
+    const ep = createEndpoints(api);
+    ep.getDevotee(user.devoteeId)
+      .then((d) => {
+        setGotram(d.gotram ?? '');
+        setNakshatra(d.nakshatra ?? '');
+        setRashi(d.rashi ?? '');
+        if (!sponsorName && d.firstName) {
+          setSponsorName(`${d.firstName} ${d.lastName}`.trim());
+        }
+      })
+      .catch(() => {
+        /* profile optional */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, user?.devoteeId]);
+
   useEffect(() => {
     if (selectedService) {
       setPaymentProvider(defaultPaymentProvider(selectedService.currency, channel));
     }
   }, [selectedService, channel]);
+
+  useEffect(() => {
+    setSlot('');
+  }, [serviceId, date]);
 
   async function handleBook() {
     if (!user?.devoteeId || !serviceId || !slot) {
@@ -84,7 +140,7 @@ export default function BookSevaPage() {
     setMessage(null);
     try {
       const ep = createEndpoints(api);
-      const scheduledAt = new Date(`${date}T${slot}`).toISOString();
+      const scheduledAt = slotToScheduledAt(date, slot);
       const svc = selectedService;
       if (!svc) return;
 
@@ -109,21 +165,19 @@ export default function BookSevaPage() {
         priestPreference: priestPreference || undefined,
         remoteParticipation: remoteParticipation || undefined,
         additionalBeneficiaries: additionalBeneficiaries || undefined,
-        sankalpa: sponsorName
-          ? {
-              sponsorName,
-              gotram: gotram || undefined,
-              nakshatra: nakshatra || undefined,
-              rashi: rashi || undefined,
-              occasion: occasion || undefined,
-              beneficiaryName: beneficiaryName || undefined,
-              additionalBeneficiaries: additionalBeneficiaries || undefined,
-              remoteParticipation: remoteParticipation || undefined,
-            }
-          : undefined,
+        sankalpa: {
+          sponsorName: sponsorName || user.name,
+          gotram: gotram || undefined,
+          nakshatra: nakshatra || undefined,
+          rashi: rashi || undefined,
+          occasion: occasion || undefined,
+          beneficiaryName: beneficiaryName || undefined,
+          additionalBeneficiaries: additionalBeneficiaries || undefined,
+          remoteParticipation: remoteParticipation || undefined,
+        },
       });
       setLastBookingId(booking.id);
-      setMessage(`Booking confirmed! Receipt ${booking.receiptNumber ?? booking.id.slice(0, 8)}.`);
+      setMessage(`Booking confirmed · Receipt ${booking.receiptNumber ?? booking.id.slice(0, 8)}`);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Booking failed');
     } finally {
@@ -131,170 +185,222 @@ export default function BookSevaPage() {
     }
   }
 
+  const scheduleReady = Boolean(serviceId && date);
+  const canSubmit = Boolean(user?.devoteeId && serviceId && slot && selectedService);
+
   return (
     <>
       <PageIntro
-        subtitle={
-          kioskT?.bookSevaPageSubtitle ??
-          `Select a service, date, and sankalpa details for ${site.deity}`
-        }
+        subtitle={kioskT?.bookSevaPageSubtitle ?? `Book a seva at ${site.name}`}
         actions={<PaymentModeBadge />}
         showTenantContext={false}
       />
       <ApiBanner loading={loading} error={error} />
 
-      <div className={styles.grid}>
-        <GlassCard title="1 · Choose Service">
-          <div className={styles.serviceList}>
-            {(services ?? []).map((svc) => (
-              <button
-                key={svc.id}
-                type="button"
-                className={`${styles.serviceCard} ${serviceId === svc.id ? styles.selected : ''}`}
-                onClick={() => setServiceId(svc.id)}
+      <div className={styles.layout}>
+        <div className={styles.workflow}>
+          <GlassCard title="Service & schedule" className={styles.serviceCard}>
+            <div className="formGroup">
+              <label htmlFor="service">Seva</label>
+              <select
+                id="service"
+                value={serviceId}
+                onChange={(e) => setServiceId(e.target.value)}
               >
-                <strong>{svc.name}</strong>
-                <span className="tms-t3">{svc.deity}</span>
-                <Chip>{formatMoney(svc.price, svc.currency ?? Currency.USD)}</Chip>
-              </button>
-            ))}
-          </div>
-        </GlassCard>
+                <option value="">Select a service…</option>
+                {(services ?? []).map((svc) => (
+                  <option key={svc.id} value={svc.id}>
+                    {svc.name} — {formatMoney(svc.price, svc.currency ?? Currency.USD)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {selectedService && (
+              <div className={styles.serviceSummary}>
+                <span>
+                  <strong>{selectedService.name}</strong> · {selectedService.deity}
+                </span>
+                <span className={styles.price}>
+                  {formatMoney(selectedService.price, selectedService.currency ?? Currency.USD)}
+                </span>
+              </div>
+            )}
 
-        <GlassCard title="2 · Date & Time">
-          <div className="formGroup">
-            <label htmlFor="date">Date</label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-          {slotsLoading && <p className="tms-t3">Loading slots…</p>}
-          <div className={styles.slots}>
-            {(slotsData?.slots ?? [])
-              .filter((s) => s.available)
-              .map((s) => (
-                <button
-                  key={s.startTime}
-                  type="button"
-                  className={`${styles.slot} ${slot === s.startTime ? styles.slotActive : ''}`}
-                  onClick={() => setSlot(s.startTime)}
-                >
-                  {s.startTime}
-                </button>
-              ))}
-          </div>
-        </GlassCard>
-
-        <GlassCard title="3 · Sankalpa">
-          <div className="formGrid">
-            <div className="formGroup">
-              <label htmlFor="sponsor">Sponsor name</label>
-              <input
-                id="sponsor"
-                value={sponsorName}
-                onChange={(e) => setSponsorName(e.target.value)}
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="gotram">Gotram *</label>
-              <input id="gotram" value={gotram} onChange={(e) => setGotram(e.target.value)} required />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="nakshatra">Nakshatra (star)</label>
-              <input
-                id="nakshatra"
-                value={nakshatra}
-                onChange={(e) => setNakshatra(e.target.value)}
-                placeholder="Rohini — or leave blank if unknown"
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="rashi">Rashi</label>
-              <input
-                id="rashi"
-                value={rashi}
-                onChange={(e) => setRashi(e.target.value)}
-                placeholder="Vrishabha — optional"
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="occasion">Occasion / purpose</label>
-              <input
-                id="occasion"
-                value={occasion}
-                onChange={(e) => setOccasion(e.target.value)}
-                placeholder="Birthday, anniversary, health…"
-              />
-            </div>
-            <div className="formGroup">
-              <label htmlFor="beneficiary">Beneficiary name</label>
-              <input
-                id="beneficiary"
-                value={beneficiaryName}
-                onChange={(e) => setBeneficiaryName(e.target.value)}
-                placeholder="If offering for someone else"
-              />
-            </div>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="additionalBeneficiaries">Additional beneficiaries</label>
-              <input
-                id="additionalBeneficiaries"
-                value={additionalBeneficiaries}
-                onChange={(e) => setAdditionalBeneficiaries(e.target.value)}
-                placeholder="Comma-separated names, e.g. Priya, Arjun"
-              />
-            </div>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="priestPreference">Priest preference</label>
-              <input
-                id="priestPreference"
-                value={priestPreference}
-                onChange={(e) => setPriestPreference(e.target.value)}
-                placeholder="Preferred priest name or language, if any"
-              />
-            </div>
-            <div className="formGroup" style={{ gridColumn: '1 / -1' }}>
-              <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
+            <div className={styles.scheduleCompact}>
+              <div className="formGroup">
+                <label htmlFor="date">Date</label>
                 <input
-                  type="checkbox"
-                  checked={remoteParticipation}
-                  onChange={(e) => setRemoteParticipation(e.target.checked)}
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  disabled={!serviceId}
                 />
-                Participating remotely (live stream / proxy ritual)
-              </label>
+              </div>
+              <div className={styles.slotSection}>
+                <p className={styles.hint}>Time</p>
+                {!scheduleReady && <p className={styles.hint}>Pick a service first.</p>}
+                {scheduleReady && slotsLoading && <p className={styles.hint}>Loading…</p>}
+                {scheduleReady && !slotsLoading && availableSlots.length === 0 && (
+                  <p className={styles.hint}>No slots — try another date.</p>
+                )}
+                {scheduleReady && !slotsLoading && availableSlots.length > 0 && (
+                  <div className={styles.slotGrid}>
+                    {availableSlots.map((s) => (
+                      <button
+                        key={s.startTime}
+                        type="button"
+                        className={`${styles.slot} ${slot === s.startTime ? styles.slotActive : ''}`}
+                        onClick={() => setSlot(s.startTime)}
+                      >
+                        {formatSlotLabel(s.startTime)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          {selectedService && (
-            <>
-              <p className="tms-t2 mt1">
-                Total: {formatMoney(selectedService.price, selectedService.currency)}
-              </p>
+          </GlassCard>
+
+          <GlassCard title="Sankalpa" className={styles.sankalpaCard}>
+            <div className={styles.sankalpaGrid}>
+              <div className={`formGroup ${styles.spanFull}`}>
+                <label htmlFor="sponsor">Sponsor name</label>
+                <input
+                  id="sponsor"
+                  value={sponsorName}
+                  onChange={(e) => setSponsorName(e.target.value)}
+                />
+              </div>
+              <RitualSelect
+                id="gotram"
+                field="gotram"
+                label="Gotram"
+                value={gotram}
+                onChange={setGotram}
+              />
+              <RitualSelect
+                id="nakshatra"
+                field="nakshatra"
+                label="Nakshatra"
+                value={nakshatra}
+                onChange={setNakshatra}
+              />
+              <div className={`formGroup ${styles.spanFull}`}>
+                <label htmlFor="occasion">Occasion</label>
+                <input
+                  id="occasion"
+                  value={occasion}
+                  onChange={(e) => setOccasion(e.target.value)}
+                  placeholder="Birthday, anniversary, health…"
+                />
+              </div>
+            </div>
+
+            <details className={styles.moreDetails}>
+              <summary>Additional details (optional)</summary>
+              <div className={styles.moreFields}>
+                <div className="formGroup">
+                  <label htmlFor="rashi">Rashi</label>
+                  <input
+                    id="rashi"
+                    value={rashi}
+                    onChange={(e) => setRashi(e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="formGroup">
+                  <label htmlFor="beneficiary">Beneficiary</label>
+                  <input
+                    id="beneficiary"
+                    value={beneficiaryName}
+                    onChange={(e) => setBeneficiaryName(e.target.value)}
+                    placeholder="If for someone else"
+                  />
+                </div>
+                <div className={`formGroup ${styles.spanFull}`}>
+                  <label htmlFor="additionalBeneficiaries">Other names</label>
+                  <input
+                    id="additionalBeneficiaries"
+                    value={additionalBeneficiaries}
+                    onChange={(e) => setAdditionalBeneficiaries(e.target.value)}
+                    placeholder="Comma-separated"
+                  />
+                </div>
+                <div className={`formGroup ${styles.spanFull}`}>
+                  <label htmlFor="priestPreference">Priest preference</label>
+                  <input
+                    id="priestPreference"
+                    value={priestPreference}
+                    onChange={(e) => setPriestPreference(e.target.value)}
+                    placeholder="Language or priest name"
+                  />
+                </div>
+                <div className={`formGroup ${styles.spanFull}`}>
+                  <label className="flexRow" style={{ gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={remoteParticipation}
+                      onChange={(e) => setRemoteParticipation(e.target.checked)}
+                    />
+                    Participating remotely (live stream)
+                  </label>
+                </div>
+              </div>
+            </details>
+          </GlassCard>
+
+          <div className={styles.checkout}>
+            <h4 className={styles.checkoutTitle}>Checkout</h4>
+            {selectedService ? (
+              <>
+                <div className={styles.checkoutTotal}>
+                  <span>
+                    {selectedService.name}
+                    {slot ? ` · ${formatSlotLabel(slot)}` : ''}
+                  </span>
+                  <strong>
+                    {formatMoney(selectedService.price, selectedService.currency ?? Currency.USD)}
+                  </strong>
+                </div>
+                <p className={styles.checkoutMeta}>
+                  {date}
+                  {slot ? ` at ${formatSlotLabel(slot)}` : ' — pick a time'}
+                </p>
+              </>
+            ) : (
+              <p className={styles.hint}>Select a service to continue.</p>
+            )}
+
+            {selectedService && (
               <PaymentProviderPicker
                 value={paymentProvider}
                 onChange={setPaymentProvider}
                 currency={selectedService.currency}
                 channel={channel}
               />
-            </>
-          )}
-          <Button onClick={handleBook} disabled={submitting} className="mt1">
-            {submitting ? 'Booking…' : 'Confirm Booking'}
-          </Button>
-          {message && <p className="tms-t2 mt1">{message}</p>}
-          {lastBookingId && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt1"
-              onClick={() => window.open(`/devotee/receipt/booking/${lastBookingId}`, '_blank')}
-            >
-              Print receipt
+            )}
+
+            <Button onClick={handleBook} disabled={submitting || !canSubmit}>
+              {submitting ? 'Booking…' : 'Confirm booking'}
             </Button>
-          )}
-        </GlassCard>
+
+            {message && (
+              <p className={`${styles.message} ${lastBookingId ? styles.messageOk : ''}`}>
+                {message}
+              </p>
+            )}
+            {lastBookingId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`/devotee/receipt/booking/${lastBookingId}`, '_blank')}
+              >
+                Print receipt
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {livePaymentModal}

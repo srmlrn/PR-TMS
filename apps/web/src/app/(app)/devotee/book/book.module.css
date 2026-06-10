@@ -1,60 +1,254 @@
-.grid {
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.workflow {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(240px, 300px);
+  gap: 0.85rem;
+  align-items: stretch;
+  min-width: 0;
 }
 
-.serviceList {
+.serviceCard,
+.sankalpaCard {
+  height: 100%;
+  min-width: 0;
+}
+
+.serviceSummary {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.serviceCard {
-  text-align: left;
-  padding: 0.85rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.65rem;
   border-radius: var(--rs);
-  border: 1px solid var(--b);
-  background: var(--glass);
+  border: 1px solid var(--b2);
+  background: var(--ink3);
+  font-size: 0.78rem;
+  color: var(--txt2);
+}
+
+.serviceSummary strong {
   color: var(--txt);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  font-weight: 600;
 }
 
-.serviceCard.selected {
-  border-color: var(--amber);
-  box-shadow: 0 0 0 1px var(--accent-border-soft);
+.price {
+  font-weight: 700;
+  color: var(--amber);
+  white-space: nowrap;
 }
 
-.slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.scheduleCompact {
   margin-top: 0.75rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--b2);
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 0.42fr) minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.slotSection {
+  min-width: 0;
+}
+
+.hint {
+  margin: 0 0 0.3rem;
+  font-size: 0.72rem;
+  color: var(--txt3);
+}
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+  gap: 0.32rem;
+  max-height: 7.5rem;
+  overflow-y: auto;
+  padding: 0.05rem;
 }
 
 .slot {
-  padding: 0.45rem 0.75rem;
+  padding: 0.32rem 0.35rem;
   border-radius: var(--rs);
   border: 1px solid var(--b);
   background: var(--ink3);
   color: var(--txt);
+  font-size: 0.72rem;
+  font-family: inherit;
   cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.slot:hover {
+  border-color: color-mix(in srgb, var(--amber) 35%, var(--b));
 }
 
 .slotActive {
   border-color: var(--amber);
   color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 8%, var(--ink3));
 }
 
-.mt1 {
-  margin-top: 1rem;
+.sankalpaGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.6rem;
 }
 
-@media (max-width: 960px) {
-  .grid {
+.sankalpaGrid :global(.formGroup) label {
+  font-size: 0.72rem;
+}
+
+.sankalpaGrid :global(.formGroup) input,
+.sankalpaGrid :global(.formGroup) select {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.spanFull {
+  grid-column: 1 / -1;
+}
+
+.moreDetails {
+  margin-top: 0.55rem;
+  border-top: 1px solid var(--b2);
+  padding-top: 0.5rem;
+}
+
+.moreDetails summary {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--txt2);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.moreDetails summary::-webkit-details-marker {
+  display: none;
+}
+
+.moreDetails summary::before {
+  content: '▸ ';
+  color: var(--txt3);
+}
+
+.moreDetails[open] summary::before {
+  content: '▾ ';
+}
+
+.moreFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  height: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r);
+  border: 1px solid var(--b);
+  background: var(--glass);
+  box-shadow: var(--card-shadow);
+}
+
+.checkoutTitle {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--txt);
+  letter-spacing: 0.01em;
+}
+
+.checkoutTotal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--txt2);
+}
+
+.checkoutTotal strong {
+  font-size: 1.15rem;
+  color: var(--amber);
+}
+
+.checkoutMeta {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--txt3);
+  line-height: 1.4;
+}
+
+.checkout :global(.formGroup) {
+  margin: 0;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--txt2);
+}
+
+.messageOk {
+  color: var(--green, #2d8a5c);
+}
+
+@media (max-width: 1100px) {
+  .workflow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .checkout {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .checkoutTitle {
+    width: 100%;
+  }
+
+  .checkoutTotal {
+    flex: 1;
+    min-width: 10rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .scheduleCompact {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .sankalpaGrid,
+  .moreFields {
     grid-template-columns: 1fr;
   }
 }
