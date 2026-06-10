@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -12,6 +13,7 @@ import {
   NotifyEventVolunteersResult,
   UserRole,
   VolunteerCategory,
+  VolunteerCertificate,
   VolunteerOpportunity,
   VolunteerPreferences,
   VolunteerShift,
@@ -23,6 +25,7 @@ import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CreateVolunteerShiftDto } from './dto/create-volunteer-shift.dto';
 import { NotifyEventVolunteersDto } from './dto/notify-event-volunteers.dto';
 import { UpdateVolunteerPreferencesDto } from './dto/update-volunteer-preferences.dto';
+import { generateVolunteerCertificatePdf } from '../../common/utils/volunteer-certificate-pdf.util';
 import { VolunteerService } from './volunteer.service';
 
 @ApiTags('volunteer')
@@ -85,6 +88,48 @@ export class VolunteerController {
     @CurrentUser() user: AuthUser,
   ): Promise<VolunteerStats> {
     return this.volunteerService.getStats(tenantId, user);
+  }
+
+  @Get('certificates')
+  @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'List downloadable seva certificates for current volunteer' })
+  @ApiOkResponse({ description: 'Earned volunteer certificates' })
+  async listCertificates(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ data: VolunteerCertificate[] }> {
+    return this.volunteerService.listCertificates(tenantId, user);
+  }
+
+  @Get('certificates/:id/file.pdf')
+  @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'Download volunteer certificate as PDF' })
+  async getCertificatePdf(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Res() res: Response,
+  ): Promise<void> {
+    const cert = await this.volunteerService.getCertificate(tenantId, user, id);
+    const pdf = await generateVolunteerCertificatePdf(cert);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="seva-certificate-${cert.certificateNumber}.pdf"`,
+    );
+    res.send(pdf);
+  }
+
+  @Get('certificates/:id')
+  @Roles(UserRole.ADMIN, UserRole.VOLUNTEER)
+  @ApiOperation({ summary: 'Get volunteer certificate metadata' })
+  @ApiOkResponse({ description: 'Certificate details' })
+  async getCertificate(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<VolunteerCertificate> {
+    return this.volunteerService.getCertificate(tenantId, user, id);
   }
 
   @Get('preferences')

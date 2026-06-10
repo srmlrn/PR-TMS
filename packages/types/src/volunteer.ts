@@ -124,3 +124,30 @@ export interface VolunteerStats {
   nextBadgeAtHours?: number;
   progressToNextBadge: number;
 }
+
+export type VolunteerCertificateKind =
+  | 'seva_appreciation'
+  | 'hours_ytd'
+  | 'hours_quarter'
+  | 'badge_tier'
+  | 'shift_completion'
+  | 'event_participation';
+
+export interface VolunteerCertificate {
+  id: string;
+  kind: VolunteerCertificateKind;
+  title: string;
+  subtitle: string;
+  volunteerName: string;
+  issuedAt: string;
+  certificateNumber: string;
+  hours?: number;
+  badgeTier?: VolunteerBadgeTier;
+  shiftTitle?: string;
+  shiftDate?: string;
+  eventName?: string;
+  periodLabel?: string;
+  templeName: string;
+  deity?: string;
+  location?: string;
+}

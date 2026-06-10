@@ -12,10 +12,12 @@ import {
   EventLifecycleStage,
   GANESHA_TEMPLE_ID,
   GenerateEventShiftsResult,
+  getTenantBranding,
   NotifyEventVolunteersResult,
   SV_TEMPLE_ID,
   TempleEvent,
   UserRole,
+  VolunteerCertificate,
   VolunteerNotifyAudience,
   VolunteerBadgeTier,
   VolunteerCategory,
@@ -1047,6 +1049,162 @@ export class VolunteerService
       nextBadgeAtHours: nextAt,
       progressToNextBadge: progressToNextBadge(hoursThisQuarter, badgeTier),
     };
+  }
+
+  async listCertificates(
+    tenantId: string,
+    user: AuthUser,
+  ): Promise<{ data: VolunteerCertificate[] }> {
+    const data = await this.buildCertificates(tenantId, user);
+    return { data };
+  }
+
+  async getCertificate(
+    tenantId: string,
+    user: AuthUser,
+    certId: string,
+  ): Promise<VolunteerCertificate> {
+    const certs = await this.buildCertificates(tenantId, user);
+    const cert = certs.find((c) => c.id === certId);
+    if (!cert) {
+      throw new NotFoundException(`Certificate ${certId} not found`);
+    }
+    return cert;
+  }
+
+  private async buildCertificates(
+    tenantId: string,
+    user: AuthUser,
+  ): Promise<VolunteerCertificate[]> {
+    const branding = getTenantBranding(tenantId);
+    const stats = await this.getStats(tenantId, user);
+    const shifts = await this.loadShifts(tenantId);
+    const now = new Date();
+    const year = now.getFullYear();
+    const quarter = Math.floor(now.getMonth() / 3) + 1;
+    const quarterLabel = `${year} Q${quarter}`;
+    const issuedAt = now.toISOString();
+    const certs: VolunteerCertificate[] = [];
+
+    const base = {
+      volunteerName: user.name,
+      issuedAt,
+      templeName: branding.name,
+      deity: branding.deity,
+      location: branding.location,
+    };
+
+    const certNo = (suffix: string) =>
+      `VC-${year}-${user.id.slice(-4).toUpperCase()}-${suffix}`;
+
+    if (stats.hoursYtd > 0) {
+      certs.push({
+        id: `hours-ytd-${year}`,
+        kind: 'hours_ytd',
+        title: `${year} Seva Hours`,
+        subtitle: `${stats.completedShifts} completed shifts`,
+        certificateNumber: certNo('YTD'),
+        hours: stats.hoursYtd,
+        periodLabel: String(year),
+        ...base,
+      });
+    }
+
+    if (stats.hoursThisQuarter > 0) {
+      certs.push({
+        id: `hours-quarter-${year}-q${quarter}`,
+        kind: 'hours_quarter',
+        title: `${quarterLabel} Seva`,
+        subtitle: 'Quarterly seva recognition',
+        certificateNumber: certNo(`Q${quarter}`),
+        hours: stats.hoursThisQuarter,
+        periodLabel: quarterLabel,
+        ...base,
+      });
+    }
+
+    if (stats.completedShifts > 0) {
+      const badgeLabels = {
+        bronze: 'Bronze',
+        silver: 'Silver',
+        gold: 'Gold',
+        platinum: 'Platinum',
+      } as const;
+      certs.push({
+        id: `badge-${stats.badgeTier}`,
+        kind: 'badge_tier',
+        title: `${badgeLabels[stats.badgeTier]} Seva Badge`,
+        subtitle: `${stats.hoursThisQuarter} hours this quarter`,
+        certificateNumber: certNo(stats.badgeTier.toUpperCase()),
+        badgeTier: stats.badgeTier,
+        hours: stats.hoursThisQuarter,
+        ...base,
+      });
+
+      certs.push({
+        id: 'seva-appreciation',
+        kind: 'seva_appreciation',
+        title: 'Seva Appreciation',
+        subtitle: 'Thank you for your dedicated service',
+        certificateNumber: certNo('THANK'),
+        hours: stats.hoursYtd,
+        ...base,
+      });
+    }
+
+    for (const shift of shifts) {
+      const signup = shift.signups.find((s) => s.userId === user.id);
+      if (!signup?.checkedOut || signup.hoursLogged == null) continue;
+
+      certs.push({
+        ...base,
+        id: `shift-${shift.id}`,
+        kind: 'shift_completion',
+        title: shift.title,
+        subtitle: shift.eventName ?? shift.location ?? 'Temple seva',
+        certificateNumber: certNo(shift.id.slice(-6).toUpperCase()),
+        hours: signup.hoursLogged,
+        shiftTitle: shift.title,
+        shiftDate: shift.date,
+        eventName: shift.eventName,
+        issuedAt: signup.checkedOutAt ?? issuedAt,
+      });
+    }
+
+    const eventHours = new Map<string, { name: string; hours: number; latest: string }>();
+    for (const shift of shifts) {
+      if (!shift.eventId) continue;
+      const signup = shift.signups.find((s) => s.userId === user.id);
+      if (!signup?.checkedOut || signup.hoursLogged == null) continue;
+
+      const existing = eventHours.get(shift.eventId) ?? {
+        name: shift.eventName ?? shift.title,
+        hours: 0,
+        latest: signup.checkedOutAt ?? issuedAt,
+      };
+      existing.hours += signup.hoursLogged;
+      if ((signup.checkedOutAt ?? '') > existing.latest) {
+        existing.latest = signup.checkedOutAt ?? issuedAt;
+      }
+      eventHours.set(shift.eventId, existing);
+    }
+
+    for (const [eventId, agg] of eventHours) {
+      if (agg.hours <= 0) continue;
+      certs.push({
+        ...base,
+        id: `event-${eventId}`,
+        kind: 'event_participation',
+        title: `${agg.name} — Event Seva`,
+        subtitle: 'Event participation certificate',
+        certificateNumber: certNo(eventId.slice(-6).toUpperCase()),
+        hours: Math.round(agg.hours * 10) / 10,
+        eventName: agg.name,
+        issuedAt: agg.latest,
+      });
+    }
+
+    return certs.sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
   }
 
   getPreferences(tenantId: string, userId: string): VolunteerPreferences {

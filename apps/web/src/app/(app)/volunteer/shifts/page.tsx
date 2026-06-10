@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
   Badge,
@@ -661,6 +662,11 @@ export default function VolunteerShiftsPage() {
                     color={stats.badgeTier === 'platinum' ? 'green' : 'silver'}
                   />
                   <p className={styles.recognitionYtd}>{stats.hoursYtd} hours year-to-date</p>
+                  {stats.completedShifts > 0 && (
+                    <Link href="/volunteer/certificates" className="tms-t3 mt1">
+                      📜 Download seva certificates →
+                    </Link>
+                  )}
                 </>
               ) : (
                 <p className={styles.emptyState}>Loading recognition stats…</p>

@@ -61,6 +61,7 @@ import type {
   VolunteerOpportunity,
   VolunteerCategory,
   VolunteerPreferences,
+  VolunteerCertificate,
   GenerateEventShiftsResult,
   NotifyEventVolunteersResult,
   VolunteerNotifyAudience,
@@ -516,6 +517,12 @@ export function createEndpoints(client: ApiClient) {
       client.get<{ data: VolunteerShift[] }>('/volunteer/templates'),
 
     getVolunteerStats: () => client.get<VolunteerStats>('/volunteer/stats'),
+
+    getVolunteerCertificates: () =>
+      client.get<{ data: VolunteerCertificate[] }>('/volunteer/certificates'),
+
+    getVolunteerCertificate: (id: string) =>
+      client.get<VolunteerCertificate>(`/volunteer/certificates/${id}`),
 
     getVolunteerPreferences: () => client.get<VolunteerPreferences>('/volunteer/preferences'),
 

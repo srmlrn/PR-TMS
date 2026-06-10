@@ -95,7 +95,10 @@ export const ROLE_CONFIGS: Record<AppRole, RoleConfig> = {
     envLabel: 'PROD',
     envVariant: 'prod',
     defaultHref: '/volunteer/shifts',
-    nav: [{ id: 'vol', emoji: '🤝', label: 'Volunteering', href: '/volunteer/shifts' }],
+    nav: [
+      { id: 'vol', emoji: '🤝', label: 'Volunteering', href: '/volunteer/shifts' },
+      { id: 'vol-cert', emoji: '📜', label: 'Certificates', href: '/volunteer/certificates' },
+    ],
   },
   [UserRole.COMMITTEE]: {
     key: UserRole.COMMITTEE,
@@ -250,6 +253,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/priest/leave': 'My Leave',
   '/accountant/finance': 'Finance Dashboard',
   '/volunteer/shifts': 'Volunteering',
+  '/volunteer/certificates': 'Seva Certificates',
   '/committee/dashboard': 'Committee Dashboard',
   '/committee/directory': 'Committee Directory',
   '/committee/reports': 'Committee Reports',
