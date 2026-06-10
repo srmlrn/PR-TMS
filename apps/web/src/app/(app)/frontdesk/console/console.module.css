@@ -109,36 +109,70 @@
   flex-shrink: 0;
 }
 
-.lookupStrip {
+.lookupWorkspace {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) auto;
-  gap: 0.4rem;
-  align-items: end;
+  grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: stretch;
+  min-width: 0;
 }
 
-.lookupStrip :global(.formGroup) {
+.lookupCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.lookupCol :global(.formGroup) {
   margin-bottom: 0;
 }
 
-.lookupStrip :global(.formGroup) label {
+.lookupCol :global(.formGroup) label {
   font-size: 0.62rem;
   margin-bottom: 0.1rem;
 }
 
-.lookupStrip :global(.formGroup) input,
-.lookupStrip :global(.formGroup) select {
+.lookupCol :global(.formGroup) input,
+.lookupCol :global(.formGroup) select {
   padding: 0.38rem 0.55rem;
   font-size: 0.78rem;
   width: 100%;
 }
 
-.topPanelMeta {
+.lookupBtn {
+  align-self: flex-start;
+}
+
+.resultsCol {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--b2);
+}
+
+.matchRow,
+.guestRow {
+  min-width: 0;
+}
+
+.matchRow {
+  display: flex;
   align-items: center;
-  gap: 0.4rem 0.65rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid var(--b2);
+  min-height: 2rem;
+}
+
+.guestRow {
+  display: flex;
+  align-items: stretch;
+  min-height: 3.25rem;
+}
+
+.resultsHint {
+  font-size: 0.72rem;
+  color: var(--txt3);
 }
 
 .guestBar {
@@ -146,9 +180,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem 0.65rem;
-  flex: 1;
-  min-width: min(100%, 280px);
-  padding: 0.4rem 0.55rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
   border-radius: var(--rs);
   background: color-mix(in srgb, var(--gr) 8%, var(--ink3));
   border: 1px solid color-mix(in srgb, var(--gr) 22%, var(--b2));
@@ -215,17 +248,7 @@
 .posPanel {
   flex: 1;
   margin-bottom: 0;
-  font-size: 0.8rem;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.posPanel :global([class*='GlassCard_body']) {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .emptyState {
@@ -266,8 +289,15 @@
 }
 
 @media (max-width: 900px) {
-  .lookupStrip {
-    grid-template-columns: 1fr 1fr;
+  .lookupWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .resultsCol {
+    padding-left: 0;
+    border-left: none;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--b2);
   }
 
   .mainColumn {
@@ -285,10 +315,6 @@
 }
 
 @media (max-width: 600px) {
-  .lookupStrip {
-    grid-template-columns: 1fr;
-  }
-
   .statsToggleSummary {
     display: none;
   }

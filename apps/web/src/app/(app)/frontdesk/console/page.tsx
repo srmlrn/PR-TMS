@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, GlassCard } from '@tms/ui';
+import { Button } from '@tms/ui';
 import {
   Currency,
   type DevoteeLookupMatch,
@@ -279,33 +279,35 @@ function FrontDeskConsolePageInner() {
       </div>
 
       <section className={styles.topPanel}>
-        <div className={styles.lookupStrip}>
-          <div className="formGroup">
-            <label htmlFor="phone">Phone</label>
-            <input
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 615-555-0211"
-            />
-          </div>
-          <div className="formGroup">
-            <label htmlFor="name">Name</label>
-            <input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Raj Natarajan"
-              onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
-            />
-          </div>
-          <Button size="sm" onClick={handleLookup} disabled={busy || (!phone.trim() && !name.trim())}>
-            Look up
-          </Button>
-        </div>
-
-        {(lookupMessage || matches.length > 1 || (activeDevoteeId && devotee)) && (
-          <div className={styles.topPanelMeta}>
+        <div className={styles.lookupWorkspace}>
+          <div className={styles.lookupCol}>
+            <div className="formGroup">
+              <label htmlFor="phone">Phone</label>
+              <input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 615-555-0211"
+              />
+            </div>
+            <div className="formGroup">
+              <label htmlFor="name">Name</label>
+              <input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Raj Natarajan"
+                onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+              />
+            </div>
+            <Button
+              size="sm"
+              className={styles.lookupBtn}
+              onClick={handleLookup}
+              disabled={busy || (!phone.trim() && !name.trim())}
+            >
+              Look up
+            </Button>
             {lookupMessage && (
               <p
                 className={[styles.statusMsg, devotee ? styles.statusMsgOk : '']
@@ -315,76 +317,87 @@ function FrontDeskConsolePageInner() {
                 {lookupMessage}
               </p>
             )}
-            {matches.length > 1 && (
-              <div className={styles.matchList}>
-                {matches.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={`${styles.matchItem} ${activeDevoteeId === m.id ? styles.matchItemActive : ''}`}
-                    onClick={() => selectMatch(m, lookup ?? undefined)}
-                  >
-                    {m.name}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {activeDevoteeId && devotee && (
-              <div className={styles.guestBar}>
-            <div>
-              <strong>{devotee.name}</strong>
-              <div className={styles.guestMeta}>
-                {devotee.phone}
-                {devotee.gotram ? ` · ${devotee.gotram}` : ''}
-                {devotee.nakshatra ? ` · ${devotee.nakshatra}` : ''}
-              </div>
-            </div>
-            {devotee.todayBookings && devotee.todayBookings.length > 0 && (
-              <div className={styles.todayInline}>
-                {devotee.todayBookings.map((b) => (
-                  <span key={b.id} className={styles.todayPill}>
-                    {new Date(b.scheduledAt).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                    {b.checkedIn ? ' ✓' : ''}
-                    {!b.checkedIn && (
-                      <button
-                        type="button"
-                        className={styles.matchItem}
-                        onClick={() => handleCheckIn(b.id)}
-                        disabled={busy}
-                      >
-                        Check in
-                      </button>
-                    )}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className={styles.guestActions}>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => router.push(`/frontdesk/devotees?id=${activeDevoteeId}`)}
-              >
-                Profile
-              </Button>
-              <Button size="sm" variant="outline" onClick={clearGuest}>
-                Clear
-              </Button>
-            </div>
-              </div>
-            )}
           </div>
-        )}
+
+          <div className={styles.resultsCol}>
+            <div className={styles.matchRow}>
+              {matches.length > 0 ? (
+                <div className={styles.matchList}>
+                  {matches.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={`${styles.matchItem} ${activeDevoteeId === m.id ? styles.matchItemActive : ''}`}
+                      onClick={() => selectMatch(m, lookup ?? undefined)}
+                    >
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className={styles.resultsHint}>Matching names appear here after lookup.</span>
+              )}
+            </div>
+
+            <div className={styles.guestRow}>
+              {activeDevoteeId && devotee ? (
+                <div className={styles.guestBar}>
+                  <div>
+                    <strong>{devotee.name}</strong>
+                    <div className={styles.guestMeta}>
+                      {devotee.phone}
+                      {devotee.gotram ? ` · ${devotee.gotram}` : ''}
+                      {devotee.nakshatra ? ` · ${devotee.nakshatra}` : ''}
+                    </div>
+                  </div>
+                  {devotee.todayBookings && devotee.todayBookings.length > 0 && (
+                    <div className={styles.todayInline}>
+                      {devotee.todayBookings.map((b) => (
+                        <span key={b.id} className={styles.todayPill}>
+                          {new Date(b.scheduledAt).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                          {b.checkedIn ? ' ✓' : ''}
+                          {!b.checkedIn && (
+                            <button
+                              type="button"
+                              className={styles.matchItem}
+                              onClick={() => handleCheckIn(b.id)}
+                              disabled={busy}
+                            >
+                              Check in
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className={styles.guestActions}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => router.push(`/frontdesk/devotees?id=${activeDevoteeId}`)}
+                    >
+                      Profile
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={clearGuest}>
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <span className={styles.resultsHint}>Select a name to load guest details.</span>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
 
       <div className={styles.mainColumn}>
           {devotee && serviceList.length > 0 ? (
-            <GlassCard compact title="Counter POS" className={styles.posPanel}>
               <CounterPosForm
+                className={styles.posPanel}
                 ep={ep}
                 devotee={devotee}
                 services={serviceList}
@@ -395,7 +408,6 @@ function FrontDeskConsolePageInner() {
                 }}
                 onError={(msg) => setActionMsg(msg)}
               />
-            </GlassCard>
           ) : (
             <div className={styles.emptyState}>
               Look up a devotee to open booking, sales, and donations.

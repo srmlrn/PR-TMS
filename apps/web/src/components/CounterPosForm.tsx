@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@tms/ui';
+import { Button, GlassCard } from '@tms/ui';
 import {
   Currency,
   deitySelectOptions,
@@ -56,23 +56,13 @@ interface Props {
   products: PosProduct[];
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
+  className?: string;
 }
-
-const QUICK_LINKS_COLLAPSED_KEY = 'tms-pos-quick-links-collapsed';
 
 let lineKey = 0;
 function nextKey(): string {
   lineKey += 1;
   return `line-${lineKey}`;
-}
-
-function readQuickLinksCollapsed(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return localStorage.getItem(QUICK_LINKS_COLLAPSED_KEY) === '1';
-  } catch {
-    return false;
-  }
 }
 
 function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
@@ -84,7 +74,15 @@ function catalogUnitCost(svc: SevaService, location: ServiceLocation): number {
   return resolveSevaUnitPrice(svc, location);
 }
 
-export function CounterPosForm({ ep, devotee, services, products, onSuccess, onError }: Props) {
+export function CounterPosForm({
+  ep,
+  devotee,
+  services,
+  products,
+  onSuccess,
+  onError,
+  className,
+}: Props) {
   const router = useRouter();
   const { tenantId } = useTenant();
   const today = new Date().toISOString().slice(0, 10);
@@ -120,14 +118,28 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
   const [checkNumber, setCheckNumber] = useState('');
   const [totalPaid, setTotalPaid] = useState<number | ''>('');
   const [busy, setBusy] = useState(false);
-  const [quickLinksOpen, setQuickLinksOpen] = useState(() => !readQuickLinksCollapsed());
+  const [quickLinksOpen, setQuickLinksOpen] = useState(false);
+  const quickLinksRef = useRef<HTMLDivElement>(null);
 
-  useLayoutEffect(() => {
-    try {
-      localStorage.setItem(QUICK_LINKS_COLLAPSED_KEY, quickLinksOpen ? '0' : '1');
-    } catch {
-      /* ignore */
-    }
+  useEffect(() => {
+    if (!quickLinksOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!quickLinksRef.current?.contains(event.target as Node)) {
+        setQuickLinksOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setQuickLinksOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [quickLinksOpen]);
 
   const getPayer = useCallback(
@@ -356,14 +368,86 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
     [products],
   );
 
+  const quickLinksHeader = (
+    <div className={styles.quickLinksAnchor} ref={quickLinksRef}>
+      <button
+        type="button"
+        className={styles.quickLinksIconBtn}
+        onClick={() => setQuickLinksOpen((open) => !open)}
+        aria-label="Quick links"
+        aria-expanded={quickLinksOpen}
+        aria-haspopup="menu"
+        title="Quick links"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
+        </svg>
+      </button>
+      {quickLinksOpen && (
+        <div className={styles.quickLinksPopup} role="menu" aria-label="Quick links">
+          <p className={styles.quickLinksPopupTitle}>Quick links</p>
+          <div className={styles.quickLinksScroll}>
+            {quickLinkServices.map((svc) => (
+              <button
+                key={svc.id}
+                type="button"
+                className={styles.quickLink}
+                role="menuitem"
+                onClick={() => {
+                  addServiceLine({ serviceId: svc.id });
+                  setQuickLinksOpen(false);
+                }}
+              >
+                <strong>{svc.name}</strong>
+                <span>
+                  {svc.deity} · On {formatMoney(svc.price, svc.currency)}
+                  {sevaSupportsOffSite(svc) && svc.priceOffSite != null && (
+                    <> · Off {formatMoney(svc.priceOffSite, svc.currency)}</>
+                  )}
+                </span>
+              </button>
+            ))}
+            {quickLinkProducts.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={styles.quickLink}
+                role="menuitem"
+                onClick={() => {
+                  addSalesLine(item.id);
+                  setQuickLinksOpen(false);
+                }}
+              >
+                <strong>{item.name}</strong>
+                <span>{formatMoney(item.price, item.currency)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <>
+      <GlassCard
+        compact
+        title="Counter POS"
+        headerRight={quickLinksHeader}
+        className={[styles.posCard, className ?? ''].filter(Boolean).join(' ')}
+        bodyClassName={styles.posCardBody}
+      >
       <div className={styles.pos}>
         <div className={styles.body}>
-          <div
-            className={styles.workArea}
-            data-quick-links-collapsed={quickLinksOpen ? 'false' : 'true'}
-          >
+          <div className={styles.workArea}>
           <div className={styles.main}>
           <div className={styles.mainScroll}>
           <div className={styles.sankalpaRow}>
@@ -656,8 +740,10 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
           )}
 
           </div>
+          </div>
 
-          <aside className={styles.checkoutPanel}>
+          <aside className={styles.billingPanel}>
+            <p className={styles.billingTitle}>Billing</p>
             <div className={`formGroup ${styles.checkoutComment}`}>
               <label htmlFor="posComment">Comment / notes</label>
               <input
@@ -713,83 +799,10 @@ export function CounterPosForm({ ep, devotee, services, products, onSuccess, onE
               </Button>
             </div>
           </aside>
-
-          </div>
-
-          <aside
-            className={[
-              styles.quickLinksBar,
-              quickLinksOpen ? '' : styles.quickLinksCollapsed,
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <div className={styles.quickLinksHeader}>
-              {quickLinksOpen && <p className={styles.quickLinksTitle}>Quick links</p>}
-              <button
-                type="button"
-                className={styles.quickLinksToggle}
-                onClick={() => setQuickLinksOpen((open) => !open)}
-                aria-label={quickLinksOpen ? 'Collapse quick links' : 'Expand quick links'}
-                aria-expanded={quickLinksOpen}
-                title={quickLinksOpen ? 'Collapse quick links' : 'Expand quick links'}
-              >
-                <svg
-                  className={[
-                    styles.quickLinksChevron,
-                    quickLinksOpen ? '' : styles.quickLinksChevronCollapsed,
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.25"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-            </div>
-            {quickLinksOpen && (
-            <div className={styles.quickLinksScroll}>
-              {quickLinkServices.map((svc) => (
-                <button
-                  key={svc.id}
-                  type="button"
-                  className={styles.quickLink}
-                  onClick={() =>
-                    addServiceLine({ serviceId: svc.id })
-                  }
-                >
-                  <strong>{svc.name}</strong>
-                  <span>
-                    {svc.deity} · On {formatMoney(svc.price, svc.currency)}
-                    {sevaSupportsOffSite(svc) && svc.priceOffSite != null && (
-                      <> · Off {formatMoney(svc.priceOffSite, svc.currency)}</>
-                    )}
-                  </span>
-                </button>
-              ))}
-              {quickLinkProducts.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={styles.quickLink}
-                  onClick={() => addSalesLine(item.id)}
-                >
-                  <strong>{item.name}</strong>
-                  <span>{formatMoney(item.price, item.currency)}</span>
-                </button>
-              ))}
-            </div>
-            )}
-          </aside>
           </div>
         </div>
       </div>
+      </GlassCard>
       {livePaymentModal}
     </>
   );
