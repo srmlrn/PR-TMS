@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
+  ExpressCheckoutElement,
   PaymentElement,
   useElements,
   useStripe,
@@ -65,45 +66,55 @@ function toRazorpayAmount(amount: number, currency: string): number {
   return Math.round(amount * 100);
 }
 
+function isStripeTestKey(publishableKey?: string): boolean {
+  return publishableKey?.startsWith('pk_test_') ?? false;
+}
+
 interface StripeCheckoutFormProps {
   session: PaymentSession;
   onSuccess: () => void;
   onError: (message: string) => void;
+  isTestMode: boolean;
 }
 
-function StripeCheckoutForm({ session, onSuccess, onError }: StripeCheckoutFormProps) {
+function StripeCheckoutForm({ session, onSuccess, onError, isTestMode }: StripeCheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
+  const [expressReady, setExpressReady] = useState(false);
 
-  async function handleSubmit() {
+  const returnUrl = `${window.location.origin}/devotee/payment-return?sessionId=${session.id}`;
+
+  async function confirmStripePayment() {
+    if (!stripe || !elements) return false;
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: returnUrl },
+      redirect: 'if_required',
+    });
+
+    if (error) {
+      onError(error.message ?? 'Payment failed');
+      return false;
+    }
+
+    if (
+      paymentIntent?.status === 'succeeded' ||
+      paymentIntent?.status === 'processing'
+    ) {
+      onSuccess();
+      return true;
+    }
+
+    onError(`Unexpected payment status: ${paymentIntent?.status ?? 'unknown'}`);
+    return false;
+  }
+
+  async function handleCardSubmit() {
     if (!stripe || !elements) return;
     setSubmitting(true);
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/devotee/payment-return?sessionId=${session.id}`,
-        },
-        redirect: 'if_required',
-      });
-
-      if (error) {
-        onError(error.message ?? 'Card payment failed');
-        return;
-      }
-
-      if (paymentIntent?.status === 'succeeded') {
-        onSuccess();
-        return;
-      }
-
-      if (paymentIntent?.status === 'processing') {
-        onSuccess();
-        return;
-      }
-
-      onError(`Unexpected payment status: ${paymentIntent?.status ?? 'unknown'}`);
+      await confirmStripePayment();
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Payment failed');
     } finally {
@@ -111,20 +122,71 @@ function StripeCheckoutForm({ session, onSuccess, onError }: StripeCheckoutFormP
     }
   }
 
+  async function handleExpressConfirm() {
+    setSubmitting(true);
+    try {
+      await confirmStripePayment();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Wallet payment failed');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className={styles.stripeForm}>
-      <PaymentElement
-        options={{
-          layout: { type: 'tabs', defaultCollapsed: false },
-          wallets: { applePay: 'auto', googlePay: 'auto' },
-        }}
-      />
-      <p className={styles.walletHint}>Apple Pay and Google Pay appear when supported on this device.</p>
+      {isTestMode ? (
+        <div className={styles.demoBanner} role="note">
+          <strong>Demo test card</strong>
+          <p>
+            Use card <code>4242 4242 4242 4242</code>, any future expiry, any CVC. Apple Pay here
+            would charge your real wallet — use the card form for safe demos.
+          </p>
+        </div>
+      ) : (
+        <>
+          <ExpressCheckoutElement
+            onConfirm={handleExpressConfirm}
+            onReady={({ availablePaymentMethods }) => {
+              setExpressReady(
+                Boolean(availablePaymentMethods?.applePay || availablePaymentMethods?.googlePay),
+              );
+            }}
+            options={{
+              buttonTheme: { applePay: 'black' },
+              buttonType: { applePay: 'buy', googlePay: 'buy' },
+              paymentMethods: {
+                applePay: 'auto',
+                googlePay: 'auto',
+                link: 'never',
+                paypal: 'never',
+                amazonPay: 'never',
+                klarna: 'never',
+              },
+            }}
+          />
+          {expressReady && <p className={styles.walletDivider}>or pay with card</p>}
+        </>
+      )}
+      <div className={styles.stripeElementWrap}>
+        <PaymentElement
+          options={{
+            layout: { type: 'tabs', defaultCollapsed: false },
+            paymentMethodOrder: ['card'],
+            wallets: { applePay: 'never', googlePay: 'never' },
+          }}
+        />
+      </div>
+      {!isTestMode && !expressReady && (
+        <p className={styles.walletHint}>
+          Apple Pay and Google Pay appear above on supported browsers.
+        </p>
+      )}
       <Button
         variant="primary"
         fullWidth
         className="mt1"
-        onClick={handleSubmit}
+        onClick={handleCardSubmit}
         disabled={!stripe || !elements || submitting}
       >
         {submitting ? 'Processing…' : `Pay ${formatMoney(session.amount, session.currency)}`}
@@ -166,12 +228,12 @@ export function LivePaymentModal({
           colorPrimary: theme === 'light' ? '#1a9b6e' : '#c9a227',
         },
       },
-      wallets: { applePay: 'auto' as const, googlePay: 'auto' as const },
     }),
     [session.clientSecret, theme],
   );
 
   const stripePublishableKey = session.stripePublishableKey?.trim();
+  const isStripeTestMode = isStripeTestKey(stripePublishableKey);
 
   const stripePromise = useMemo(() => {
     return stripePublishableKey ? loadStripe(stripePublishableKey) : null;
@@ -233,7 +295,9 @@ export function LivePaymentModal({
 
   const title =
     session.provider === 'stripe'
-      ? 'Pay with Apple Pay, Google Pay, or card'
+      ? isStripeTestMode
+        ? 'Pay with Stripe test card'
+        : 'Pay with Apple Pay, Google Pay, or card'
       : session.provider === 'qr'
         ? 'Pay by QR / UPI'
       : session.provider === 'razorpay'
@@ -252,6 +316,7 @@ export function LivePaymentModal({
           </p>
         </header>
 
+        <div className={styles.modalBody}>
         {session.provider === 'qr' && (
           <PaymentQrPanel
             session={session}
@@ -276,6 +341,7 @@ export function LivePaymentModal({
                   session={session}
                   onSuccess={onSuccess}
                   onError={setError}
+                  isTestMode={isStripeTestMode}
                 />
               </Elements>
             )}
@@ -296,6 +362,7 @@ export function LivePaymentModal({
         )}
 
         {error && <p className={styles.error}>{error}</p>}
+        </div>
 
         <footer className={styles.footer}>
           <Button variant="outline" onClick={onCancel}>

@@ -111,6 +111,19 @@ export class PaymentController {
   }
 
   @Public()
+  @Get('sessions/:id/public-checkout')
+  @ApiOperation({
+    summary: 'Public mobile checkout session (QR scan — Apple Pay / Google Pay / card)',
+  })
+  @ApiParam({ name: 'id', description: 'Payment session UUID' })
+  getPublicCheckout(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<PaymentSession> {
+    return this.paymentService.getPublicCheckoutSession(tenantId, id);
+  }
+
+  @Public()
   @Post('webhooks/stripe')
   @ApiOperation({ summary: 'Stripe webhook (payment_intent.succeeded)' })
   @ApiResponse({ status: 200, description: 'Webhook acknowledged' })

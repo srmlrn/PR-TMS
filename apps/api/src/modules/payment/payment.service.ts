@@ -316,6 +316,26 @@ export class PaymentService {
     return session;
   }
 
+  /** Public mobile checkout (QR scan) — pending Stripe sessions only. */
+  async getPublicCheckoutSession(
+    tenantId: string,
+    sessionId: string,
+  ): Promise<PaymentSession> {
+    const session = await this.getSession(tenantId, sessionId);
+    if (session.status === PaymentStatus.PAID) {
+      return session;
+    }
+    if (session.status !== PaymentStatus.PENDING) {
+      throw new BadRequestException('Payment session is no longer available.');
+    }
+    if (session.provider !== 'stripe' || !session.clientSecret) {
+      throw new BadRequestException(
+        'This payment link is not available. Ask staff to generate a new QR code.',
+      );
+    }
+    return session;
+  }
+
   getProviderForCurrency(currency: Currency): PaymentProvider {
     return currency === Currency.INR ? 'razorpay' : 'stripe';
   }
@@ -531,6 +551,6 @@ export class PaymentService {
       return;
     }
 
-    session.qrPayload = buildWebPayQrPayload(webPayOrigin(), session.id);
+    session.qrPayload = buildWebPayQrPayload(webPayOrigin(), session.id, tenantId);
   }
 }

@@ -210,7 +210,11 @@ export class TenantPaymentSettingsService {
     return {
       stripeLive: this.isStripeLiveForTenant(resolved),
       razorpayLive: isRazorpayLive(),
-      applePayDomainConfigured: Boolean(process.env.APPLE_PAY_DOMAIN_ASSOCIATION?.trim()),
+      applePayDomainConfigured: Boolean(
+        process.env.APPLE_PAY_DOMAIN_ASSOCIATION?.trim() ||
+          (process.env.WEB_PAY_ORIGIN?.startsWith('https://') &&
+            this.isStripeLiveForTenant(resolved)),
+      ),
       demoUpiVpa: process.env.DEMO_UPI_VPA?.trim() || 'temple.demo@upi',
       webPayOrigin:
         process.env.WEB_PAY_ORIGIN?.trim() ||

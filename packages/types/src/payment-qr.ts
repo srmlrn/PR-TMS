@@ -18,8 +18,16 @@ export function buildUpiQrPayload(opts: {
   return `upi://pay?${params.toString()}`;
 }
 
-/** Web URL encoded in QR for demo / non-UPI flows. */
-export function buildWebPayQrPayload(webOrigin: string, sessionId: string): string {
+/** Web URL encoded in QR — customer scans to pay on their phone (Apple Pay / Google Pay / card). */
+export function buildWebPayQrPayload(
+  webOrigin: string,
+  sessionId: string,
+  tenantId: string,
+): string {
   const base = webOrigin.replace(/\/$/, '');
-  return `${base}/devotee/pay-qr?sessionId=${encodeURIComponent(sessionId)}`;
+  const params = new URLSearchParams({
+    sessionId,
+    tenantId,
+  });
+  return `${base}/pay?${params.toString()}`;
 }

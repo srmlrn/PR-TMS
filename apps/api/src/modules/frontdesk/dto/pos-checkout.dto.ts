@@ -138,7 +138,7 @@ export class PosCheckoutDto {
 
   @ApiPropertyOptional({ enum: ['cash', 'check', 'card'] })
   @IsOptional()
-  @IsEnum(['cash', 'check', 'card'] satisfies CounterPaymentMethod[])
+  @IsEnum(['cash', 'check', 'card', 'apple_pay', 'google_pay'] satisfies CounterPaymentMethod[])
   paymentMethod?: CounterPaymentMethod;
 
   @ApiPropertyOptional({ type: PosSankalpaDto })

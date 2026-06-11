@@ -6,7 +6,20 @@ import { ganeshaDonationFundNames } from './ganesha-catalog';
 
 export type ServiceLocation = 'on_site' | 'off_site';
 
-export type CounterPaymentMethod = 'cash' | 'check' | 'card';
+export type CounterPaymentMethod =
+  | 'cash'
+  | 'check'
+  | 'card'
+  | 'apple_pay'
+  | 'google_pay';
+
+export const COUNTER_PAYMENT_METHOD_LABELS: Record<CounterPaymentMethod, string> = {
+  cash: 'Cash',
+  check: 'Check',
+  card: 'Card',
+  apple_pay: 'Apple Pay',
+  google_pay: 'Google Pay',
+};
 
 export const DONATION_FUND_OPTIONS = [
   'General Hundi',

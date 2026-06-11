@@ -48,6 +48,10 @@ export class StripeProvider {
       return null;
     }
 
+    const config = await this.paymentSettings.resolveStripeConfigForTenant(opts.tenantId);
+    const isTestMode =
+      config.mode === 'test' || Boolean(config.secretKey?.startsWith('sk_test_'));
+
     const intent = await stripe.paymentIntents.create({
       amount: toStripeAmount(opts.amount, opts.currency),
       currency: opts.currency.toLowerCase(),
@@ -57,10 +61,14 @@ export class StripeProvider {
         tenantId: opts.tenantId,
         ...(opts.devoteeId ? { devoteeId: opts.devoteeId } : {}),
       },
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'always',
-      },
+      ...(isTestMode
+        ? { payment_method_types: ['card'] }
+        : {
+            automatic_payment_methods: {
+              enabled: true,
+              allow_redirects: 'always',
+            },
+          }),
     });
 
     this.logger.log(`Created Stripe PaymentIntent ${intent.id} for session ${opts.sessionId}`);

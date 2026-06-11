@@ -257,9 +257,13 @@ export default function PaymentSettingsPage() {
               <strong>QR / UPI scan</strong>.
             </li>
             <li>
+              Front desk counter → choose <strong>Apple Pay</strong> or <strong>Google Pay</strong>{' '}
+              → Submit shows a QR — customer scans with their phone (IONOS-style scan-to-pay).
+            </li>
+            <li>
               Demo mode (no keys): QR shows a scannable code — click <em>Simulate scan &amp; pay</em>{' '}
               or open{' '}
-              <code>{settings.testCapabilities.webPayOrigin}/devotee/pay-qr?sessionId=…</code>
+              <code>{settings.testCapabilities.webPayOrigin}/pay?sessionId=…&amp;tenantId=…</code>
             </li>
             <li>
               Stripe test: use card <code>4242 4242 4242 4242</code>; wallets appear on supported

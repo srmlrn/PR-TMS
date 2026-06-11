@@ -7,6 +7,7 @@ import {
   Currency,
   deitySelectOptions,
   donationFundOptionsForTenant,
+  COUNTER_PAYMENT_METHOD_LABELS,
   type CounterPaymentMethod,
   type PosProduct,
   type DevoteeLookupResult,
@@ -18,10 +19,12 @@ import {
   resolveSevaUnitPrice,
   sevaSupportsOffSite,
 } from '@tms/types';
+import type { PaymentSession } from '@tms/types';
 import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney } from '@/lib/api/endpoints';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay } from '@/lib/payment-flow';
+import { PaymentScanQrModal } from '@/components/PaymentScanQrModal';
 import { resolvePosQuickLinkProducts, resolvePosQuickLinkServices } from '@/lib/pos-quick-links';
 import { useTenant } from '@/lib/tenant-context';
 import styles from './CounterPosForm.module.css';
@@ -67,8 +70,18 @@ function nextKey(): string {
 }
 
 function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
-  if (method === 'card') return 'stripe';
+  if (method === 'card' || method === 'apple_pay' || method === 'google_pay') {
+    return 'stripe';
+  }
   return 'cash';
+}
+
+function isStripeCounterPayment(method: CounterPaymentMethod): boolean {
+  return method === 'card';
+}
+
+function isWalletQrPayment(method: CounterPaymentMethod): boolean {
+  return method === 'apple_pay' || method === 'google_pay';
 }
 
 function catalogUnitCost(svc: SevaService, location: ServiceLocation): number {
@@ -150,6 +163,17 @@ export function CounterPosForm({
     [devotee],
   );
   const { gate, livePaymentModal } = useLivePaymentGate(getPayer);
+  const [walletQrPay, setWalletQrPay] = useState<{
+    session: PaymentSession;
+    resolve: () => void;
+    reject: (err: Error) => void;
+  } | null>(null);
+
+  function waitForWalletQr(session: PaymentSession): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setWalletQrPay({ session, resolve, reject });
+    });
+  }
 
   const serviceTotal = useMemo(
     () => serviceLines.reduce((sum, l) => sum + l.unitCost * l.quantity, 0),
@@ -293,17 +317,31 @@ export function CounterPosForm({
     setBusy(true);
     try {
       const provider = mapPaymentMethod(paymentMethod);
-      const paymentSessionId = await checkoutAndPay(
-        ep,
-        {
+      let paymentSessionId: string;
+
+      if (isWalletQrPayment(paymentMethod)) {
+        const session = await ep.createPaymentSession({
           amount: grandTotal,
           currency,
+          provider: 'stripe',
           purpose: `Counter POS — ${devotee.name}`,
           devoteeId: devotee.id,
-          provider,
-        },
-        gate,
-      );
+        });
+        await waitForWalletQr(session);
+        paymentSessionId = session.id;
+      } else {
+        paymentSessionId = await checkoutAndPay(
+          ep,
+          {
+            amount: grandTotal,
+            currency,
+            purpose: `Counter POS — ${devotee.name}`,
+            devoteeId: devotee.id,
+            provider,
+          },
+          isStripeCounterPayment(paymentMethod) ? gate : undefined,
+        );
+      }
 
       const result = await ep.posCheckout({
         devoteeId: devotee.id,
@@ -762,10 +800,27 @@ export function CounterPosForm({
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as CounterPaymentMethod)}
               >
-                <option value="cash">Cash</option>
-                <option value="check">Check</option>
-                <option value="card">Card</option>
+                {(Object.keys(COUNTER_PAYMENT_METHOD_LABELS) as CounterPaymentMethod[]).map(
+                  (method) => (
+                    <option key={method} value={method}>
+                      {COUNTER_PAYMENT_METHOD_LABELS[method]}
+                    </option>
+                  ),
+                )}
               </select>
+              {isStripeCounterPayment(paymentMethod) && (
+                <p className={styles.hint}>
+                  Click Submit to open secure checkout — Apple Pay and Google Pay appear when
+                  supported on this device.
+                </p>
+              )}
+              {isWalletQrPayment(paymentMethod) && (
+                <p className={styles.hint}>
+                  Click Submit to show a QR code — the customer scans with their phone and pays
+                  with {paymentMethod === 'google_pay' ? 'Google Pay' : 'Apple Pay'} (IONOS-style
+                  scan-to-pay).
+                </p>
+              )}
             </div>
             {paymentMethod === 'check' && (
               <div className={`formGroup ${styles.checkoutField}`}>
@@ -805,6 +860,22 @@ export function CounterPosForm({
       </div>
       </GlassCard>
       {livePaymentModal}
+      {walletQrPay && (
+        <PaymentScanQrModal
+          session={walletQrPay.session}
+          tenantId={tenantId}
+          ep={ep}
+          walletLabel={paymentMethod === 'google_pay' ? 'Google Pay' : 'Apple Pay'}
+          onSuccess={() => {
+            walletQrPay.resolve();
+            setWalletQrPay(null);
+          }}
+          onCancel={() => {
+            walletQrPay.reject(new Error('Payment cancelled'));
+            setWalletQrPay(null);
+          }}
+        />
+      )}
     </>
   );
 }
