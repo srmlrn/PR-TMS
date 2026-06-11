@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 640" fill="none">
+  <defs>
+    <linearGradient id="venuGold" x1="35%" y1="0%" x2="65%" y2="100%">
+      <stop offset="0%" stop-color="#fff6e0"/>
+      <stop offset="30%" stop-color="#f0d070"/>
+      <stop offset="65%" stop-color="#d4a030"/>
+      <stop offset="100%" stop-color="#9a6818"/>
+    </linearGradient>
+    <linearGradient id="venuRobe" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffe8b0" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#b87820" stop-opacity="0.8"/>
+    </linearGradient>
+    <radialGradient id="venuAura" cx="50%" cy="38%" r="58%">
+      <stop offset="0%" stop-color="#f5d878" stop-opacity="0.32"/>
+      <stop offset="75%" stop-color="#c89028" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="venuSoftGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Soft halo -->
+  <ellipse cx="240" cy="260" rx="190" ry="250" fill="url(#venuAura)"/>
+  <!-- Lord Venkateswara  standing blessing posture -->
+  <g filter="url(#venuSoftGlow)" fill="url(#venuGold)">
+    <!-- Pedestal -->
+    <rect x="140" y="555" width="200" height="22" rx="4" opacity="0.8"/>
+    <path d="M120 555 L360 555 L340 575 L140 575 Z" opacity="0.65"/>
+    <!-- Robe / lower garment -->
+    <path d="M175 420 Q240 445 305 420 L320 540 Q240 565 160 540 Z" fill="url(#venuRobe)"/>
+    <!-- Torso -->
+    <ellipse cx="240" cy="360" rx="72" ry="88"/>
+    <!-- Shoulders -->
+    <ellipse cx="240" cy="310" rx="95" ry="38"/>
+    <!-- Left arm raised (blessing) -->
+    <path d="M165 310 Q110 260 95 195 Q115 180 130 210 Q145 260 175 295 Z"/>
+    <!-- Right arm raised (blessing) -->
+    <path d="M315 310 Q370 260 385 195 Q365 180 350 210 Q335 260 305 295 Z"/>
+    <!-- Hands -->
+    <ellipse cx="102" cy="198" rx="18" ry="14" transform="rotate(-15 102 198)"/>
+    <ellipse cx="378" cy="198" rx="18" ry="14" transform="rotate(15 378 198)"/>
+    <!-- Neck -->
+    <rect x="220" y="248" width="40" height="35" rx="8"/>
+    <!-- Head -->
+    <circle cx="240" cy="210" r="52"/>
+    <!-- Crown / kiritam -->
+    <path d="M188 175 Q240 120 292 175 L280 195 Q240 175 200 195 Z"/>
+    <path d="M210 160 L240 125 L270 160 L260 175 L220 175 Z" opacity="0.9"/>
+    <circle cx="240" cy="138" r="10" fill="#fff8e0"/>
+    <!-- Tilak / u-shaped mark -->
+    <path d="M225 205 Q240 195 255 205" stroke="#fff8e0" stroke-width="3" fill="none" opacity="0.7"/>
+    <!-- Garland hint -->
+    <path d="M195 320 Q240 350 285 320" stroke="#f0d060" stroke-width="6" fill="none" opacity="0.5" stroke-linecap="round"/>
+  </g>
+</svg>

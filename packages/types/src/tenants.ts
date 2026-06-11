@@ -1,6 +1,19 @@
 export const SV_TEMPLE_ID = '00000000-0000-0000-0000-000000000001';
 export const GANESHA_TEMPLE_ID = '00000000-0000-0000-0000-000000000002';
 
+export interface TenantLandingTheme {
+  /** Full-bleed hero background under /public */
+  heroImage: string;
+  /** Optional deity art overlay */
+  deityImage?: string;
+  /** CSS gradient overlay on top of hero */
+  overlay: string;
+  /** Accent for glows, borders, highlights */
+  accent: string;
+  /** Short welcome line on landing */
+  welcome: string;
+}
+
 export interface TenantBranding {
   id: string;
   slug: string;
@@ -14,6 +27,8 @@ export interface TenantBranding {
   logoBg?: string;
   deity: string;
   location: string;
+  /** Immersive landing page visuals */
+  landing?: TenantLandingTheme;
   /** Street / city line for receipts and headers */
   address?: string;
   country: string;
@@ -39,6 +54,14 @@ export const TENANT_BRANDING: Record<string, TenantBranding> = {
       'Proceed to the counter shown when your number is called',
       'Thank you for your patience · धन्यवाद',
     ],
+    landing: {
+      heroImage: '/tenants/venkateswara-hero.svg',
+      deityImage: '/tenants/venkateswara-deity.svg',
+      overlay:
+        'linear-gradient(105deg, rgba(4,8,20,0.82) 0%, rgba(8,20,48,0.38) 45%, rgba(4,8,16,0.78) 100%)',
+      accent: '#e8b84a',
+      welcome: 'Welcome to the abode of Lord Venkateswara',
+    },
   },
   [GANESHA_TEMPLE_ID]: {
     id: GANESHA_TEMPLE_ID,
@@ -59,6 +82,14 @@ export const TENANT_BRANDING: Record<string, TenantBranding> = {
       'Proceed to the counter shown when your number is called',
       'Thank you for your patience',
     ],
+    landing: {
+      heroImage: '/tenants/ganesha-hero.svg',
+      deityImage: '/tenants/ganesha-deity.svg',
+      overlay:
+        'linear-gradient(105deg, rgba(20,4,6,0.84) 0%, rgba(96,16,24,0.32) 42%, rgba(12,2,4,0.8) 100%)',
+      accent: '#f0a838',
+      welcome: 'Om Gam Ganapataye Namaha · Welcome home',
+    },
   },
 };
 
