@@ -25,7 +25,7 @@
   </defs>
   <!-- Soft halo -->
   <ellipse cx="240" cy="280" rx="200" ry="240" fill="url(#ganeshaAura)"/>
-  <!-- Lord Ganesha  seated, stylized silhouette -->
+  <!-- Lord Ganesha  seated, stylized silhouette -->
   <g filter="url(#ganeshaSoftGlow)" fill="url(#ganeshaGold)">
     <!-- Lotus seat -->
     <ellipse cx="240" cy="560" rx="130" ry="28" opacity="0.85"/>
