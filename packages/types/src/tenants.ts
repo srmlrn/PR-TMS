@@ -2,8 +2,8 @@ export const SV_TEMPLE_ID = '00000000-0000-0000-0000-000000000001';
 export const GANESHA_TEMPLE_ID = '00000000-0000-0000-0000-000000000002';
 
 export interface TenantLandingTheme {
-  /** Full-bleed hero background under /public */
-  heroImage: string;
+  /** Optional full-bleed photo background under /public */
+  heroImage?: string;
   /** Optional deity art overlay */
   deityImage?: string;
   /** CSS gradient overlay on top of hero */
@@ -55,10 +55,10 @@ export const TENANT_BRANDING: Record<string, TenantBranding> = {
       'Thank you for your patience · धन्यवाद',
     ],
     landing: {
-      heroImage: '/tenants/venkateswara-hero.svg',
-      deityImage: '/tenants/venkateswara-deity.svg',
+      /** Deity: Wikimedia Commons Lord-venkateshwara.jpg (CC BY-SA 4.0) */
+      deityImage: '/tenants/venkateswara-deity.jpg',
       overlay:
-        'linear-gradient(105deg, rgba(4,8,20,0.82) 0%, rgba(8,20,48,0.38) 45%, rgba(4,8,16,0.78) 100%)',
+        'linear-gradient(180deg, rgba(6,10,22,0.55) 0%, rgba(8,12,24,0.35) 100%)',
       accent: '#e8b84a',
       welcome: 'Welcome to the abode of Lord Venkateswara',
     },
@@ -83,10 +83,10 @@ export const TENANT_BRANDING: Record<string, TenantBranding> = {
       'Thank you for your patience',
     ],
     landing: {
-      heroImage: '/tenants/ganesha-hero.svg',
-      deityImage: '/tenants/ganesha-deity.svg',
+      /** Main sanctum Ganesha from Sri Ganesha Temple Nashville Facebook */
+      deityImage: '/tenants/ganesha-deity.jpg',
       overlay:
-        'linear-gradient(105deg, rgba(20,4,6,0.84) 0%, rgba(96,16,24,0.32) 42%, rgba(12,2,4,0.8) 100%)',
+        'linear-gradient(180deg, rgba(18,4,6,0.55) 0%, rgba(12,3,5,0.35) 100%)',
       accent: '#f0a838',
       welcome: 'Om Gam Ganapataye Namaha · Welcome home',
     },

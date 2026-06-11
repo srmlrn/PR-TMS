@@ -3,6 +3,19 @@
   min-height: 100vh;
   overflow: hidden;
   color: #f8f4ee;
+  background: #0a0c12;
+}
+
+.page[data-tenant='sv-temple'] {
+  background:
+    radial-gradient(ellipse 70% 55% at 20% 35%, rgba(30, 48, 96, 0.35), transparent 70%),
+    linear-gradient(165deg, #060a14 0%, #0c1220 45%, #080c14 100%);
+}
+
+.page[data-tenant='sri-ganesha-temple'] {
+  background:
+    radial-gradient(ellipse 65% 50% at 22% 40%, rgba(120, 24, 32, 0.28), transparent 70%),
+    linear-gradient(165deg, #120408 0%, #1a080c 45%, #0c0406 100%);
 }
 
 .backdrop {
@@ -160,15 +173,18 @@
 
 .deityArt {
   width: 100%;
-  max-width: 320px;
+  max-width: 300px;
   height: auto;
   max-height: min(72vh, 640px);
   object-fit: contain;
+  object-position: center bottom;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   pointer-events: none;
-  filter:
-    drop-shadow(0 0 32px color-mix(in srgb, var(--landing-accent, #e8b84a) 55%, transparent))
-    drop-shadow(0 0 80px color-mix(in srgb, var(--landing-accent, #e8b84a) 28%, transparent));
-  animation: sacred-pulse 4.5s ease-in-out infinite;
+  box-shadow:
+    0 20px 56px rgba(0, 0, 0, 0.45),
+    0 0 48px color-mix(in srgb, var(--landing-accent, #e8b84a) 22%, transparent);
+  filter: saturate(1.05) contrast(1.02);
 }
 
 .hero {

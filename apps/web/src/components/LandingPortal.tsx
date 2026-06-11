@@ -77,14 +77,16 @@ export function LandingPortal() {
       style={{ ['--landing-accent' as string]: accent }}
       data-tenant={tenant.slug}
     >
-      <div
-        className={[styles.backdrop, bgReady ? styles.backdropLoaded : ''].filter(Boolean).join(' ')}
-        style={{
-          backgroundImage: landing?.heroImage ? `url(${landing.heroImage})` : undefined,
-          opacity: bgReady ? 1 : 0,
-        }}
-        aria-hidden
-      />
+      {landing?.heroImage ? (
+        <div
+          className={[styles.backdrop, bgReady ? styles.backdropLoaded : ''].filter(Boolean).join(' ')}
+          style={{
+            backgroundImage: `url(${landing.heroImage})`,
+            opacity: bgReady ? 1 : 0,
+          }}
+          aria-hidden
+        />
+      ) : null}
       <div
         className={styles.overlay}
         style={{ background: landing?.overlay ?? DEFAULT_OVERLAY }}
