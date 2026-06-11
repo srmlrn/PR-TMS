@@ -136,10 +136,7 @@ export class PaymentService {
       if (intent) {
         session.providerRefId = intent.paymentIntentId;
         session.clientSecret = intent.clientSecret;
-        session.stripePublishableKey =
-          stripeConfig.publishableKey?.trim() ||
-          process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ||
-          process.env.STRIPE_PUBLISHABLE_KEY?.trim();
+        session.stripePublishableKey = stripeConfig.publishableKey?.trim();
       }
     } else if (input.provider === 'razorpay' && paymentMode === 'live') {
       const order = await this.razorpayProvider.createOrder({

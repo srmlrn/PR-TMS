@@ -14,6 +14,7 @@ import {
   type UpdateTenantPaymentSettingsInput,
 } from '@tms/types';
 import { useTenant } from '@/lib/tenant-context';
+import { useTenantSite } from '@/lib/tenant-site';
 import styles from '../settings.module.css';
 
 function sourceLabel(source: TenantPaymentSettingsPublic['source']): string {
@@ -23,7 +24,8 @@ function sourceLabel(source: TenantPaymentSettingsPublic['source']): string {
 }
 
 export default function PaymentSettingsPage() {
-  const { api } = useTenant();
+  const { api, tenantId } = useTenant();
+  const site = useTenantSite();
   const [settings, setSettings] = useState<TenantPaymentSettingsPublic | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [mode, setMode] = useState<'test' | 'live'>('test');
@@ -86,13 +88,13 @@ export default function PaymentSettingsPage() {
   return (
     <div>
       <PageIntro
-        subtitle="Configure Stripe keys for this temple — each tenant manages its own payment provider"
+        subtitle={`Stripe keys for ${site.name} only — other temples keep their own separate payment settings`}
         actions={
           <Link href="/admin/settings">
             <Button variant="glass">← Back to Settings</Button>
           </Link>
         }
-        showTenantContext={false}
+        showTenantContext
       />
 
       {error && (
@@ -112,6 +114,12 @@ export default function PaymentSettingsPage() {
         {!loading && settings && (
           <>
             <div className={styles.settingsMeta}>
+              <span>
+                Temple: <strong>{site.name}</strong>
+              </span>
+              <span>
+                Tenant ID: <code>{tenantId}</code>
+              </span>
               <span>
                 Key source: <strong>{sourceLabel(settings.source)}</strong>
               </span>
@@ -179,8 +187,9 @@ export default function PaymentSettingsPage() {
 
             <p className={styles.hint}>
               Secret keys are never returned from the API. Leave masked fields unchanged to keep
-              existing values. Platform environment variables are used only when no tenant secret
-              key is configured.
+              existing values. Each temple stores its own keys — switching temples in the header
+              loads a different configuration. Sri Venkateswara Temple and Sri Ganesha Temple do
+              not share Stripe accounts.
             </p>
 
             <Button variant="primary" onClick={() => void handleSave()} disabled={saving}>

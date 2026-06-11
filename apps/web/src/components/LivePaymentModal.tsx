@@ -166,9 +166,7 @@ export function LivePaymentModal({
     [session.clientSecret, theme],
   );
 
-  const stripePublishableKey =
-    session.stripePublishableKey?.trim() ||
-    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
+  const stripePublishableKey = session.stripePublishableKey?.trim();
 
   const stripePromise = useMemo(() => {
     return stripePublishableKey ? loadStripe(stripePublishableKey) : null;

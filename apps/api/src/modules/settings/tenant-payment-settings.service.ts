@@ -82,7 +82,8 @@ export class TenantPaymentSettingsService {
       };
     }
 
-    if (envSecret) {
+    // Platform env keys are a single-tenant dev fallback only — never shared across temples in postgres mode.
+    if (!this.usePostgres && envSecret) {
       return {
         enabled: true,
         mode: envSecret.startsWith('sk_live_') ? 'live' : 'test',
