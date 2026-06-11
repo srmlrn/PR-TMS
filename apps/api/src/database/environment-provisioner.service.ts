@@ -53,6 +53,7 @@ export class EnvironmentProvisionerService {
       const ctx = await this.tenantResolver.resolveByEnvironmentId(envRecord.id);
       await this.tenantConnections.getDataSource(ctx);
       await this.tenantSeed.seedIfEmpty(ctx);
+      await this.tenantSeed.syncGaneshaCatalogIfNeeded(ctx);
 
       await this.controlPlane.getRepository(TenantEnvironmentEntity).update(envRecord.id, {
         status: 'active',
@@ -92,6 +93,7 @@ export class EnvironmentProvisionerService {
         const ctx = await this.tenantResolver.resolveByEnvironmentId(env.id);
         await this.tenantConnections.getDataSource(ctx);
         await this.tenantSeed.seedIfEmpty(ctx);
+        await this.tenantSeed.syncGaneshaCatalogIfNeeded(ctx);
       }
     }
   }

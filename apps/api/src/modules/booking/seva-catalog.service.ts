@@ -3,6 +3,7 @@ import {
   CreateSevaServiceInput,
   Currency,
   DEMO_TENANT_IDS,
+  dedupeSevaServicesByName,
   ganeshaSevaSeedRows,
   getTenantBranding,
   GANESHA_TEMPLE_ID,
@@ -54,7 +55,7 @@ export class SevaCatalogService
 
   async findAll(tenantId: string): Promise<SevaServiceRecord[]> {
     const all = await this.findAllAdmin(tenantId);
-    return all.filter((s) => s.isActive);
+    return dedupeSevaServicesByName(all.filter((s) => s.isActive));
   }
 
   async findAllAdmin(tenantId: string): Promise<SevaServiceRecord[]> {

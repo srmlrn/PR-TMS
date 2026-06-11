@@ -32,6 +32,21 @@ export function sevaSupportsOffSite(service: Pick<SevaService, 'priceOffSite'>):
   return service.priceOffSite != null;
 }
 
+/** Keep the first catalog row per normalized service name (stable order). */
+export function dedupeSevaServicesByName<T extends Pick<SevaService, 'id' | 'name'>>(
+  services: T[],
+): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const svc of services) {
+    const key = svc.name.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(svc);
+  }
+  return result;
+}
+
 /** Prefer the location with a non-zero catalog price when the other is zero. */
 export function defaultSevaServiceLocation(
   service: Pick<SevaService, 'price' | 'priceOffSite'>,

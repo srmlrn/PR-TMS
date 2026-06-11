@@ -27,6 +27,7 @@ import {
 export class TenantSeedService {
   private readonly logger = new Logger(TenantSeedService.name);
   private readonly seeded = new Set<string>();
+  private readonly seedChains = new Map<string, Promise<void>>();
 
   constructor(private readonly connections: TenantConnectionService) {}
 
@@ -38,28 +39,49 @@ export class TenantSeedService {
     if (ctx.tenantId !== GANESHA_TEMPLE_ID) return 0;
     const ds = await this.connections.getDataSource(ctx);
     const sevaRepo = ds.getRepository(SevaServiceEntity);
-    const { syncGaneshaSevaCatalogIfNeeded, syncGaneshaWebsitePricing } = await import(
-      './ganesha-catalog.seed'
-    );
+    const { syncGaneshaSevaCatalogIfNeeded, syncGaneshaWebsitePricing, dedupeSevaServicesByName } =
+      await import('./ganesha-catalog.seed');
     const added = await syncGaneshaSevaCatalogIfNeeded(
       sevaRepo,
       ctx.tenantId,
       'Lord Ganesha',
     );
+    const deduped = await dedupeSevaServicesByName(sevaRepo);
     const priced = await syncGaneshaWebsitePricing(sevaRepo, ctx.tenantId);
     if (added > 0) {
       this.logger.log(`Synced ${added} SGT catalog sevas into ${ctx.dbName}`);
     }
+    if (deduped > 0) {
+      this.logger.log(`Removed ${deduped} duplicate seva_services rows from ${ctx.dbName}`);
+    }
     if (priced > 0) {
       this.logger.log(`Updated ${priced} seva prices from ganeshatemple.org into ${ctx.dbName}`);
     }
-    return added + priced;
+    return added + deduped + priced;
   }
 
   async seedIfEmpty(ctx: TenantContext): Promise<void> {
     const k = this.key(ctx);
     if (this.seeded.has(k)) return;
 
+    const inFlight = this.seedChains.get(k);
+    if (inFlight) {
+      await inFlight;
+      return;
+    }
+
+    const work = this.runSeedIfEmpty(ctx, k);
+    this.seedChains.set(k, work);
+    try {
+      await work;
+    } finally {
+      if (this.seedChains.get(k) === work) {
+        this.seedChains.delete(k);
+      }
+    }
+  }
+
+  private async runSeedIfEmpty(ctx: TenantContext, k: string): Promise<void> {
     const ds = await this.connections.getDataSource(ctx);
     const devoteeRepo = ds.getRepository(DevoteeEntity);
     if ((await devoteeRepo.count()) > 0) {

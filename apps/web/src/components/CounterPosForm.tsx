@@ -14,6 +14,7 @@ import {
   type SevaService,
   type ServiceLocation,
   defaultSevaServiceLocation,
+  dedupeSevaServicesByName,
   resolveSevaUnitPrice,
   sevaSupportsOffSite,
 } from '@tms/types';
@@ -86,7 +87,8 @@ export function CounterPosForm({
   const router = useRouter();
   const { tenantId } = useTenant();
   const today = new Date().toISOString().slice(0, 10);
-  const currency = (services[0]?.currency as Currency) ?? Currency.USD;
+  const catalogServices = useMemo(() => dedupeSevaServicesByName(services), [services]);
+  const currency = (catalogServices[0]?.currency as Currency) ?? Currency.USD;
   const donationFunds = useMemo(
     () => donationFundOptionsForTenant(tenantId),
     [tenantId],
@@ -94,17 +96,18 @@ export function CounterPosForm({
 
   const [tab, setTab] = useState<PosTab>('services');
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>(() => {
-    if (!services[0]) return [];
-    const location = defaultSevaServiceLocation(services[0]);
+    const initial = dedupeSevaServicesByName(services);
+    if (!initial[0]) return [];
+    const location = defaultSevaServiceLocation(initial[0]);
     return [
       {
         key: nextKey(),
-        serviceId: services[0].id,
-        deity: services[0].deity,
+        serviceId: initial[0].id,
+        deity: initial[0].deity,
         date: today,
         location,
         quantity: 1,
-        unitCost: catalogUnitCost(services[0], location),
+        unitCost: catalogUnitCost(initial[0], location),
       },
     ];
   });
@@ -169,7 +172,7 @@ export function CounterPosForm({
   const effectiveTotalPaid = totalPaid === '' ? grandTotal : totalPaid;
 
   function addServiceLine(prefill?: Partial<ServiceLine>) {
-    const svc = services.find((s) => s.id === prefill?.serviceId) ?? services[0];
+    const svc = catalogServices.find((s) => s.id === prefill?.serviceId) ?? catalogServices[0];
     if (!svc) return;
     const location = prefill?.location ?? defaultSevaServiceLocation(svc);
     setServiceLines((rows) => [
@@ -192,7 +195,7 @@ export function CounterPosForm({
       rows.map((r) => {
         if (r.key !== key) return r;
         const next = { ...r, ...patch };
-        const svc = services.find((s) => s.id === (patch.serviceId ?? next.serviceId));
+        const svc = catalogServices.find((s) => s.id === (patch.serviceId ?? next.serviceId));
         if (svc) {
           if (patch.serviceId && patch.deity === undefined) {
             next.deity = svc.deity;
@@ -251,17 +254,17 @@ export function CounterPosForm({
 
   function handleCancel() {
     setServiceLines(() => {
-      if (!services[0]) return [];
-      const location = defaultSevaServiceLocation(services[0]);
+      if (!catalogServices[0]) return [];
+      const location = defaultSevaServiceLocation(catalogServices[0]);
       return [
         {
           key: nextKey(),
-          serviceId: services[0].id,
-          deity: services[0].deity,
+          serviceId: catalogServices[0].id,
+          deity: catalogServices[0].deity,
           date: today,
           location,
           quantity: 1,
-          unitCost: catalogUnitCost(services[0], location),
+          unitCost: catalogUnitCost(catalogServices[0], location),
         },
       ];
     });
@@ -360,8 +363,8 @@ export function CounterPosForm({
   }
 
   const quickLinkServices = useMemo(
-    () => resolvePosQuickLinkServices(tenantId, services),
-    [tenantId, services],
+    () => resolvePosQuickLinkServices(tenantId, catalogServices),
+    [tenantId, catalogServices],
   );
   const quickLinkProducts = useMemo(
     () => resolvePosQuickLinkProducts(products),
@@ -516,8 +519,8 @@ export function CounterPosForm({
                 </thead>
                 <tbody>
                   {serviceLines.map((line) => {
-                    const svc = services.find((s) => s.id === line.serviceId);
-                    const lineDeityOptions = deitySelectOptions(services, line.deity);
+                    const svc = catalogServices.find((s) => s.id === line.serviceId);
+                    const lineDeityOptions = deitySelectOptions(catalogServices, line.deity);
                     const lineTotal = line.unitCost * line.quantity;
                     const offSiteAvailable = svc ? sevaSupportsOffSite(svc) : false;
                     return (
@@ -529,7 +532,7 @@ export function CounterPosForm({
                               updateServiceLine(line.key, { serviceId: e.target.value })
                             }
                           >
-                            {services.map((s) => (
+                            {catalogServices.map((s) => (
                               <option key={s.id} value={s.id}>
                                 {s.name}
                               </option>
