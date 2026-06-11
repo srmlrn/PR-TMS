@@ -14,12 +14,14 @@ import {
   PaymentProvidersResponse,
   PaymentSession,
   PaymentStatus,
+  buildUpiQrPayload,
+  buildWebPayQrPayload,
 } from '@tms/types';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { PaymentSessionEntity } from '../../database/entities/tenant/payment-session.entity';
 import { TenantDataService } from '../../database/tenant-data.service';
 import { TenantPaymentSettingsService } from '../settings/tenant-payment-settings.service';
-import { isRazorpayLive } from './payment-config';
+import { isRazorpayLive, demoUpiVpa, webPayOrigin } from './payment-config';
 import { RazorpayProvider } from './razorpay.provider';
 import { StripeProvider } from './stripe.provider';
 
@@ -34,10 +36,10 @@ const FX_RATES: Record<Currency, number> = {
 
 /** Card PSP per currency; demo/cash are always available for local and counter flows. */
 const PROVIDERS_BY_CURRENCY: Record<Currency, PaymentProvider[]> = {
-  [Currency.USD]: ['stripe', 'demo', 'cash'],
-  [Currency.INR]: ['razorpay', 'demo', 'cash'],
-  [Currency.CAD]: ['stripe', 'demo', 'cash'],
-  [Currency.GBP]: ['stripe', 'demo', 'cash'],
+  [Currency.USD]: ['stripe', 'qr', 'demo', 'cash'],
+  [Currency.INR]: ['razorpay', 'qr', 'demo', 'cash'],
+  [Currency.CAD]: ['stripe', 'qr', 'demo', 'cash'],
+  [Currency.GBP]: ['stripe', 'qr', 'demo', 'cash'],
 };
 
 @Injectable()
@@ -91,6 +93,9 @@ export class PaymentService {
     if (provider === 'razorpay') {
       return isRazorpayLive() ? 'live' : 'demo';
     }
+    if (provider === 'qr') {
+      return 'demo';
+    }
     return 'demo';
   }
 
@@ -104,7 +109,10 @@ export class PaymentService {
   ): Promise<PaymentSession> {
     const now = new Date();
     const sessionId = uuidv4();
-    const paymentMode = await this.resolvePaymentMode(tenantId, input.provider);
+    const paymentMode =
+      input.provider === 'qr' && input.currency === Currency.INR && isRazorpayLive()
+        ? 'live'
+        : await this.resolvePaymentMode(tenantId, input.provider);
     const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
 
     const session: PaymentSession = {
@@ -150,6 +158,8 @@ export class PaymentService {
       if (order) {
         session.providerRefId = order.orderId;
       }
+    } else if (input.provider === 'qr') {
+      await this.attachQrCheckout(session, tenantId, paymentMode, expiresAt);
     }
 
     await this.saveSession(tenantId, session);
@@ -172,10 +182,12 @@ export class PaymentService {
 
     if (
       mode === 'live' &&
-      (session.provider === 'stripe' || session.provider === 'razorpay')
+      (session.provider === 'stripe' ||
+        session.provider === 'razorpay' ||
+        session.provider === 'qr')
     ) {
       throw new BadRequestException(
-        'Live stripe/razorpay sessions cannot be confirmed via this endpoint. ' +
+        'Live payment sessions cannot be confirmed via this endpoint. ' +
           'Complete payment on the client, poll GET /payments/sessions/:id, or wait for webhook confirmation.',
       );
     }
@@ -263,7 +275,9 @@ export class PaymentService {
       const mode = session.paymentMode ?? (await this.resolvePaymentMode(tenantId, session.provider));
       if (
         mode === 'live' &&
-        (session.provider === 'stripe' || session.provider === 'razorpay')
+        (session.provider === 'stripe' ||
+          session.provider === 'razorpay' ||
+          session.provider === 'qr')
       ) {
         throw new BadRequestException(
           `Payment session ${sessionId} is not paid (status: ${session.status}). ` +
@@ -378,6 +392,8 @@ export class PaymentService {
         ...(session.stripePublishableKey
           ? { stripePublishableKey: session.stripePublishableKey }
           : {}),
+        ...(session.qrPayload ? { qrPayload: session.qrPayload } : {}),
+        ...(session.qrImageUrl ? { qrImageUrl: session.qrImageUrl } : {}),
       },
       providerRefId: session.providerRefId,
       clientSecret: session.clientSecret,
@@ -402,6 +418,8 @@ export class PaymentService {
       providerRefId: row.providerRefId,
       clientSecret: row.clientSecret,
       stripePublishableKey: row.metadata?.stripePublishableKey,
+      qrPayload: row.metadata?.qrPayload,
+      qrImageUrl: row.metadata?.qrImageUrl,
       paymentMode: row.paymentMode as PaymentMode | undefined,
       expiresAt: row.expiresAt.toISOString(),
       createdAt: row.createdAt,
@@ -464,6 +482,55 @@ export class PaymentService {
       }
     }
 
+    if (session.provider === 'qr' && session.providerRefId) {
+      const status = await this.razorpayProvider.fetchQrCodeStatus(session.providerRefId);
+      if (status === 'paid') {
+        session.status = PaymentStatus.PAID;
+        session.updatedAt = new Date();
+        return session;
+      }
+    }
+
     return undefined;
+  }
+
+  private async attachQrCheckout(
+    session: PaymentSession,
+    tenantId: string,
+    paymentMode: PaymentMode,
+    expiresAt: Date,
+  ): Promise<void> {
+    const payeeName = session.metadata?.payeeName ?? 'Temple Management';
+
+    if (paymentMode === 'live' && session.currency === Currency.INR) {
+      const qr = await this.razorpayProvider.createUpiQrCode({
+        amount: session.amount,
+        currency: session.currency,
+        purpose: session.purpose,
+        sessionId: session.id,
+        tenantId,
+        devoteeId: session.devoteeId,
+        closeBy: expiresAt,
+      });
+      if (qr) {
+        session.providerRefId = qr.qrId;
+        session.qrImageUrl = qr.imageUrl;
+        session.qrPayload = qr.imageUrl;
+        return;
+      }
+    }
+
+    if (session.currency === Currency.INR) {
+      session.qrPayload = buildUpiQrPayload({
+        vpa: demoUpiVpa(),
+        payeeName,
+        amount: session.amount,
+        purpose: session.purpose,
+        transactionRef: session.id,
+      });
+      return;
+    }
+
+    session.qrPayload = buildWebPayQrPayload(webPayOrigin(), session.id);
   }
 }

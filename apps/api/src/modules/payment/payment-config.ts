@@ -18,6 +18,20 @@ export function razorpayWebhookSecret(): string | undefined {
   return process.env.RAZORPAY_WEBHOOK_SECRET?.trim() || undefined;
 }
 
+/** Demo UPI VPA shown in test QR codes (INR). */
+export function demoUpiVpa(): string {
+  return process.env.DEMO_UPI_VPA?.trim() || 'temple.demo@upi';
+}
+
+/** Public web origin for pay-by-QR links (defaults to CORS origin). */
+export function webPayOrigin(): string {
+  return (
+    process.env.WEB_PAY_ORIGIN?.trim() ||
+    process.env.CORS_ORIGIN?.trim() ||
+    'http://localhost:3001'
+  );
+}
+
 /** Smallest currency unit for Stripe (cents/paise). */
 export function toStripeAmount(amount: number, _currency: Currency): number {
   return Math.round(amount * 100);

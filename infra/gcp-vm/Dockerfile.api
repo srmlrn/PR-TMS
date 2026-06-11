@@ -1,0 +1,24 @@
+FROM node:20-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/types/package.json packages/types/
+COPY packages/ui/package.json packages/ui/
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+RUN npm ci
+COPY packages/types packages/types
+COPY packages/ui packages/ui
+COPY apps/api apps/api
+RUN npm run build -w @tms/types && npm run build -w @tms/api
+
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/types ./packages/types
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
+WORKDIR /app/apps/api
+EXPOSE 3000
+CMD ["node", "dist/main.js"]

@@ -3,7 +3,8 @@ import type { Endpoints } from './api/endpoints';
 
 export const PAYMENT_PROVIDER_LABELS: Record<PaymentProvider, string> = {
   stripe: 'Card · Apple Pay · Google Pay',
-  razorpay: 'Razorpay (INR)',
+  razorpay: 'Razorpay (INR · UPI in checkout)',
+  qr: 'QR / UPI scan',
   demo: 'Demo / test',
   cash: 'Cash (counter)',
 };
@@ -24,6 +25,9 @@ export function defaultPaymentProvider(
 }
 
 export function requiresLiveClientPayment(session: PaymentSession): boolean {
+  if (session.provider === 'qr') {
+    return Boolean(session.qrPayload || session.qrImageUrl);
+  }
   return (
     session.paymentMode === 'live' &&
     (session.provider === 'stripe' || session.provider === 'razorpay')
@@ -87,6 +91,24 @@ export async function checkoutAndPay(
     purpose: opts.purpose,
     devoteeId: opts.devoteeId,
   });
+
+  if (session.provider === 'qr') {
+    if (!gate) {
+      throw new Error(
+        'QR payment requires a payment modal. Integrate LivePaymentModal via createLivePaymentGate.',
+      );
+    }
+    await gate.runLivePayment(session);
+    if (session.paymentMode === 'live') {
+      await waitForSessionPaid(ep, session.id);
+    } else {
+      const updated = await ep.getPaymentSession(session.id);
+      if (updated.status !== 'paid') {
+        throw new Error('QR payment was not completed.');
+      }
+    }
+    return session.id;
+  }
 
   if (!requiresLiveClientPayment(session)) {
     await ep.confirmPaymentSession(session.id);

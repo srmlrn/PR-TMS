@@ -13,11 +13,23 @@ export interface TenantStripeSettingsPublic {
 
 export type PaymentSettingsSource = 'tenant' | 'env' | 'none';
 
+export interface PaymentTestCapabilities {
+  stripeLive: boolean;
+  razorpayLive: boolean;
+  applePayDomainConfigured: boolean;
+  demoUpiVpa?: string;
+  webPayOrigin?: string;
+  stripeWebhookConfigured: boolean;
+  razorpayWebhookConfigured: boolean;
+}
+
 export interface TenantPaymentSettingsPublic {
   tenantId: string;
   stripe: TenantStripeSettingsPublic;
   /** Whether keys come from tenant settings, platform env fallback, or are unset. */
   source: PaymentSettingsSource;
+  /** Platform + tenant readiness for wallets, QR, and webhooks (admin test checklist). */
+  testCapabilities: PaymentTestCapabilities;
   updatedAt?: string;
 }
 

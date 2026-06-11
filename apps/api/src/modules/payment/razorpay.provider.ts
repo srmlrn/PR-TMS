@@ -8,6 +8,11 @@ export interface RazorpayOrderResult {
   orderId: string;
 }
 
+export interface RazorpayQrResult {
+  qrId: string;
+  imageUrl: string;
+}
+
 @Injectable()
 export class RazorpayProvider {
   private readonly logger = new Logger(RazorpayProvider.name);
@@ -54,6 +59,57 @@ export class RazorpayProvider {
     this.logger.log(`Created Razorpay order ${order.id} for session ${opts.sessionId}`);
 
     return { orderId: order.id };
+  }
+
+  async createUpiQrCode(opts: {
+    amount: number;
+    currency: Currency;
+    purpose: string;
+    sessionId: string;
+    tenantId: string;
+    devoteeId?: string;
+    closeBy: Date;
+  }): Promise<RazorpayQrResult | null> {
+    const razorpay = this.getClient();
+    if (!razorpay || opts.currency !== Currency.INR) {
+      return null;
+    }
+
+    const qr = await razorpay.qrCode.create({
+      type: 'upi_qr',
+      name: opts.purpose.slice(0, 50),
+      usage: 'single_use',
+      fixed_amount: true,
+      payment_amount: toRazorpayAmount(opts.amount, opts.currency),
+      description: opts.purpose.slice(0, 120),
+      close_by: Math.floor(opts.closeBy.getTime() / 1000),
+      notes: {
+        purpose: opts.purpose,
+        sessionId: opts.sessionId,
+        tenantId: opts.tenantId,
+        ...(opts.devoteeId ? { devoteeId: opts.devoteeId } : {}),
+      },
+    });
+
+    this.logger.log(`Created Razorpay UPI QR ${qr.id} for session ${opts.sessionId}`);
+
+    return {
+      qrId: qr.id,
+      imageUrl: qr.image_url,
+    };
+  }
+
+  async fetchQrCodeStatus(qrId: string): Promise<'paid' | 'pending' | null> {
+    const razorpay = this.getClient();
+    if (!razorpay) {
+      return null;
+    }
+    const qr = await razorpay.qrCode.fetch(qrId);
+    const paymentsReceived = Number(qr.payments_amount_received ?? 0);
+    if (paymentsReceived > 0 || qr.status === 'closed') {
+      return 'paid';
+    }
+    return 'pending';
   }
 
   async fetchOrderStatus(orderId: string): Promise<string | null> {

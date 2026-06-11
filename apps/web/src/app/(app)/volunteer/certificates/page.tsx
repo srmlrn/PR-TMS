@@ -24,12 +24,12 @@ const KIND_LABELS: Record<VolunteerCertificateKind, string> = {
 
 const KIND_VARIANT: Record<
   VolunteerCertificateKind,
-  'ok' | 'info' | 'pending' | 'amber'
+  'ok' | 'info' | 'pending'
 > = {
   seva_appreciation: 'ok',
   hours_ytd: 'info',
   hours_quarter: 'info',
-  badge_tier: 'amber',
+  badge_tier: 'info',
   shift_completion: 'pending',
   event_participation: 'ok',
 };

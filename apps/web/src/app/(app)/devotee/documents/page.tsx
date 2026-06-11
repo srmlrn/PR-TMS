@@ -83,7 +83,7 @@ export default function DevoteeDocumentsPage() {
       title: SERVICE_LABELS[b.serviceId] ?? b.serviceId.replace('svc-', ''),
       subtitle: `${formatShortDate(b.scheduledAt)} · ${formatTime(b.scheduledAt)} · ${b.status}`,
       amountLabel: b.amount != null ? formatMoney(b.amount, b.currency) : '—',
-      date: b.scheduledAt,
+      date: typeof b.scheduledAt === 'string' ? b.scheduledAt : new Date(b.scheduledAt).toISOString(),
       receiptNumber: b.receiptNumber,
     }));
 
@@ -93,7 +93,7 @@ export default function DevoteeDocumentsPage() {
       title: d.purpose,
       subtitle: d.receiptNumber ? `#${d.receiptNumber}` : 'Donation receipt',
       amountLabel: formatMoney(d.amount, d.currency),
-      date: d.createdAt,
+      date: typeof d.createdAt === 'string' ? d.createdAt : new Date(d.createdAt).toISOString(),
       receiptNumber: d.receiptNumber,
     }));
 

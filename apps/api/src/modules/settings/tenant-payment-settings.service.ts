@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   PaymentSettingsSource,
+  PaymentTestCapabilities,
   ResolvedStripeConfig,
   SECRET_FIELD_MASK,
   TenantPaymentSettingsPublic,
@@ -10,6 +11,7 @@ import {
   UpdateTenantPaymentSettingsInput,
 } from '@tms/types';
 import { TenantPaymentSettingsEntity } from '../../database/entities/control/tenant-payment-settings.entity';
+import { isRazorpayLive, razorpayWebhookSecret, stripeWebhookSecret } from '../payment/payment-config';
 
 export { SECRET_FIELD_MASK };
 
@@ -199,7 +201,23 @@ export class TenantPaymentSettingsService {
         hasWebhookSecret: Boolean(resolved.webhookSecret),
       },
       source,
+      testCapabilities: this.buildTestCapabilities(resolved),
       updatedAt: record?.updatedAt.toISOString(),
+    };
+  }
+
+  private buildTestCapabilities(resolved: ResolvedStripeConfig): PaymentTestCapabilities {
+    return {
+      stripeLive: this.isStripeLiveForTenant(resolved),
+      razorpayLive: isRazorpayLive(),
+      applePayDomainConfigured: Boolean(process.env.APPLE_PAY_DOMAIN_ASSOCIATION?.trim()),
+      demoUpiVpa: process.env.DEMO_UPI_VPA?.trim() || 'temple.demo@upi',
+      webPayOrigin:
+        process.env.WEB_PAY_ORIGIN?.trim() ||
+        process.env.CORS_ORIGIN?.trim() ||
+        'http://localhost:3001',
+      stripeWebhookConfigured: Boolean(resolved.webhookSecret || stripeWebhookSecret()),
+      razorpayWebhookConfigured: Boolean(razorpayWebhookSecret()),
     };
   }
 }

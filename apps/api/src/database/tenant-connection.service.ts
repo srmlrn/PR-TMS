@@ -22,7 +22,8 @@ export class TenantConnectionService implements OnModuleDestroy {
       password: process.env.TENANT_DB_PASSWORD ?? process.env.DATABASE_PASSWORD ?? 'tms_dev',
       database: ctx.dbName,
       entities: TENANT_ENTITIES,
-      synchronize: process.env.NODE_ENV !== 'production',
+      synchronize:
+        process.env.TENANT_DB_SYNC === 'true' || process.env.NODE_ENV !== 'production',
       logging: process.env.DB_LOGGING === 'true',
     };
   }

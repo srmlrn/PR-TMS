@@ -173,6 +173,12 @@ export class PaymentController {
             notes?: { tenantId?: string; sessionId?: string };
           };
         };
+        qr_code?: {
+          entity?: {
+            id?: string;
+            notes?: { tenantId?: string; sessionId?: string };
+          };
+        };
       };
     },
   ): Promise<{ received: boolean; sessionId?: string }> {
@@ -192,6 +198,18 @@ export class PaymentController {
       if (orderId && tenantId) {
         const session = await this.runInTenantContext(tenantId, () =>
           this.paymentService.markSessionPaidByProviderRef(tenantId, orderId),
+        );
+        return { received: true, sessionId: session?.id };
+      }
+    }
+
+    if (body?.event === 'qr_code.credited') {
+      const qr = body.payload?.qr_code?.entity;
+      const qrId = qr?.id;
+      const tenantId = qr?.notes?.tenantId;
+      if (qrId && tenantId) {
+        const session = await this.runInTenantContext(tenantId, () =>
+          this.paymentService.markSessionPaidByProviderRef(tenantId, qrId),
         );
         return { received: true, sessionId: session?.id };
       }

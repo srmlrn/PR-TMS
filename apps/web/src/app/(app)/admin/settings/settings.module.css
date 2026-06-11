@@ -250,3 +250,29 @@
   font-size: 1.75rem;
   line-height: 1;
 }
+
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.checklist li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--txt2);
+}
+
+.stepsList {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--txt2);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}

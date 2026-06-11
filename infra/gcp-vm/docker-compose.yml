@@ -1,0 +1,67 @@
+# GCP single-VM stack: Postgres + API + Web + Caddy (HTTPS)
+# Usage (from this directory):
+#   cp .env.example .env   # edit values
+#   docker compose -f docker-compose.yml up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: tms_control
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ../../infra/postgres/init-control-plane.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-tms} -d tms_control']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/gcp-vm/Dockerfile.api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/gcp-vm/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL in .env}
+        NEXT_PUBLIC_PAYMENT_MODE: ${NEXT_PUBLIC_PAYMENT_MODE:-demo}
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN:-}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./caddy-entrypoint.sh:/etc/caddy/caddy-entrypoint.sh:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    entrypoint: ["/bin/sh", "/etc/caddy/caddy-entrypoint.sh"]
+    depends_on:
+      - web
+      - api
+
+volumes:
+  pg_data:
+  caddy_data:
+  caddy_config:

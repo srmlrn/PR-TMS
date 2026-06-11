@@ -1,0 +1,13 @@
+node_modules
+.git
+.next
+dist
+**/*.tsbuildinfo
+apps/web/.next
+apps/api/dist
+.cursor
+mockui-sn46
+requirements
+**/.env
+**/.env.*
+!**/.env.example

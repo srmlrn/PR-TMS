@@ -11,8 +11,11 @@ import {
 import { Button } from '@tms/ui';
 import type { PaymentSession } from '@tms/types';
 import { formatMoney } from '@/lib/api/endpoints';
+import { createEndpoints } from '@/lib/api/endpoints';
 import { useTheme } from '@/lib/theme-context';
+import { useTenant } from '@/lib/tenant-context';
 import { useTenantSite } from '@/lib/tenant-site';
+import { PaymentQrPanel } from '@/components/PaymentQrPanel';
 import styles from './live-payment-modal.module.css';
 
 declare global {
@@ -148,6 +151,8 @@ export function LivePaymentModal({
   payerPhone,
 }: LivePaymentModalProps) {
   const { theme } = useTheme();
+  const { api } = useTenant();
+  const ep = useMemo(() => createEndpoints(api), [api]);
   const site = useTenantSite();
   const [error, setError] = useState<string | null>(null);
   const [razorpayReady, setRazorpayReady] = useState(false);
@@ -229,6 +234,8 @@ export function LivePaymentModal({
   const title =
     session.provider === 'stripe'
       ? 'Pay with Apple Pay, Google Pay, or card'
+      : session.provider === 'qr'
+        ? 'Pay by QR / UPI'
       : session.provider === 'razorpay'
         ? 'Pay with Razorpay'
         : 'Complete payment';
@@ -244,6 +251,15 @@ export function LivePaymentModal({
             {session.purpose} · {formatMoney(session.amount, session.currency)}
           </p>
         </header>
+
+        {session.provider === 'qr' && (
+          <PaymentQrPanel
+            session={session}
+            ep={ep}
+            onSuccess={onSuccess}
+            onError={setError}
+          />
+        )}
 
         {session.provider === 'stripe' && (
           <>

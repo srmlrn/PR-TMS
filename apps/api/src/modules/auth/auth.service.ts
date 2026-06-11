@@ -63,15 +63,12 @@ export class AuthService {
     record: (typeof DEMO_USERS)[number],
     dto: LoginDto,
   ): Promise<LoginResponse> {
-    if (
-      dto.tenantId &&
-      dto.tenantId !== record.tenantId &&
-      record.role !== UserRole.SUPER_ADMIN
-    ) {
-      throw new UnauthorizedException('Invalid email or password for this temple');
-    }
-
-    const tenantId = dto.tenantId ?? record.tenantId ?? DEMO_TENANT_ID;
+    // Demo accounts are tied to one temple; use the account tenant so a mismatched
+    // temple picker on the login page does not block valid demo credentials.
+    const tenantId =
+      record.role === UserRole.SUPER_ADMIN
+        ? (dto.tenantId ?? record.tenantId ?? DEMO_TENANT_ID)
+        : (record.tenantId ?? dto.tenantId ?? DEMO_TENANT_ID);
     const environment = dto.environment ?? record.environment ?? TenantEnvironment.PROD;
 
     let devoteeId: string | undefined;

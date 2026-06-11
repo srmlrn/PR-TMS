@@ -198,6 +198,79 @@ export default function PaymentSettingsPage() {
           </>
         )}
       </GlassCard>
+
+      {!loading && settings && (
+        <GlassCard title="Wallets, QR & test checklist" className={styles.configCard}>
+          <p className={styles.hint}>
+            Apple Pay, Google Pay, and QR/UPI use the providers below. Status reflects server env +
+            saved tenant Stripe keys.
+          </p>
+
+          <ul className={styles.checklist}>
+            <li>
+              <Badge variant={settings.testCapabilities.stripeLive ? 'ok' : 'pending'}>
+                {settings.testCapabilities.stripeLive ? 'Ready' : 'Setup needed'}
+              </Badge>
+              <strong>Stripe (card)</strong> — enable above with test keys{' '}
+              <code>pk_test_…</code> / <code>sk_test_…</code>
+            </li>
+            <li>
+              <Badge variant={settings.testCapabilities.stripeWebhookConfigured ? 'ok' : 'pending'}>
+                {settings.testCapabilities.stripeWebhookConfigured ? 'Ready' : 'Setup needed'}
+              </Badge>
+              <strong>Stripe webhook</strong> → <code>POST /api/v1/payments/webhooks/stripe</code>
+            </li>
+            <li>
+              <Badge variant={settings.testCapabilities.applePayDomainConfigured ? 'ok' : 'info'}>
+                {settings.testCapabilities.applePayDomainConfigured ? 'Configured' : 'Prod only'}
+              </Badge>
+              <strong>Apple Pay</strong> — register domain in Stripe Dashboard; set{' '}
+              <code>APPLE_PAY_DOMAIN_ASSOCIATION</code> on web deploy (HTTPS)
+            </li>
+            <li>
+              <Badge variant={settings.testCapabilities.stripeLive ? 'ok' : 'info'}>Via Stripe</Badge>
+              <strong>Google Pay</strong> — appears in Stripe checkout on Chrome/Android with test keys
+            </li>
+            <li>
+              <Badge variant={settings.testCapabilities.razorpayLive ? 'ok' : 'pending'}>
+                {settings.testCapabilities.razorpayLive ? 'Ready' : 'Demo QR'}
+              </Badge>
+              <strong>QR / UPI</strong> — live Razorpay UPI QR when API env has{' '}
+              <code>RAZORPAY_KEY_*</code>; demo uses VPA{' '}
+              <code>{settings.testCapabilities.demoUpiVpa}</code>
+            </li>
+            <li>
+              <Badge variant={settings.testCapabilities.razorpayWebhookConfigured ? 'ok' : 'pending'}>
+                {settings.testCapabilities.razorpayWebhookConfigured ? 'Ready' : 'Setup needed'}
+              </Badge>
+              <strong>Razorpay webhook</strong> → <code>POST /api/v1/payments/webhooks/razorpay</code>{' '}
+              (enable <code>qr_code.credited</code> + <code>payment.captured</code>)
+            </li>
+          </ul>
+
+          <p className={styles.hint}>
+            <strong>How to test locally</strong>
+          </p>
+          <ol className={styles.stepsList}>
+            <li>
+              Book or donate → choose <strong>Card · Apple Pay · Google Pay</strong> (Stripe) or{' '}
+              <strong>QR / UPI scan</strong>.
+            </li>
+            <li>
+              Demo mode (no keys): QR shows a scannable code — click <em>Simulate scan &amp; pay</em>{' '}
+              or open{' '}
+              <code>{settings.testCapabilities.webPayOrigin}/devotee/pay-qr?sessionId=…</code>
+            </li>
+            <li>
+              Stripe test: use card <code>4242 4242 4242 4242</code>; wallets appear on supported
+              browsers when live Stripe is enabled.
+            </li>
+            <li>
+              Razorpay test: set API + web env keys; INR + QR provider creates a live UPI QR image.
+            </li>
+          </ol>
+        </GlassCard>
+      )}
     </div>
   );
 }
