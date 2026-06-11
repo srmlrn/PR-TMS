@@ -287,7 +287,6 @@ function FrontDeskConsolePageInner() {
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 615-555-0211"
               />
             </div>
             <div className="formGroup">
@@ -296,7 +295,6 @@ function FrontDeskConsolePageInner() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Raj Natarajan"
                 onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
               />
             </div>

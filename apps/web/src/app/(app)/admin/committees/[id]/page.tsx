@@ -236,7 +236,6 @@ export default function AdminCommitteeDetailPage() {
                 <input
                   value={memberForm.userId}
                   onChange={(e) => setMemberForm({ ...memberForm, userId: e.target.value })}
-                  placeholder="user-committee-001"
                 />
               </label>
               <label>

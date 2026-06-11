@@ -363,7 +363,6 @@ export default function DevoteesPage() {
                   type="url"
                   value={editForm.photoUrl}
                   onChange={(e) => setEditForm({ ...editForm, photoUrl: e.target.value })}
-                  placeholder="https://…"
                 />
               </div>
               <div className="formGroup">
@@ -495,7 +494,6 @@ export default function DevoteesPage() {
         headerRight={
           <input
             className={styles.search}
-            placeholder="Search by name or phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

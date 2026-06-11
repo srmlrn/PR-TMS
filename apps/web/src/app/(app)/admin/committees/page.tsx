@@ -72,7 +72,6 @@ export default function AdminCommitteesPage() {
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. Finance Committee"
               />
             </label>
             <label>
@@ -80,7 +79,6 @@ export default function AdminCommitteesPage() {
               <input
                 value={form.purpose ?? ''}
                 onChange={(e) => setForm({ ...form, purpose: e.target.value })}
-                placeholder="Primary mandate"
               />
             </label>
             <label>

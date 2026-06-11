@@ -70,7 +70,6 @@ export default function SevaCatalogReferencePage() {
           <div className="flexRow">
             <input
               type="search"
-              placeholder="Search name…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label="Search catalog"

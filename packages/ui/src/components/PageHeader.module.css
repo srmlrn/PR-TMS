@@ -8,13 +8,13 @@
 }
 
 .title {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   color: var(--txt2);
   margin-top: 0.1rem;
 }

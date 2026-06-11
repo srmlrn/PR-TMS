@@ -167,7 +167,6 @@ export default function PriestLeavePage() {
                 id="leave-reason"
                 value={form.reason ?? ''}
                 onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                placeholder="Festival travel, medical, family event…"
               />
             </div>
           </div>

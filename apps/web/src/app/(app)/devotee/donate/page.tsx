@@ -243,7 +243,6 @@ export default function DonatePage() {
               id="taxId"
               value={taxId}
               onChange={(e) => setTaxId(e.target.value)}
-              placeholder="Required for official tax receipt in some countries"
             />
           </div>
           <div className="formGroup mt1">
@@ -273,7 +272,6 @@ export default function DonatePage() {
                 id="inKindDescription"
                 value={inKindDescription}
                 onChange={(e) => setInKindDescription(e.target.value)}
-                placeholder="e.g. 50 lbs rice, flower garlands, volunteer hours"
               />
             </div>
           )}

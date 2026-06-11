@@ -119,7 +119,6 @@ export default function AdminCommunicationsPage() {
               id="to"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              placeholder={channel === 'email' ? 'devotee@example.com' : '+1 408-555-0101'}
             />
           </div>
           {channel === 'email' && (

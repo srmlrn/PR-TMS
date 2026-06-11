@@ -239,7 +239,6 @@ export default function CommitteeDirectoryPage() {
                 <div className={styles.listTools}>
                   <input
                     type="search"
-                    placeholder="Search committees…"
                     value={committeeQuery}
                     onChange={(e) => setCommitteeQuery(e.target.value)}
                     aria-label="Search committees"
@@ -338,7 +337,6 @@ export default function CommitteeDirectoryPage() {
                       <div className={styles.detailTools}>
                         <input
                           type="search"
-                          placeholder="Search members…"
                           value={memberQuery}
                           onChange={(e) => setMemberQuery(e.target.value)}
                           aria-label="Search members"
@@ -452,7 +450,6 @@ export default function CommitteeDirectoryPage() {
                               onChange={(e) =>
                                 setEditForm({ ...editForm, displayTitle: e.target.value })
                               }
-                              placeholder="e.g. Chair"
                             />
                           </label>
                         </div>
@@ -524,7 +521,6 @@ export default function CommitteeDirectoryPage() {
                               onChange={(e) =>
                                 setAddForm({ ...addForm, displayTitle: e.target.value })
                               }
-                              placeholder="e.g. Chair"
                             />
                           </label>
                         </div>

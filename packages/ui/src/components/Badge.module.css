@@ -2,9 +2,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.28rem;
-  padding: 0.17rem 0.58rem;
+  padding: 0.18rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.69rem;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
@@ -21,8 +21,8 @@
   color: var(--amber);
   border: 1px solid var(--accent-border-soft);
   border-radius: 999px;
-  padding: 0.15rem 0.58rem;
-  font-size: 0.7rem;
+  padding: 0.18rem 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -33,8 +33,8 @@
   color: var(--gr);
   border: 1px solid var(--success-border-soft);
   border-radius: 999px;
-  padding: 0.15rem 0.58rem;
-  font-size: 0.7rem;
+  padding: 0.18rem 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -45,8 +45,8 @@
   color: var(--bl);
   border: 1px solid var(--info-border);
   border-radius: 999px;
-  padding: 0.15rem 0.58rem;
-  font-size: 0.7rem;
+  padding: 0.18rem 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -73,7 +73,7 @@
 }
 
 .envProd {
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-weight: 700;
@@ -84,7 +84,7 @@
 }
 
 .envUat {
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-weight: 700;
@@ -95,7 +95,7 @@
 }
 
 .envDev {
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-weight: 700;

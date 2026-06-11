@@ -141,7 +141,6 @@ export function DevoteeContactFields({
                   phones[index] = { ...phone, number: e.target.value };
                   onChange(updatePhones(value, phones));
                 }}
-                placeholder="+1 615-555-0100"
               />
             </div>
             {value.phones.length > 1 && (

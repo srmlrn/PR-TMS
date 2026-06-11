@@ -150,7 +150,6 @@ export default function PaymentSettingsPage() {
                   type="text"
                   value={publishableKey}
                   onChange={(e) => setPublishableKey(e.target.value)}
-                  placeholder="pk_test_… or pk_live_…"
                   autoComplete="off"
                 />
               </label>
@@ -161,7 +160,7 @@ export default function PaymentSettingsPage() {
                   type="password"
                   value={secretKey}
                   onChange={(e) => setSecretKey(e.target.value)}
-                  placeholder={settings.stripe.hasSecretKey ? SECRET_FIELD_MASK : 'sk_test_…'}
+                  {...(settings.stripe.hasSecretKey ? { placeholder: SECRET_FIELD_MASK } : {})}
                   autoComplete="new-password"
                 />
               </label>
@@ -172,9 +171,7 @@ export default function PaymentSettingsPage() {
                   type="password"
                   value={webhookSecret}
                   onChange={(e) => setWebhookSecret(e.target.value)}
-                  placeholder={
-                    settings.stripe.hasWebhookSecret ? SECRET_FIELD_MASK : 'whsec_…'
-                  }
+                  {...(settings.stripe.hasWebhookSecret ? { placeholder: SECRET_FIELD_MASK } : {})}
                   autoComplete="new-password"
                 />
               </label>

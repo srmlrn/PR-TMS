@@ -158,7 +158,6 @@ export default function SevaCatalogSettingsPage() {
               min={0}
               step={0.01}
               value={form.priceOffSite ?? ''}
-              placeholder="On-site only"
               onChange={(e) =>
                 setForm((f) => ({
                   ...f,

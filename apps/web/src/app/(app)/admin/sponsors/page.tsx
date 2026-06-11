@@ -393,7 +393,7 @@ export default function AdminSponsorsPage() {
             headerRight={
               <div className={styles.searchPill}>
                 <span className="tms-t3">⌕</span>
-                <input placeholder="Search…" aria-label="Search sponsors" />
+                <input aria-label="Search sponsors" />
               </div>
             }
             noBodyPadding

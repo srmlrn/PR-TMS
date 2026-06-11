@@ -141,7 +141,6 @@ export default function DevoteeProfilePage() {
               type="url"
               value={form.photoUrl}
               onChange={(e) => setForm({ ...form, photoUrl: e.target.value })}
-              placeholder="https://…"
             />
           </div>
           {form.membershipTier && (
@@ -204,7 +203,7 @@ export default function DevoteeProfilePage() {
           </div>
           <div className="formGroup">
             <label htmlFor="familyId">Family / household ID</label>
-            <input id="familyId" value={form.familyId} onChange={(e) => setForm({ ...form, familyId: e.target.value })} placeholder="Link to family profile" />
+            <input id="familyId" value={form.familyId} onChange={(e) => setForm({ ...form, familyId: e.target.value })} />
           </div>
           <div className="formGroup">
             <label htmlFor="taxId">Tax ID (PAN / SSN / SIN)</label>
@@ -235,7 +234,6 @@ export default function DevoteeProfilePage() {
                     next[index] = { ...row, label: e.target.value };
                     setImportantDates(next);
                   }}
-                  placeholder="Spouse birthday"
                 />
               </div>
               <div className="formGroup">

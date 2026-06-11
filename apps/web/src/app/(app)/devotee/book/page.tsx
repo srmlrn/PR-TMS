@@ -292,7 +292,6 @@ export default function BookSevaPage() {
                   id="occasion"
                   value={occasion}
                   onChange={(e) => setOccasion(e.target.value)}
-                  placeholder="Birthday, anniversary, health…"
                 />
               </div>
             </div>
@@ -306,7 +305,6 @@ export default function BookSevaPage() {
                     id="rashi"
                     value={rashi}
                     onChange={(e) => setRashi(e.target.value)}
-                    placeholder="Optional"
                   />
                 </div>
                 <div className="formGroup">
@@ -315,7 +313,6 @@ export default function BookSevaPage() {
                     id="beneficiary"
                     value={beneficiaryName}
                     onChange={(e) => setBeneficiaryName(e.target.value)}
-                    placeholder="If for someone else"
                   />
                 </div>
                 <div className={`formGroup ${styles.spanFull}`}>
@@ -324,7 +321,6 @@ export default function BookSevaPage() {
                     id="additionalBeneficiaries"
                     value={additionalBeneficiaries}
                     onChange={(e) => setAdditionalBeneficiaries(e.target.value)}
-                    placeholder="Comma-separated"
                   />
                 </div>
                 <div className={`formGroup ${styles.spanFull}`}>
@@ -333,7 +329,6 @@ export default function BookSevaPage() {
                     id="priestPreference"
                     value={priestPreference}
                     onChange={(e) => setPriestPreference(e.target.value)}
-                    placeholder="Language or priest name"
                   />
                 </div>
                 <div className={`formGroup ${styles.spanFull}`}>

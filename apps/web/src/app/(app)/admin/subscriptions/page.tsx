@@ -215,7 +215,6 @@ export default function AdminSubscriptionsPage() {
                   id="create-sponsor"
                   value={createSponsor}
                   onChange={(e) => setCreateSponsor(e.target.value)}
-                  placeholder="Sankalpa sponsor"
                 />
               </div>
               <div className="formGroup">

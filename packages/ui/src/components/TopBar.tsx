@@ -55,7 +55,7 @@ export function TopBar({
   envVariant = 'prod',
   avatarInitials = 'RK',
   roleLabel,
-  searchPlaceholder = 'Search devotees, receipts, bookings…',
+  searchPlaceholder = '',
   languages = ['EN', 'हि', 'தமி', 'తె'],
   themeToggle,
   menuExtras,

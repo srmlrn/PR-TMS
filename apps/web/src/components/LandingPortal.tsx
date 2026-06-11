@@ -73,7 +73,7 @@ export function LandingPortal() {
 
   return (
     <div
-      className={`${styles.page} compactUi`}
+      className={styles.page}
       style={{ ['--landing-accent' as string]: accent }}
       data-tenant={tenant.slug}
     >
@@ -102,8 +102,8 @@ export function LandingPortal() {
       <main className={styles.shell}>
         <TenantPicker tenantId={tenantId} onSelect={pickTenant} />
 
-        <div className={styles.heroLayout}>
-          <section className={styles.hero}>
+        <div className={styles.mainStage}>
+          <section className={styles.welcomePanel}>
             <p className={styles.heroEyebrow}>{landing?.welcome ?? tenant.subtitle}</p>
 
             <div className={styles.deityBadge}>
@@ -138,19 +138,13 @@ export function LandingPortal() {
               </>
             )}
 
-            {tenant.logoSrc && (
-              <h1 className={styles.templeName}>
-                <span className={styles.templeNameShine}>{tenant.name}</span>
-              </h1>
-            )}
-
             <p className={styles.tagline}>{tenant.subtitle}</p>
             <p className={styles.location}>{tenant.location}</p>
           </section>
 
           {landing?.deityImage ? (
-            <div
-              className={[styles.deityCol, bgReady ? styles.deityColReady : ''].filter(Boolean).join(' ')}
+            <section
+              className={[styles.showcase, bgReady ? styles.showcaseReady : ''].filter(Boolean).join(' ')}
               aria-hidden
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -161,32 +155,32 @@ export function LandingPortal() {
                 width={480}
                 height={640}
               />
-            </div>
+            </section>
           ) : null}
-
-          <section className={styles.workspace}>
-            <p className={styles.prompt}>Choose a workspace</p>
-
-            <div className={styles.grid}>
-              {roles.map((role) => (
-                <Link
-                  key={`${tenantId}-${role.role}`}
-                  href={loginHref(role.loginEmail, role.role, tenantId)}
-                  className={styles.tile}
-                >
-                  <span className={styles.tileEmoji} aria-hidden>
-                    {role.emoji}
-                  </span>
-                  <span className={styles.tileLabel}>{role.title}</span>
-                </Link>
-              ))}
-            </div>
-
-            <p className={styles.hint}>
-              Tap a role · password <code>demo123</code>
-            </p>
-          </section>
         </div>
+
+        <section className={styles.workspaceDock}>
+          <p className={styles.prompt}>Choose a workspace</p>
+
+          <div className={styles.grid}>
+            {roles.map((role) => (
+              <Link
+                key={`${tenantId}-${role.role}`}
+                href={loginHref(role.loginEmail, role.role, tenantId)}
+                className={styles.tile}
+              >
+                <span className={styles.tileEmoji} aria-hidden>
+                  {role.emoji}
+                </span>
+                <span className={styles.tileLabel}>{role.title}</span>
+              </Link>
+            ))}
+          </div>
+
+          <p className={styles.hint}>
+            Tap a role · password <code>demo123</code>
+          </p>
+        </section>
       </main>
     </div>
   );

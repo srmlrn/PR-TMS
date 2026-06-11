@@ -750,7 +750,6 @@ export function CounterPosForm({
                 id="posComment"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Optional notes for receipt"
               />
             </div>
             <div className={`formGroup ${styles.checkoutField}`}>
@@ -772,7 +771,6 @@ export function CounterPosForm({
                   id="posCheck"
                   value={checkNumber}
                   onChange={(e) => setCheckNumber(e.target.value)}
-                  placeholder="Check #"
                 />
               </div>
             )}

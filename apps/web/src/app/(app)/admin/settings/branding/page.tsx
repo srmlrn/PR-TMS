@@ -154,7 +154,6 @@ export default function BrandingSettingsPage() {
                 <input
                   value={logoSrc}
                   onChange={(e) => setLogoSrc(e.target.value)}
-                  placeholder="/tenants/your-logo.png"
                 />
               </label>
               <label>
@@ -162,7 +161,6 @@ export default function BrandingSettingsPage() {
                 <input
                   value={logoBg}
                   onChange={(e) => setLogoBg(e.target.value)}
-                  placeholder="#960000"
                 />
               </label>
               <label>

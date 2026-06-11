@@ -5,14 +5,14 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
 }
 
 .th {
   padding: 0.6rem 1rem;
   text-align: left;
-  color: var(--txt3);
-  font-size: 0.68rem;
+  color: var(--txt2);
+  font-size: 0.73rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   border-bottom: 1px solid var(--b);

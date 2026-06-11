@@ -374,13 +374,11 @@ function FrontDeskDevoteesPageInner() {
       <div className={styles.toolbar}>
         <input
           className={styles.search}
-          placeholder="Search name…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <input
           className={styles.search}
-          placeholder="Phone…"
           value={phoneSearch}
           onChange={(e) => setPhoneSearch(e.target.value)}
         />
@@ -653,7 +651,6 @@ function FrontDeskDevoteesPageInner() {
                   id="fd-family"
                   value={form.familyId}
                   onChange={(e) => setForm({ ...form, familyId: e.target.value })}
-                  placeholder="Link family members"
                 />
               </div>
               <DevoteeContactFields
@@ -765,7 +762,6 @@ function FrontDeskDevoteesPageInner() {
                         id="fm-last"
                         value={familyForm.lastName}
                         onChange={(e) => setFamilyForm({ ...familyForm, lastName: e.target.value })}
-                        placeholder="Same household"
                       />
                     </div>
                     <div className="formGroup">

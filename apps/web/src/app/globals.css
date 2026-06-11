@@ -235,11 +235,11 @@ html[data-dock-collapsed='true'] {
 }
 
 .sectionLabel {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--txt3);
+  letter-spacing: 0.09em;
+  color: var(--txt2);
   margin-bottom: 0.85rem;
 }
 
@@ -279,7 +279,7 @@ html[data-dock-collapsed='true'] {
 
 .pageIntroSubtitle {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.94rem;
   color: var(--txt2);
   line-height: 1.45;
   max-width: 42rem;
@@ -316,7 +316,7 @@ html[data-dock-collapsed='true'] {
 }
 
 .hint {
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   color: var(--txt2);
   line-height: 1.45;
   margin: 0.15rem 0 0;
@@ -360,7 +360,7 @@ html[data-dock-collapsed='true'] {
 
 .listRowTitle {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.96rem;
   line-height: 1.35;
 }
 
@@ -424,7 +424,7 @@ html[data-dock-collapsed='true'] {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.71rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: var(--txt2);
   text-transform: uppercase;
@@ -434,7 +434,7 @@ html[data-dock-collapsed='true'] {
 .formStack input,
 .formStack select,
 .priestSelect {
-  font-size: 0.85rem;
+  font-size: 0.91rem;
   padding: 0.25rem 0.4rem;
   border-radius: var(--r);
   border: 1px solid var(--b);
@@ -449,7 +449,7 @@ html[data-dock-collapsed='true'] {
   border: 1px solid var(--b);
   border-radius: var(--rs);
   color: var(--txt);
-  font-size: 0.86rem;
+  font-size: 0.91rem;
   font-family: inherit;
   text-transform: none;
   font-weight: 400;
@@ -494,7 +494,7 @@ html[data-dock-collapsed='true'] {
 
 .formGroup label {
   display: block;
-  font-size: 0.71rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: var(--txt2);
   text-transform: uppercase;
@@ -511,7 +511,7 @@ html[data-dock-collapsed='true'] {
   border: 1px solid var(--b);
   border-radius: var(--rs);
   color: var(--txt);
-  font-size: 0.86rem;
+  font-size: 0.92rem;
   outline: none;
   transition: border 0.15s, box-shadow 0.15s;
   font-family: inherit;
@@ -528,7 +528,7 @@ html[data-dock-collapsed='true'] {
   border: 1px solid var(--callout-border);
   border-radius: var(--rs);
   padding: 0.75rem;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
 }
 
 .calloutRed {

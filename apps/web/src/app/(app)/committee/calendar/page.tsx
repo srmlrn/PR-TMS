@@ -483,7 +483,6 @@ export default function CommitteeCalendarPage() {
                     <input
                       value={blockForm.title}
                       onChange={(e) => setBlockForm({ ...blockForm, title: e.target.value })}
-                      placeholder="e.g. Board meeting prep"
                     />
                   </label>
                   <label>
@@ -510,7 +509,6 @@ export default function CommitteeCalendarPage() {
                       rows={2}
                       value={blockForm.reason ?? ''}
                       onChange={(e) => setBlockForm({ ...blockForm, reason: e.target.value })}
-                      placeholder="Optional context for the committee"
                     />
                   </label>
                   <div className="flexRow">
