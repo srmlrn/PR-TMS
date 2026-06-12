@@ -549,7 +549,7 @@ export function CounterPosForm({
                     <th>Deity</th>
                     <th>Location</th>
                     <th>Date</th>
-                    <th>Cost</th>
+                    <th>Donation</th>
                     <th>Qty</th>
                     <th>Total</th>
                     <th />

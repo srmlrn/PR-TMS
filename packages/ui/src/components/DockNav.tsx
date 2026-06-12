@@ -30,6 +30,9 @@ export interface DockNavProps {
   variant?: 'dock' | 'sidebar';
   brandLabel?: string;
   brandIcon?: string;
+  /** Tenant logo from landing page (overrides emoji when set). */
+  brandLogoSrc?: string;
+  brandLogoBg?: string;
 }
 
 export function DockNav({
@@ -39,6 +42,8 @@ export function DockNav({
   variant = 'dock',
   brandLabel = 'TMS',
   brandIcon = '🛕',
+  brandLogoSrc,
+  brandLogoBg,
 }: DockNavProps) {
   const pathname = usePathname();
   const isSidebar = variant === 'sidebar';
@@ -71,9 +76,20 @@ export function DockNav({
           className={styles.brand}
           title={collapsed ? brandLabel : undefined}
         >
-          <span className={styles.brandIcon} aria-hidden>
-            {brandIcon}
-          </span>
+          {brandLogoSrc ? (
+            <span
+              className={styles.brandLogoWrap}
+              style={brandLogoBg ? { backgroundColor: brandLogoBg } : undefined}
+              aria-hidden
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={brandLogoSrc} alt="" className={styles.brandLogo} />
+            </span>
+          ) : (
+            <span className={styles.brandIcon} aria-hidden>
+              {brandIcon}
+            </span>
+          )}
           <span className={styles.brandText}>{brandLabel}</span>
         </Link>
       ) : (

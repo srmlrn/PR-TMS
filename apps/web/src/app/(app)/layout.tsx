@@ -82,6 +82,8 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           variant="sidebar"
           brandLabel={site.name}
           brandIcon={site.icon}
+          brandLogoSrc={site.logoSrc}
+          brandLogoBg={site.logoBg}
         />
       )}
       {!isKiosk ? (

@@ -18,7 +18,6 @@ export const LANDING_ROLE_ORDER: AppRole[] = [
   UserRole.COMMITTEE,
   UserRole.ACCOUNTANT,
   'kiosk',
-  UserRole.SUPER_ADMIN,
 ];
 
 const SV_ROLES: LandingRoleCard[] = [
@@ -35,7 +34,6 @@ const SV_ROLES: LandingRoleCard[] = [
   },
   { role: UserRole.ACCOUNTANT, emoji: '🧾', title: 'Accountant', loginEmail: 'finance@svtemple.org' },
   { role: 'kiosk', emoji: '🏧', title: 'Kiosk', loginEmail: 'frontdesk@svtemple.org' },
-  { role: UserRole.SUPER_ADMIN, emoji: '⚙️', title: 'Platform', loginEmail: 'platform@tms.dev' },
 ];
 
 const GANESHA_ROLES: LandingRoleCard[] = [
@@ -52,7 +50,6 @@ const GANESHA_ROLES: LandingRoleCard[] = [
   },
   { role: UserRole.ACCOUNTANT, emoji: '🧾', title: 'Accountant', loginEmail: 'finance@sgtemple.org' },
   { role: 'kiosk', emoji: '🏧', title: 'Kiosk', loginEmail: 'frontdesk@sgtemple.org' },
-  { role: UserRole.SUPER_ADMIN, emoji: '⚙️', title: 'Platform', loginEmail: 'platform@tms.dev' },
 ];
 
 export function getLandingRoles(tenantId: string): LandingRoleCard[] {
