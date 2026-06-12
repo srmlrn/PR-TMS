@@ -26,6 +26,10 @@ export interface PaymentSession extends TenantScoped, Timestamps {
   paymentMode?: PaymentMode;
   /** ISO timestamp when an unpaid session expires (typically 30 minutes after creation). */
   expiresAt?: string;
+  /** Stripe Terminal counter checkout status (card-present hardware). */
+  terminalStatus?: import('./payment-terminal').TerminalSessionStatus;
+  terminalReaderId?: string;
+  terminalFailureMessage?: string;
 }
 
 export interface CreatePaymentSessionInput {

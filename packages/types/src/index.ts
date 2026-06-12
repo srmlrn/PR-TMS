@@ -15,6 +15,7 @@ export * from './finance';
 export * from './frontdesk';
 export * from './pos';
 export * from './payment';
+export * from './payment-terminal';
 export * from './payment-qr';
 export * from './invoice';
 export * from './notification';

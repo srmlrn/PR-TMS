@@ -24,6 +24,8 @@ import {
   PaymentSession,
   TenantContext,
   TenantEnvironment,
+  TerminalCheckoutStatus,
+  TerminalReader,
   UserRole,
 } from '@tms/types';
 import { Public } from '../../common/decorators/public.decorator';
@@ -32,10 +34,15 @@ import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { TenantContextStorage } from '../../common/context/tenant-context.storage';
 import { TenantResolverService } from '../../database/tenant-resolver.service';
 import { CreatePaymentSessionDto } from './dto/create-payment-session.dto';
+import {
+  CreateTerminalCheckoutDto,
+  ProcessTerminalCheckoutDto,
+} from './dto/terminal-checkout.dto';
 import { PaymentService } from './payment.service';
 import { razorpayWebhookSecret } from './payment-config';
 import { RazorpayProvider } from './razorpay.provider';
 import { StripeProvider } from './stripe.provider';
+import { StripeTerminalService } from './stripe-terminal.service';
 import { TenantPaymentSettingsService } from '../settings/tenant-payment-settings.service';
 
 @ApiTags('payments')
@@ -45,6 +52,7 @@ export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService,
     private readonly stripeProvider: StripeProvider,
+    private readonly stripeTerminalService: StripeTerminalService,
     private readonly razorpayProvider: RazorpayProvider,
     private readonly paymentSettings: TenantPaymentSettingsService,
     @Optional() private readonly tenantResolver?: TenantResolverService,
@@ -110,6 +118,68 @@ export class PaymentController {
     return this.paymentService.getSession(tenantId, id);
   }
 
+  @Get('terminal/config')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Terminal readiness for counter POS (no secrets)' })
+  async getTerminalConfig(@TenantId() tenantId: string): Promise<{
+    enabled: boolean;
+    hasDefaultReader: boolean;
+  }> {
+    const terminal = await this.paymentSettings.resolveTerminalConfigForTenant(tenantId);
+    return {
+      enabled: terminal.enabled,
+      hasDefaultReader: Boolean(terminal.defaultReaderId),
+    };
+  }
+
+  @Get('terminal/readers')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'List Stripe Terminal readers for this temple location' })
+  listTerminalReaders(@TenantId() tenantId: string): Promise<TerminalReader[]> {
+    return this.stripeTerminalService.listReaders(tenantId);
+  }
+
+  @Post('terminal/sessions')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Create a card-present Terminal checkout session' })
+  createTerminalSession(
+    @TenantId() tenantId: string,
+    @Body() dto: CreateTerminalCheckoutDto,
+  ): Promise<PaymentSession> {
+    return this.stripeTerminalService.createCheckout(tenantId, dto);
+  }
+
+  @Post('terminal/sessions/:id/process')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Send payment to Terminal reader (swipe / tap / insert)' })
+  processTerminalSession(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: ProcessTerminalCheckoutDto,
+  ): Promise<TerminalCheckoutStatus> {
+    return this.stripeTerminalService.processCheckout(tenantId, id, dto.readerId);
+  }
+
+  @Get('terminal/sessions/:id/status')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Poll Terminal checkout status' })
+  getTerminalSessionStatus(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<TerminalCheckoutStatus> {
+    return this.stripeTerminalService.getCheckoutStatus(tenantId, id);
+  }
+
+  @Post('terminal/sessions/:id/cancel')
+  @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Cancel in-progress Terminal checkout' })
+  cancelTerminalSession(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<TerminalCheckoutStatus> {
+    return this.stripeTerminalService.cancelCheckout(tenantId, id);
+  }
+
   @Public()
   @Get('sessions/:id/public-checkout')
   @ApiOperation({
@@ -157,6 +227,22 @@ export class PaymentController {
             metadata?: { tenantId?: string; sessionId?: string };
           };
           return this.markStripePaid(paidIntent);
+        }
+        if (event.type === 'terminal.reader.action_failed') {
+          const action = event.data.object as {
+            failure_message?: string;
+            process_payment_intent?: { payment_intent?: string };
+          };
+          const paymentIntentId = action.process_payment_intent?.payment_intent;
+          if (paymentIntentId) {
+            await this.runInTenantContext(tenantId, () =>
+              this.stripeTerminalService.markTerminalFailed(
+                tenantId,
+                paymentIntentId,
+                action.failure_message,
+              ),
+            );
+          }
         }
         return { received: true };
       }

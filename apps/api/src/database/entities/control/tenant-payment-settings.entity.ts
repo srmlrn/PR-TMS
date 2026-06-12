@@ -36,6 +36,15 @@ export class TenantPaymentSettingsEntity {
   @Column({ name: 'stripe_webhook_secret', length: 255, nullable: true })
   stripeWebhookSecret?: string;
 
+  @Column({ name: 'stripe_terminal_enabled', default: false })
+  stripeTerminalEnabled!: boolean;
+
+  @Column({ name: 'stripe_terminal_location_id', length: 64, nullable: true })
+  stripeTerminalLocationId?: string;
+
+  @Column({ name: 'stripe_terminal_default_reader_id', length: 64, nullable: true })
+  stripeTerminalDefaultReaderId?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

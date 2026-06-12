@@ -32,6 +32,13 @@ export default function PaymentSettingsPage() {
   const [publishableKey, setPublishableKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
   const [webhookSecret, setWebhookSecret] = useState('');
+  const [terminalEnabled, setTerminalEnabled] = useState(false);
+  const [terminalLocationId, setTerminalLocationId] = useState('');
+  const [terminalDefaultReaderId, setTerminalDefaultReaderId] = useState('');
+  const [readers, setReaders] = useState<Array<{ id: string; label: string; deviceType: string }>>(
+    [],
+  );
+  const [loadingReaders, setLoadingReaders] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +55,9 @@ export default function PaymentSettingsPage() {
       setPublishableKey(data.stripe.publishableKey ?? '');
       setSecretKey(data.stripe.hasSecretKey ? SECRET_FIELD_MASK : '');
       setWebhookSecret(data.stripe.hasWebhookSecret ? SECRET_FIELD_MASK : '');
+      setTerminalEnabled(data.terminal.enabled);
+      setTerminalLocationId(data.terminal.locationId ?? '');
+      setTerminalDefaultReaderId(data.terminal.defaultReaderId ?? '');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load payment settings');
     } finally {
@@ -72,16 +82,42 @@ export default function PaymentSettingsPage() {
           secretKey: secretKey.trim() || undefined,
           webhookSecret: webhookSecret.trim() || undefined,
         },
+        terminal: {
+          enabled: terminalEnabled,
+          locationId: terminalLocationId.trim() || undefined,
+          defaultReaderId: terminalDefaultReaderId.trim() || undefined,
+        },
       };
       const data = await api.patch<TenantPaymentSettingsPublic>('/settings/payments', body);
       setSettings(data);
       setSecretKey(data.stripe.hasSecretKey ? SECRET_FIELD_MASK : '');
       setWebhookSecret(data.stripe.hasWebhookSecret ? SECRET_FIELD_MASK : '');
+      setTerminalEnabled(data.terminal.enabled);
+      setTerminalLocationId(data.terminal.locationId ?? '');
+      setTerminalDefaultReaderId(data.terminal.defaultReaderId ?? '');
       setSaved(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save payment settings');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function loadReaders() {
+    setLoadingReaders(true);
+    setError(null);
+    try {
+      const data = await api.get<Array<{ id: string; label: string; deviceType: string }>>(
+        '/payments/terminal/readers',
+      );
+      setReaders(data);
+      if (data[0] && !terminalDefaultReaderId) {
+        setTerminalDefaultReaderId(data[0].id);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load Terminal readers');
+    } finally {
+      setLoadingReaders(false);
     }
   }
 
@@ -200,6 +236,104 @@ export default function PaymentSettingsPage() {
       </GlassCard>
 
       {!loading && settings && (
+        <GlassCard title="Stripe Terminal (card-present hardware)" className={styles.configCard}>
+          <p className={styles.hint}>
+            For counter swipe, chip insert, and contactless tap on physical readers (WisePOS E,
+            S700, Verifone). Not available in India — use Razorpay POS for INR temples. Bluetooth
+            readers (M2) and Tap to Pay on iPhone require a native app (future).
+          </p>
+
+          <div className={styles.configGrid}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={terminalEnabled}
+                onChange={(e) => setTerminalEnabled(e.target.checked)}
+                disabled={!enabled}
+              />
+              Enable Stripe Terminal at counter
+            </label>
+
+            <label className={styles.fullWidth}>
+              Terminal location ID
+              <input
+                type="text"
+                value={terminalLocationId}
+                onChange={(e) => setTerminalLocationId(e.target.value)}
+                placeholder="tml_…"
+                autoComplete="off"
+              />
+            </label>
+
+            <label className={styles.fullWidth}>
+              Default reader ID
+              <input
+                type="text"
+                value={terminalDefaultReaderId}
+                onChange={(e) => setTerminalDefaultReaderId(e.target.value)}
+                placeholder="tmr_…"
+                autoComplete="off"
+              />
+            </label>
+          </div>
+
+          <div className={styles.settingsMeta}>
+            <Button
+              variant="outline"
+              onClick={() => void loadReaders()}
+              disabled={loadingReaders || !terminalLocationId.trim()}
+            >
+              {loadingReaders ? 'Loading readers…' : 'Load readers from Stripe'}
+            </Button>
+            {readers.length > 0 && (
+              <span>
+                {readers.length} reader(s) — pick default ID above or select:
+              </span>
+            )}
+          </div>
+
+          {readers.length > 0 && (
+            <ul className={styles.checklist}>
+              {readers.map((reader) => (
+                <li key={reader.id}>
+                  <button
+                    type="button"
+                    onClick={() => setTerminalDefaultReaderId(reader.id)}
+                    style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    {reader.label}
+                  </button>{' '}
+                  <code>{reader.id}</code> · {reader.deviceType}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <ol className={styles.stepsList}>
+            <li>
+              Stripe Dashboard → <strong>Terminal</strong> → create a <strong>Location</strong>{' '}
+              with temple address → copy <code>tml_…</code>
+            </li>
+            <li>
+              Register hardware (WisePOS E / S700 pairing code) or use a{' '}
+              <strong>simulated reader</strong> in test mode (auto-created on first checkout)
+            </li>
+            <li>
+              Add webhook events <code>terminal.reader.action_failed</code> and{' '}
+              <code>payment_intent.succeeded</code>
+            </li>
+            <li>
+              Front desk → payment type <strong>Card (Terminal — swipe / tap)</strong>
+            </li>
+          </ol>
+
+          <Button variant="primary" onClick={() => void handleSave()} disabled={saving}>
+            {saving ? 'Saving…' : 'Save Terminal Settings'}
+          </Button>
+        </GlassCard>
+      )}
+
+      {!loading && settings && (
         <GlassCard title="Wallets, QR & test checklist" className={styles.configCard}>
           <p className={styles.hint}>
             Apple Pay, Google Pay, and QR/UPI use the providers below. Status reflects server env +
@@ -207,6 +341,17 @@ export default function PaymentSettingsPage() {
           </p>
 
           <ul className={styles.checklist}>
+            <li>
+              <Badge
+                variant={
+                  settings.testCapabilities.stripeTerminalConfigured ? 'ok' : 'pending'
+                }
+              >
+                {settings.testCapabilities.stripeTerminalConfigured ? 'Ready' : 'Setup needed'}
+              </Badge>
+              <strong>Stripe Terminal</strong> — location + reader above; test mode uses simulated
+              WisePOS E
+            </li>
             <li>
               <Badge variant={settings.testCapabilities.stripeLive ? 'ok' : 'pending'}>
                 {settings.testCapabilities.stripeLive ? 'Ready' : 'Setup needed'}
@@ -255,6 +400,10 @@ export default function PaymentSettingsPage() {
             <li>
               Book or donate → choose <strong>Card · Apple Pay · Google Pay</strong> (Stripe) or{' '}
               <strong>QR / UPI scan</strong>.
+            </li>
+            <li>
+              Front desk counter → <strong>Card (Terminal)</strong> sends amount to your reader;
+              customer swipes, inserts, or taps on the device.
             </li>
             <li>
               Front desk counter → choose <strong>Apple Pay</strong> or <strong>Google Pay</strong>{' '}

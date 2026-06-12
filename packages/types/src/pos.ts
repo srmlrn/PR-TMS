@@ -10,13 +10,15 @@ export type CounterPaymentMethod =
   | 'cash'
   | 'check'
   | 'card'
+  | 'card_terminal'
   | 'apple_pay'
   | 'google_pay';
 
 export const COUNTER_PAYMENT_METHOD_LABELS: Record<CounterPaymentMethod, string> = {
   cash: 'Cash',
   check: 'Check',
-  card: 'Card',
+  card: 'Card (manual entry)',
+  card_terminal: 'Card (Terminal — swipe / tap)',
   apple_pay: 'Apple Pay',
   google_pay: 'Google Pay',
 };

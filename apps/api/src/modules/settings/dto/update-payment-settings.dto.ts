@@ -39,10 +39,35 @@ class UpdateStripeSettingsDto {
   webhookSecret?: string;
 }
 
+class UpdateStripeTerminalSettingsDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+
+  @ApiPropertyOptional({ description: 'Stripe Terminal location id (tml_…)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  locationId?: string;
+
+  @ApiPropertyOptional({ description: 'Default reader id (tmr_…) for this counter' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  defaultReaderId?: string;
+}
+
 export class UpdatePaymentSettingsDto {
   @ApiPropertyOptional({ type: UpdateStripeSettingsDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => UpdateStripeSettingsDto)
   stripe?: UpdateStripeSettingsDto;
+
+  @ApiPropertyOptional({ type: UpdateStripeTerminalSettingsDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpdateStripeTerminalSettingsDto)
+  terminal?: UpdateStripeTerminalSettingsDto;
 }

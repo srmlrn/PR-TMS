@@ -17,15 +17,25 @@ export interface PaymentTestCapabilities {
   stripeLive: boolean;
   razorpayLive: boolean;
   applePayDomainConfigured: boolean;
+  stripeTerminalConfigured: boolean;
   demoUpiVpa?: string;
   webPayOrigin?: string;
   stripeWebhookConfigured: boolean;
   razorpayWebhookConfigured: boolean;
 }
 
+export interface TenantStripeTerminalSettingsPublic {
+  enabled: boolean;
+  locationId?: string;
+  defaultReaderId?: string;
+  hasLocation: boolean;
+  hasDefaultReader: boolean;
+}
+
 export interface TenantPaymentSettingsPublic {
   tenantId: string;
   stripe: TenantStripeSettingsPublic;
+  terminal: TenantStripeTerminalSettingsPublic;
   /** Whether keys come from tenant settings, platform env fallback, or are unset. */
   source: PaymentSettingsSource;
   /** Platform + tenant readiness for wallets, QR, and webhooks (admin test checklist). */
@@ -42,8 +52,15 @@ export interface UpdateTenantStripeSettingsInput {
   webhookSecret?: string;
 }
 
+export interface UpdateTenantStripeTerminalSettingsInput {
+  enabled?: boolean;
+  locationId?: string;
+  defaultReaderId?: string;
+}
+
 export interface UpdateTenantPaymentSettingsInput {
   stripe?: UpdateTenantStripeSettingsInput;
+  terminal?: UpdateTenantStripeTerminalSettingsInput;
 }
 
 /** Internal shape persisted per tenant (includes secrets). */
@@ -54,7 +71,16 @@ export interface TenantPaymentSettingsRecord {
   stripePublishableKey?: string;
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
+  stripeTerminalEnabled: boolean;
+  stripeTerminalLocationId?: string;
+  stripeTerminalDefaultReaderId?: string;
   updatedAt: Date;
+}
+
+export interface ResolvedStripeTerminalConfig {
+  enabled: boolean;
+  locationId?: string;
+  defaultReaderId?: string;
 }
 
 export interface ResolvedStripeConfig {

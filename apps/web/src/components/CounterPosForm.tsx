@@ -19,12 +19,14 @@ import {
   resolveSevaUnitPrice,
   sevaSupportsOffSite,
 } from '@tms/types';
-import type { PaymentSession } from '@tms/types';
+import type { PaymentSession, TerminalCheckoutStatus } from '@tms/types';
 import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney } from '@/lib/api/endpoints';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay } from '@/lib/payment-flow';
+import { runTerminalCheckout } from '@/lib/terminal-payment-flow';
 import { PaymentScanQrModal } from '@/components/PaymentScanQrModal';
+import { TerminalPaymentModal } from '@/components/TerminalPaymentModal';
 import { resolvePosQuickLinkProducts, resolvePosQuickLinkServices } from '@/lib/pos-quick-links';
 import { useTenant } from '@/lib/tenant-context';
 import styles from './CounterPosForm.module.css';
@@ -78,6 +80,10 @@ function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
 
 function isStripeCounterPayment(method: CounterPaymentMethod): boolean {
   return method === 'card';
+}
+
+function isTerminalCounterPayment(method: CounterPaymentMethod): boolean {
+  return method === 'card_terminal';
 }
 
 function isWalletQrPayment(method: CounterPaymentMethod): boolean {
@@ -168,6 +174,26 @@ export function CounterPosForm({
     resolve: () => void;
     reject: (err: Error) => void;
   } | null>(null);
+  const [terminalPay, setTerminalPay] = useState<{
+    sessionId?: string;
+    amount: number;
+    status: TerminalCheckoutStatus | null;
+  } | null>(null);
+  const [terminalEnabled, setTerminalEnabled] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    ep.getTerminalConfig()
+      .then((config) => {
+        if (!cancelled) setTerminalEnabled(config.enabled);
+      })
+      .catch(() => {
+        if (!cancelled) setTerminalEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ep]);
 
   function waitForWalletQr(session: PaymentSession): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -329,6 +355,28 @@ export function CounterPosForm({
         });
         await waitForWalletQr(session);
         paymentSessionId = session.id;
+      } else if (isTerminalCounterPayment(paymentMethod)) {
+        setTerminalPay({ amount: grandTotal, status: null });
+        try {
+          paymentSessionId = await runTerminalCheckout(
+            ep,
+            {
+              amount: grandTotal,
+              currency,
+              purpose: `Counter POS — ${devotee.name}`,
+              devoteeId: devotee.id,
+            },
+            (status) => {
+              setTerminalPay((prev) => ({
+                sessionId: status.sessionId,
+                amount: grandTotal,
+                status,
+              }));
+            },
+          );
+        } finally {
+          setTerminalPay(null);
+        }
       } else {
         paymentSessionId = await checkoutAndPay(
           ep,
@@ -798,8 +846,9 @@ export function CounterPosForm({
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as CounterPaymentMethod)}
               >
-                {(Object.keys(COUNTER_PAYMENT_METHOD_LABELS) as CounterPaymentMethod[]).map(
-                  (method) => (
+                {(Object.keys(COUNTER_PAYMENT_METHOD_LABELS) as CounterPaymentMethod[])
+                  .filter((method) => method !== 'card_terminal' || terminalEnabled)
+                  .map((method) => (
                     <option key={method} value={method}>
                       {COUNTER_PAYMENT_METHOD_LABELS[method]}
                     </option>
@@ -810,6 +859,12 @@ export function CounterPosForm({
                 <p className={styles.hint}>
                   Click Submit to open secure checkout — Apple Pay and Google Pay appear when
                   supported on this device.
+                </p>
+              )}
+              {isTerminalCounterPayment(paymentMethod) && (
+                <p className={styles.hint}>
+                  Click Submit to charge on your Stripe Terminal reader — swipe, insert chip, or tap
+                  contactless (phone wallets work on the reader).
                 </p>
               )}
               {isWalletQrPayment(paymentMethod) && (
@@ -871,6 +926,28 @@ export function CounterPosForm({
           onCancel={() => {
             walletQrPay.reject(new Error('Payment cancelled'));
             setWalletQrPay(null);
+          }}
+        />
+      )}
+      {terminalPay && (
+        <TerminalPaymentModal
+          amount={terminalPay.amount}
+          currency={currency}
+          status={terminalPay.status}
+          busy={busy}
+          onCancel={() => {
+            void (async () => {
+              if (terminalPay.sessionId) {
+                try {
+                  await ep.cancelTerminalCheckout(terminalPay.sessionId);
+                } catch {
+                  /* reader may already be idle */
+                }
+              }
+              setTerminalPay(null);
+              setBusy(false);
+              onError('Terminal payment cancelled.');
+            })();
           }}
         />
       )}

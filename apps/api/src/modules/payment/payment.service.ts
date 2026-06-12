@@ -14,6 +14,7 @@ import {
   PaymentProvidersResponse,
   PaymentSession,
   PaymentStatus,
+  TerminalSessionStatus,
   buildUpiQrPayload,
   buildWebPayQrPayload,
 } from '@tms/types';
@@ -171,6 +172,113 @@ export class PaymentService {
     return session;
   }
 
+  /** Card-present checkout for Stripe Terminal hardware at the counter. */
+  async createTerminalSession(
+    tenantId: string,
+    input: CreatePaymentSessionInput,
+  ): Promise<PaymentSession> {
+    const now = new Date();
+    const sessionId = uuidv4();
+    const paymentMode = await this.resolvePaymentMode(tenantId, 'stripe');
+    const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
+
+    const session: PaymentSession = {
+      id: sessionId,
+      tenantId,
+      amount: input.amount,
+      currency: input.currency,
+      provider: 'stripe',
+      status: PaymentStatus.PENDING,
+      purpose: input.purpose,
+      devoteeId: input.devoteeId,
+      metadata: {
+        ...input.metadata,
+        channel: 'counter_terminal',
+      },
+      paymentMode,
+      terminalStatus: 'pending',
+      expiresAt: expiresAt.toISOString(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (paymentMode === 'live') {
+      const stripeConfig = await this.paymentSettings.resolveStripeConfigForTenant(tenantId);
+      const intent = await this.stripeProvider.createCardPresentPaymentIntent({
+        amount: input.amount,
+        currency: input.currency,
+        purpose: input.purpose,
+        sessionId,
+        tenantId,
+        devoteeId: input.devoteeId,
+      });
+      if (intent) {
+        session.providerRefId = intent.paymentIntentId;
+        session.clientSecret = intent.clientSecret;
+        session.stripePublishableKey = stripeConfig.publishableKey?.trim();
+      }
+    }
+
+    await this.saveSession(tenantId, session);
+    return session;
+  }
+
+  async updateTerminalSession(
+    tenantId: string,
+    sessionId: string,
+    patch: {
+      terminalStatus?: TerminalSessionStatus;
+      terminalReaderId?: string;
+      terminalFailureMessage?: string;
+      status?: PaymentStatus;
+    },
+  ): Promise<PaymentSession> {
+    const session = await this.getSessionRecord(tenantId, sessionId);
+    if (patch.terminalStatus) session.terminalStatus = patch.terminalStatus;
+    if (patch.terminalReaderId) session.terminalReaderId = patch.terminalReaderId;
+    if (patch.terminalFailureMessage !== undefined) {
+      session.terminalFailureMessage = patch.terminalFailureMessage;
+    }
+    if (patch.status) session.status = patch.status;
+    session.updatedAt = new Date();
+    await this.saveSession(tenantId, session);
+    return session;
+  }
+
+  async syncTerminalSessionFromProvider(
+    tenantId: string,
+    sessionId: string,
+  ): Promise<PaymentSession> {
+    const session = await this.getSessionRecord(tenantId, sessionId);
+    const refreshed = await this.refreshSessionFromProvider(session);
+    if (refreshed) {
+      if (refreshed.status === PaymentStatus.PAID) {
+        refreshed.terminalStatus = 'succeeded';
+      }
+      await this.saveSession(tenantId, refreshed);
+      return refreshed;
+    }
+    return session;
+  }
+
+  async markTerminalFailedByProviderRef(
+    tenantId: string,
+    providerRefId: string,
+    failureMessage?: string,
+  ): Promise<PaymentSession | undefined> {
+    const session = await this.findSessionByProviderRef(tenantId, providerRefId);
+    if (!session || session.status === PaymentStatus.PAID) {
+      return session;
+    }
+
+    session.status = PaymentStatus.FAILED;
+    session.terminalStatus = 'failed';
+    session.terminalFailureMessage = failureMessage ?? 'Card declined on Terminal reader';
+    session.updatedAt = new Date();
+    await this.saveSession(tenantId, session);
+    return session;
+  }
+
   async confirmSession(tenantId: string, sessionId: string): Promise<PaymentSession> {
     const session = await this.getSessionRecord(tenantId, sessionId);
 
@@ -208,6 +316,8 @@ export class PaymentService {
     }
 
     session.status = PaymentStatus.PAID;
+    session.terminalStatus =
+      session.metadata?.channel === 'counter_terminal' ? 'succeeded' : session.terminalStatus;
     session.updatedAt = new Date();
     await this.saveSession(tenantId, session);
     this.logger.log(
@@ -414,6 +524,11 @@ export class PaymentService {
           : {}),
         ...(session.qrPayload ? { qrPayload: session.qrPayload } : {}),
         ...(session.qrImageUrl ? { qrImageUrl: session.qrImageUrl } : {}),
+        ...(session.terminalStatus ? { terminalStatus: session.terminalStatus } : {}),
+        ...(session.terminalReaderId ? { terminalReaderId: session.terminalReaderId } : {}),
+        ...(session.terminalFailureMessage
+          ? { terminalFailureMessage: session.terminalFailureMessage }
+          : {}),
       },
       providerRefId: session.providerRefId,
       clientSecret: session.clientSecret,
@@ -440,6 +555,9 @@ export class PaymentService {
       stripePublishableKey: row.metadata?.stripePublishableKey,
       qrPayload: row.metadata?.qrPayload,
       qrImageUrl: row.metadata?.qrImageUrl,
+      terminalStatus: row.metadata?.terminalStatus as TerminalSessionStatus | undefined,
+      terminalReaderId: row.metadata?.terminalReaderId,
+      terminalFailureMessage: row.metadata?.terminalFailureMessage,
       paymentMode: row.paymentMode as PaymentMode | undefined,
       expiresAt: row.expiresAt.toISOString(),
       createdAt: row.createdAt,

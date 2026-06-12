@@ -101,6 +101,7 @@ import type {
   CreateCommitteeRequestInput,
   UpdateCommitteeRequestInput,
   CreateCommitteeMessageInput,
+  TenantPaymentSettingsPublic,
 } from '@tms/types';
 import type { ApiClient } from './client';
 
@@ -191,6 +192,9 @@ export function createEndpoints(client: ApiClient) {
 
     getFxRates: () => client.get<FxRates>('/payments/fx-rates'),
 
+    getPaymentSettings: () =>
+      client.get<TenantPaymentSettingsPublic>('/settings/payments'),
+
     createPaymentSession: (body: {
       amount: number;
       currency: string;
@@ -205,6 +209,36 @@ export function createEndpoints(client: ApiClient) {
 
     getPaymentSession: (id: string) =>
       client.get<PaymentSession>(`/payments/sessions/${id}`),
+
+    createTerminalCheckoutSession: (body: {
+      amount: number;
+      currency: string;
+      purpose: string;
+      devoteeId?: string;
+    }) => client.post<PaymentSession>('/payments/terminal/sessions', body),
+
+    processTerminalCheckout: (sessionId: string, readerId?: string) =>
+      client.post<import('@tms/types').TerminalCheckoutStatus>(
+        `/payments/terminal/sessions/${sessionId}/process`,
+        readerId ? { readerId } : {},
+      ),
+
+    getTerminalCheckoutStatus: (sessionId: string) =>
+      client.get<import('@tms/types').TerminalCheckoutStatus>(
+        `/payments/terminal/sessions/${sessionId}/status`,
+      ),
+
+    cancelTerminalCheckout: (sessionId: string) =>
+      client.post<import('@tms/types').TerminalCheckoutStatus>(
+        `/payments/terminal/sessions/${sessionId}/cancel`,
+        {},
+      ),
+
+    listTerminalReaders: () =>
+      client.get<import('@tms/types').TerminalReader[]>('/payments/terminal/readers'),
+
+    getTerminalConfig: () =>
+      client.get<{ enabled: boolean; hasDefaultReader: boolean }>('/payments/terminal/config'),
 
     getPublicPaymentSession: (id: string) =>
       client.get<PaymentSession>(`/payments/sessions/${id}/public-checkout`),

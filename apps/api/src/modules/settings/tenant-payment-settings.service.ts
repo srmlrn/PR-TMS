@@ -5,6 +5,7 @@ import {
   PaymentSettingsSource,
   PaymentTestCapabilities,
   ResolvedStripeConfig,
+  ResolvedStripeTerminalConfig,
   SECRET_FIELD_MASK,
   TenantPaymentSettingsPublic,
   TenantPaymentSettingsRecord,
@@ -43,6 +44,7 @@ export class TenantPaymentSettingsService {
   ): Promise<TenantPaymentSettingsPublic> {
     const existing = (await this.loadRecord(tenantId)) ?? this.emptyRecord(tenantId);
     const stripe = input.stripe;
+    const terminal = input.terminal;
 
     const updated: TenantPaymentSettingsRecord = {
       ...existing,
@@ -57,6 +59,15 @@ export class TenantPaymentSettingsService {
         stripe?.webhookSecret,
         existing.stripeWebhookSecret,
       ),
+      stripeTerminalEnabled: terminal?.enabled ?? existing.stripeTerminalEnabled,
+      stripeTerminalLocationId:
+        terminal?.locationId !== undefined
+          ? terminal.locationId.trim() || undefined
+          : existing.stripeTerminalLocationId,
+      stripeTerminalDefaultReaderId:
+        terminal?.defaultReaderId !== undefined
+          ? terminal.defaultReaderId.trim() || undefined
+          : existing.stripeTerminalDefaultReaderId,
       updatedAt: new Date(),
     };
 
@@ -108,6 +119,21 @@ export class TenantPaymentSettingsService {
     return this.resolveStripeConfig(record);
   }
 
+  async resolveTerminalConfigForTenant(tenantId: string): Promise<ResolvedStripeTerminalConfig> {
+    const record = await this.loadRecord(tenantId);
+    const stripe = this.resolveStripeConfig(record);
+    const enabled = Boolean(
+      record?.stripeTerminalEnabled &&
+        this.isStripeLiveForTenant(stripe) &&
+        record.stripeTerminalLocationId?.trim(),
+    );
+    return {
+      enabled,
+      locationId: record?.stripeTerminalLocationId?.trim() || undefined,
+      defaultReaderId: record?.stripeTerminalDefaultReaderId?.trim() || undefined,
+    };
+  }
+
   isStripeLiveForTenant(config: ResolvedStripeConfig): boolean {
     return Boolean(config.enabled && config.secretKey?.trim());
   }
@@ -150,6 +176,9 @@ export class TenantPaymentSettingsService {
         stripePublishableKey: record.stripePublishableKey,
         stripeSecretKey: record.stripeSecretKey,
         stripeWebhookSecret: record.stripeWebhookSecret,
+        stripeTerminalEnabled: record.stripeTerminalEnabled,
+        stripeTerminalLocationId: record.stripeTerminalLocationId,
+        stripeTerminalDefaultReaderId: record.stripeTerminalDefaultReaderId,
       });
       return;
     }
@@ -161,6 +190,9 @@ export class TenantPaymentSettingsService {
       stripePublishableKey: record.stripePublishableKey,
       stripeSecretKey: record.stripeSecretKey,
       stripeWebhookSecret: record.stripeWebhookSecret,
+      stripeTerminalEnabled: record.stripeTerminalEnabled,
+      stripeTerminalLocationId: record.stripeTerminalLocationId,
+      stripeTerminalDefaultReaderId: record.stripeTerminalDefaultReaderId,
     });
   }
 
@@ -169,6 +201,7 @@ export class TenantPaymentSettingsService {
       tenantId,
       stripeEnabled: false,
       stripeMode: 'test',
+      stripeTerminalEnabled: false,
       updatedAt: new Date(),
     };
   }
@@ -181,6 +214,9 @@ export class TenantPaymentSettingsService {
       stripePublishableKey: row.stripePublishableKey,
       stripeSecretKey: row.stripeSecretKey,
       stripeWebhookSecret: row.stripeWebhookSecret,
+      stripeTerminalEnabled: row.stripeTerminalEnabled,
+      stripeTerminalLocationId: row.stripeTerminalLocationId,
+      stripeTerminalDefaultReaderId: row.stripeTerminalDefaultReaderId,
       updatedAt: row.updatedAt,
     };
   }
@@ -191,6 +227,7 @@ export class TenantPaymentSettingsService {
     source: PaymentSettingsSource,
   ): TenantPaymentSettingsPublic {
     const resolved = this.resolveStripeConfig(record);
+    const terminal = this.buildTerminalPublic(record, resolved);
     return {
       tenantId,
       stripe: {
@@ -200,16 +237,43 @@ export class TenantPaymentSettingsService {
         hasSecretKey: Boolean(resolved.secretKey),
         hasWebhookSecret: Boolean(resolved.webhookSecret),
       },
+      terminal,
       source,
-      testCapabilities: this.buildTestCapabilities(resolved),
+      testCapabilities: this.buildTestCapabilities(resolved, record),
       updatedAt: record?.updatedAt.toISOString(),
     };
   }
 
-  private buildTestCapabilities(resolved: ResolvedStripeConfig): PaymentTestCapabilities {
+  private buildTerminalPublic(
+    record: TenantPaymentSettingsRecord | undefined,
+    resolved: ResolvedStripeConfig,
+  ) {
+    const locationId = record?.stripeTerminalLocationId?.trim() || undefined;
+    const defaultReaderId = record?.stripeTerminalDefaultReaderId?.trim() || undefined;
+    const enabled = Boolean(
+      record?.stripeTerminalEnabled && this.isStripeLiveForTenant(resolved) && locationId,
+    );
+    return {
+      enabled,
+      locationId,
+      defaultReaderId,
+      hasLocation: Boolean(locationId),
+      hasDefaultReader: Boolean(defaultReaderId),
+    };
+  }
+
+  private buildTestCapabilities(
+    resolved: ResolvedStripeConfig,
+    record?: TenantPaymentSettingsRecord,
+  ): PaymentTestCapabilities {
     return {
       stripeLive: this.isStripeLiveForTenant(resolved),
       razorpayLive: isRazorpayLive(),
+      stripeTerminalConfigured: Boolean(
+        record?.stripeTerminalEnabled &&
+          record.stripeTerminalLocationId?.trim() &&
+          this.isStripeLiveForTenant(resolved),
+      ),
       applePayDomainConfigured: Boolean(
         process.env.APPLE_PAY_DOMAIN_ASSOCIATION?.trim() ||
           (process.env.WEB_PAY_ORIGIN?.startsWith('https://') &&
