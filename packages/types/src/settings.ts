@@ -11,17 +11,27 @@ export interface TenantStripeSettingsPublic {
   hasWebhookSecret: boolean;
 }
 
+export interface TenantPayPalSettingsPublic {
+  enabled: boolean;
+  mode: PaymentKeyMode;
+  clientId?: string;
+  hasClientSecret: boolean;
+  hasWebhookId: boolean;
+}
+
 export type PaymentSettingsSource = 'tenant' | 'env' | 'none';
 
 export interface PaymentTestCapabilities {
   stripeLive: boolean;
   razorpayLive: boolean;
+  paypalLive: boolean;
   applePayDomainConfigured: boolean;
   stripeTerminalConfigured: boolean;
   demoUpiVpa?: string;
   webPayOrigin?: string;
   stripeWebhookConfigured: boolean;
   razorpayWebhookConfigured: boolean;
+  paypalWebhookConfigured: boolean;
 }
 
 export interface TenantStripeTerminalSettingsPublic {
@@ -35,6 +45,7 @@ export interface TenantStripeTerminalSettingsPublic {
 export interface TenantPaymentSettingsPublic {
   tenantId: string;
   stripe: TenantStripeSettingsPublic;
+  paypal: TenantPayPalSettingsPublic;
   terminal: TenantStripeTerminalSettingsPublic;
   /** Whether keys come from tenant settings, platform env fallback, or are unset. */
   source: PaymentSettingsSource;
@@ -52,6 +63,15 @@ export interface UpdateTenantStripeSettingsInput {
   webhookSecret?: string;
 }
 
+export interface UpdateTenantPayPalSettingsInput {
+  enabled?: boolean;
+  mode?: PaymentKeyMode;
+  clientId?: string;
+  /** Send a new value to replace; omit or send empty to keep existing. */
+  clientSecret?: string;
+  webhookId?: string;
+}
+
 export interface UpdateTenantStripeTerminalSettingsInput {
   enabled?: boolean;
   locationId?: string;
@@ -60,6 +80,7 @@ export interface UpdateTenantStripeTerminalSettingsInput {
 
 export interface UpdateTenantPaymentSettingsInput {
   stripe?: UpdateTenantStripeSettingsInput;
+  paypal?: UpdateTenantPayPalSettingsInput;
   terminal?: UpdateTenantStripeTerminalSettingsInput;
 }
 
@@ -74,6 +95,11 @@ export interface TenantPaymentSettingsRecord {
   stripeTerminalEnabled: boolean;
   stripeTerminalLocationId?: string;
   stripeTerminalDefaultReaderId?: string;
+  paypalEnabled: boolean;
+  paypalMode: PaymentKeyMode;
+  paypalClientId?: string;
+  paypalClientSecret?: string;
+  paypalWebhookId?: string;
   updatedAt: Date;
 }
 
@@ -89,6 +115,15 @@ export interface ResolvedStripeConfig {
   publishableKey?: string;
   secretKey?: string;
   webhookSecret?: string;
+  source: PaymentSettingsSource;
+}
+
+export interface ResolvedPayPalConfig {
+  enabled: boolean;
+  mode: PaymentKeyMode;
+  clientId?: string;
+  clientSecret?: string;
+  webhookId?: string;
   source: PaymentSettingsSource;
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -25,7 +25,20 @@ declare global {
       open: () => void;
       on: (event: string, handler: () => void) => void;
     };
+    paypal?: {
+      Buttons: (options: PayPalButtonsOptions) => {
+        render: (selector: string | HTMLElement) => Promise<void>;
+        close: () => void;
+      };
+    };
   }
+}
+
+interface PayPalButtonsOptions {
+  createOrder: () => string | Promise<string>;
+  onApprove: (data: { orderID: string }) => void | Promise<void>;
+  onCancel?: () => void;
+  onError?: (err: { message?: string }) => void;
 }
 
 interface RazorpayCheckoutOptions {
@@ -58,6 +71,33 @@ function loadRazorpayScript(): Promise<void> {
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error('Failed to load Razorpay checkout'));
+    document.body.appendChild(script);
+  });
+}
+
+function loadPayPalScript(clientId: string, currency: string): Promise<void> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('PayPal is only available in the browser'));
+  }
+  if (window.paypal) {
+    return Promise.resolve();
+  }
+
+  const existing = document.querySelector<HTMLScriptElement>('script[data-paypal-sdk]');
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load PayPal SDK')));
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=${encodeURIComponent(currency)}&intent=capture&enable-funding=venmo,paypal&disable-funding=credit,card`;
+    script.async = true;
+    script.dataset.paypalSdk = 'true';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
     document.body.appendChild(script);
   });
 }
@@ -195,6 +235,101 @@ function StripeCheckoutForm({ session, onSuccess, onError, isTestMode }: StripeC
   );
 }
 
+interface PayPalCheckoutPanelProps {
+  session: PaymentSession;
+  ep: ReturnType<typeof createEndpoints>;
+  onSuccess: () => void;
+  onCancel: () => void;
+  onError: (message: string) => void;
+}
+
+function PayPalCheckoutPanel({
+  session,
+  ep,
+  onSuccess,
+  onCancel,
+  onError,
+}: PayPalCheckoutPanelProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const clientId = session.paypalClientId?.trim();
+    if (!clientId || !session.providerRefId || !containerRef.current) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    let buttons:
+      | {
+          render: (selector: string | HTMLElement) => Promise<void>;
+          close: () => void;
+        }
+      | undefined;
+
+    void (async () => {
+      try {
+        await loadPayPalScript(clientId, session.currency);
+        if (cancelled || !window.paypal || !containerRef.current) {
+          return;
+        }
+
+        buttons = window.paypal.Buttons({
+          createOrder: () => session.providerRefId!,
+          onApprove: async (data) => {
+            try {
+              await ep.capturePayPalOrder(session.id, data.orderID);
+              onSuccess();
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'PayPal capture failed');
+            }
+          },
+          onCancel: onCancel,
+          onError: (err) => onError(err.message ?? 'PayPal checkout failed'),
+        });
+
+        await buttons.render(containerRef.current);
+        if (!cancelled) {
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          onError(err instanceof Error ? err.message : 'PayPal checkout failed');
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      buttons?.close();
+    };
+  }, [session, ep, onSuccess, onCancel, onError]);
+
+  if (!session.paypalClientId?.trim()) {
+    return (
+      <p className={styles.error}>
+        PayPal client id is not configured for this temple. Add it in Admin → Payment Settings.
+      </p>
+    );
+  }
+
+  if (!session.providerRefId) {
+    return <p className={styles.error}>PayPal order id missing from payment session.</p>;
+  }
+
+  return (
+    <div className={styles.paypalWrap}>
+      {loading && <p className="tms-t2">Loading PayPal / Venmo…</p>}
+      <div ref={containerRef} className={styles.paypalButtons} />
+      <p className={styles.walletHint}>
+        Venmo appears for US buyers when enabled in your PayPal sandbox buyer account.
+      </p>
+    </div>
+  );
+}
+
 export interface LivePaymentModalProps {
   session: PaymentSession;
   onSuccess: () => void;
@@ -302,6 +437,8 @@ export function LivePaymentModal({
         ? 'Pay by QR / UPI'
       : session.provider === 'razorpay'
         ? 'Pay with Razorpay'
+      : session.provider === 'paypal'
+        ? 'Pay with PayPal or Venmo'
         : 'Complete payment';
 
   return (
@@ -359,6 +496,16 @@ export function LivePaymentModal({
               Re-open Razorpay
             </Button>
           </div>
+        )}
+
+        {session.provider === 'paypal' && (
+          <PayPalCheckoutPanel
+            session={session}
+            ep={ep}
+            onSuccess={onSuccess}
+            onCancel={onCancel}
+            onError={setError}
+          />
         )}
 
         {error && <p className={styles.error}>{error}</p>}

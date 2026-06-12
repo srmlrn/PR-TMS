@@ -23,6 +23,7 @@ import { PaymentSessionEntity } from '../../database/entities/tenant/payment-ses
 import { TenantDataService } from '../../database/tenant-data.service';
 import { TenantPaymentSettingsService } from '../settings/tenant-payment-settings.service';
 import { isRazorpayLive, demoUpiVpa, webPayOrigin } from './payment-config';
+import { PayPalProvider } from './paypal.provider';
 import { RazorpayProvider } from './razorpay.provider';
 import { StripeProvider } from './stripe.provider';
 
@@ -37,10 +38,10 @@ const FX_RATES: Record<Currency, number> = {
 
 /** Card PSP per currency; demo/cash are always available for local and counter flows. */
 const PROVIDERS_BY_CURRENCY: Record<Currency, PaymentProvider[]> = {
-  [Currency.USD]: ['stripe', 'qr', 'demo', 'cash'],
+  [Currency.USD]: ['stripe', 'paypal', 'qr', 'demo', 'cash'],
   [Currency.INR]: ['razorpay', 'qr', 'demo', 'cash'],
-  [Currency.CAD]: ['stripe', 'qr', 'demo', 'cash'],
-  [Currency.GBP]: ['stripe', 'qr', 'demo', 'cash'],
+  [Currency.CAD]: ['stripe', 'paypal', 'qr', 'demo', 'cash'],
+  [Currency.GBP]: ['stripe', 'paypal', 'qr', 'demo', 'cash'],
 };
 
 @Injectable()
@@ -51,6 +52,7 @@ export class PaymentService {
   constructor(
     private readonly stripeProvider: StripeProvider,
     private readonly razorpayProvider: RazorpayProvider,
+    private readonly paypalProvider: PayPalProvider,
     private readonly tenantData: TenantDataService,
     private readonly paymentSettings: TenantPaymentSettingsService,
   ) {}
@@ -93,6 +95,10 @@ export class PaymentService {
     }
     if (provider === 'razorpay') {
       return isRazorpayLive() ? 'live' : 'demo';
+    }
+    if (provider === 'paypal') {
+      const config = await this.paymentSettings.resolvePayPalConfigForTenant(tenantId);
+      return this.paymentSettings.isPayPalLiveForTenant(config) ? 'live' : 'demo';
     }
     if (provider === 'qr') {
       return 'demo';
@@ -158,6 +164,20 @@ export class PaymentService {
       });
       if (order) {
         session.providerRefId = order.orderId;
+      }
+    } else if (input.provider === 'paypal' && paymentMode === 'live') {
+      const paypalConfig = await this.paymentSettings.resolvePayPalConfigForTenant(tenantId);
+      const order = await this.paypalProvider.createOrder({
+        amount: input.amount,
+        currency: input.currency,
+        purpose: input.purpose,
+        sessionId,
+        tenantId,
+        devoteeId: input.devoteeId,
+      });
+      if (order) {
+        session.providerRefId = order.orderId;
+        session.paypalClientId = paypalConfig.clientId?.trim();
       }
     } else if (input.provider === 'qr') {
       await this.attachQrCheckout(session, tenantId, paymentMode, expiresAt);
@@ -279,6 +299,37 @@ export class PaymentService {
     return session;
   }
 
+  async capturePayPalOrder(
+    tenantId: string,
+    sessionId: string,
+    orderId?: string,
+  ): Promise<PaymentSession> {
+    const session = await this.getSessionRecord(tenantId, sessionId);
+    this.assertSessionUsable(session);
+
+    if (session.provider !== 'paypal') {
+      throw new BadRequestException('Session is not a PayPal checkout');
+    }
+
+    const captureOrderId = orderId?.trim() || session.providerRefId;
+    if (!captureOrderId) {
+      throw new BadRequestException('PayPal order id is missing');
+    }
+
+    const status = await this.paypalProvider.captureOrder(tenantId, captureOrderId);
+    if (status !== 'COMPLETED') {
+      throw new BadRequestException(
+        `PayPal capture did not complete (status: ${status ?? 'unknown'})`,
+      );
+    }
+
+    session.status = PaymentStatus.PAID;
+    session.providerRefId = captureOrderId;
+    session.updatedAt = new Date();
+    await this.saveSession(tenantId, session);
+    return session;
+  }
+
   async confirmSession(tenantId: string, sessionId: string): Promise<PaymentSession> {
     const session = await this.getSessionRecord(tenantId, sessionId);
 
@@ -292,6 +343,7 @@ export class PaymentService {
       mode === 'live' &&
       (session.provider === 'stripe' ||
         session.provider === 'razorpay' ||
+        session.provider === 'paypal' ||
         session.provider === 'qr')
     ) {
       throw new BadRequestException(
@@ -387,6 +439,7 @@ export class PaymentService {
         mode === 'live' &&
         (session.provider === 'stripe' ||
           session.provider === 'razorpay' ||
+          session.provider === 'paypal' ||
           session.provider === 'qr')
       ) {
         throw new BadRequestException(
@@ -522,6 +575,7 @@ export class PaymentService {
         ...(session.stripePublishableKey
           ? { stripePublishableKey: session.stripePublishableKey }
           : {}),
+        ...(session.paypalClientId ? { paypalClientId: session.paypalClientId } : {}),
         ...(session.qrPayload ? { qrPayload: session.qrPayload } : {}),
         ...(session.qrImageUrl ? { qrImageUrl: session.qrImageUrl } : {}),
         ...(session.terminalStatus ? { terminalStatus: session.terminalStatus } : {}),
@@ -553,6 +607,7 @@ export class PaymentService {
       providerRefId: row.providerRefId,
       clientSecret: row.clientSecret,
       stripePublishableKey: row.metadata?.stripePublishableKey,
+      paypalClientId: row.metadata?.paypalClientId,
       qrPayload: row.metadata?.qrPayload,
       qrImageUrl: row.metadata?.qrImageUrl,
       terminalStatus: row.metadata?.terminalStatus as TerminalSessionStatus | undefined,
@@ -614,6 +669,18 @@ export class PaymentService {
     if (session.provider === 'razorpay') {
       const status = await this.razorpayProvider.fetchOrderStatus(session.providerRefId);
       if (status === 'paid') {
+        session.status = PaymentStatus.PAID;
+        session.updatedAt = new Date();
+        return session;
+      }
+    }
+
+    if (session.provider === 'paypal') {
+      const status = await this.paypalProvider.fetchOrderStatus(
+        session.tenantId,
+        session.providerRefId,
+      );
+      if (status === 'COMPLETED') {
         session.status = PaymentStatus.PAID;
         session.updatedAt = new Date();
         return session;

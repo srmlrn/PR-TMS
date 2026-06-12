@@ -10,6 +10,7 @@ import {
 import { PageIntro } from '@/components/AppPage';
 import {
   SECRET_FIELD_MASK,
+  PAYMENT_GATEWAY_CATALOG,
   type TenantPaymentSettingsPublic,
   type UpdateTenantPaymentSettingsInput,
 } from '@tms/types';
@@ -32,6 +33,11 @@ export default function PaymentSettingsPage() {
   const [publishableKey, setPublishableKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
   const [webhookSecret, setWebhookSecret] = useState('');
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [paypalMode, setPaypalMode] = useState<'test' | 'live'>('test');
+  const [paypalClientId, setPaypalClientId] = useState('');
+  const [paypalClientSecret, setPaypalClientSecret] = useState('');
+  const [paypalWebhookId, setPaypalWebhookId] = useState('');
   const [terminalEnabled, setTerminalEnabled] = useState(false);
   const [terminalLocationId, setTerminalLocationId] = useState('');
   const [terminalDefaultReaderId, setTerminalDefaultReaderId] = useState('');
@@ -55,6 +61,11 @@ export default function PaymentSettingsPage() {
       setPublishableKey(data.stripe.publishableKey ?? '');
       setSecretKey(data.stripe.hasSecretKey ? SECRET_FIELD_MASK : '');
       setWebhookSecret(data.stripe.hasWebhookSecret ? SECRET_FIELD_MASK : '');
+      setPaypalEnabled(data.paypal.enabled);
+      setPaypalMode(data.paypal.mode);
+      setPaypalClientId(data.paypal.clientId ?? '');
+      setPaypalClientSecret(data.paypal.hasClientSecret ? SECRET_FIELD_MASK : '');
+      setPaypalWebhookId(data.paypal.hasWebhookId ? SECRET_FIELD_MASK : '');
       setTerminalEnabled(data.terminal.enabled);
       setTerminalLocationId(data.terminal.locationId ?? '');
       setTerminalDefaultReaderId(data.terminal.defaultReaderId ?? '');
@@ -82,6 +93,13 @@ export default function PaymentSettingsPage() {
           secretKey: secretKey.trim() || undefined,
           webhookSecret: webhookSecret.trim() || undefined,
         },
+        paypal: {
+          enabled: paypalEnabled,
+          mode: paypalMode,
+          clientId: paypalClientId,
+          clientSecret: paypalClientSecret.trim() || undefined,
+          webhookId: paypalWebhookId.trim() || undefined,
+        },
         terminal: {
           enabled: terminalEnabled,
           locationId: terminalLocationId.trim() || undefined,
@@ -92,6 +110,11 @@ export default function PaymentSettingsPage() {
       setSettings(data);
       setSecretKey(data.stripe.hasSecretKey ? SECRET_FIELD_MASK : '');
       setWebhookSecret(data.stripe.hasWebhookSecret ? SECRET_FIELD_MASK : '');
+      setPaypalEnabled(data.paypal.enabled);
+      setPaypalMode(data.paypal.mode);
+      setPaypalClientId(data.paypal.clientId ?? '');
+      setPaypalClientSecret(data.paypal.hasClientSecret ? SECRET_FIELD_MASK : '');
+      setPaypalWebhookId(data.paypal.hasWebhookId ? SECRET_FIELD_MASK : '');
       setTerminalEnabled(data.terminal.enabled);
       setTerminalLocationId(data.terminal.locationId ?? '');
       setTerminalDefaultReaderId(data.terminal.defaultReaderId ?? '');
@@ -234,6 +257,88 @@ export default function PaymentSettingsPage() {
           </>
         )}
       </GlassCard>
+
+      {!loading && settings && (
+        <GlassCard title="PayPal Configuration (+ Venmo US)" className={styles.configCard}>
+          <p className={styles.hint}>
+            PayPal Checkout Orders API with Venmo via <code>enable-funding=venmo,paypal</code> on
+            the JS SDK. Use sandbox credentials from PayPal Developer Dashboard for testing.
+          </p>
+
+          <div className={styles.settingsMeta}>
+            <Badge variant={settings.paypal.enabled ? 'ok' : 'pending'}>
+              {settings.paypal.enabled ? 'Enabled' : 'Disabled'}
+            </Badge>
+            <Badge variant={settings.paypal.mode === 'live' ? 'ok' : 'info'}>
+              {settings.paypal.mode === 'live' ? 'Live mode' : 'Test mode'}
+            </Badge>
+          </div>
+
+          <div className={styles.configGrid}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={paypalEnabled}
+                onChange={(e) => setPaypalEnabled(e.target.checked)}
+              />
+              Enable PayPal payments
+            </label>
+
+            <label>
+              Mode
+              <select
+                value={paypalMode}
+                onChange={(e) => setPaypalMode(e.target.value as 'test' | 'live')}
+              >
+                <option value="test">Test (sandbox)</option>
+                <option value="live">Live</option>
+              </select>
+            </label>
+
+            <label>
+              Client ID
+              <input
+                type="text"
+                value={paypalClientId}
+                onChange={(e) => setPaypalClientId(e.target.value)}
+                autoComplete="off"
+              />
+            </label>
+
+            <label>
+              Client secret
+              <input
+                type="password"
+                value={paypalClientSecret}
+                onChange={(e) => setPaypalClientSecret(e.target.value)}
+                {...(settings.paypal.hasClientSecret ? { placeholder: SECRET_FIELD_MASK } : {})}
+                autoComplete="new-password"
+              />
+            </label>
+
+            <label className={styles.fullWidth}>
+              Webhook ID
+              <input
+                type="password"
+                value={paypalWebhookId}
+                onChange={(e) => setPaypalWebhookId(e.target.value)}
+                {...(settings.paypal.hasWebhookId ? { placeholder: SECRET_FIELD_MASK } : {})}
+                autoComplete="new-password"
+              />
+            </label>
+          </div>
+
+          <p className={styles.hint}>
+            Create a REST app in PayPal Developer → Sandbox/Live → copy Client ID and Secret.
+            Register webhook URL <code>POST /api/v1/payments/webhooks/paypal</code> with events{' '}
+            <code>PAYMENT.CAPTURE.COMPLETED</code> and <code>CHECKOUT.ORDER.COMPLETED</code>.
+          </p>
+
+          <Button variant="primary" onClick={() => void handleSave()} disabled={saving}>
+            {saving ? 'Saving…' : 'Save PayPal Settings'}
+          </Button>
+        </GlassCard>
+      )}
 
       {!loading && settings && (
         <GlassCard title="Stripe Terminal (card-present hardware)" className={styles.configCard}>
@@ -391,6 +496,18 @@ export default function PaymentSettingsPage() {
               <strong>Razorpay webhook</strong> → <code>POST /api/v1/payments/webhooks/razorpay</code>{' '}
               (enable <code>qr_code.credited</code> + <code>payment.captured</code>)
             </li>
+            <li>
+              <Badge variant={settings.testCapabilities.paypalLive ? 'ok' : 'pending'}>
+                {settings.testCapabilities.paypalLive ? 'Ready' : 'Setup needed'}
+              </Badge>
+              <strong>PayPal (+ Venmo)</strong> — enable above with sandbox Client ID / Secret
+            </li>
+            <li>
+              <Badge variant={settings.testCapabilities.paypalWebhookConfigured ? 'ok' : 'pending'}>
+                {settings.testCapabilities.paypalWebhookConfigured ? 'Ready' : 'Setup needed'}
+              </Badge>
+              <strong>PayPal webhook</strong> → <code>POST /api/v1/payments/webhooks/paypal</code>
+            </li>
           </ul>
 
           <p className={styles.hint}>
@@ -421,7 +538,34 @@ export default function PaymentSettingsPage() {
             <li>
               Razorpay test: set API + web env keys; INR + QR provider creates a live UPI QR image.
             </li>
+            <li>
+              PayPal sandbox: save sandbox Client ID/Secret above; book/donate with{' '}
+              <strong>PayPal · Venmo</strong> — Venmo button appears for US sandbox buyers.
+            </li>
           </ol>
+        </GlassCard>
+      )}
+
+      {!loading && (
+        <GlassCard title="Payment gateways (multi-PSP roadmap)" className={styles.configCard}>
+          <p className={styles.hint}>
+            Each temple can enable different providers. Today: Stripe + Razorpay + PayPal are wired;
+            others follow the same tenant-settings + provider plugin pattern.
+          </p>
+          <ul className={styles.checklist}>
+            {PAYMENT_GATEWAY_CATALOG.map((gateway) => (
+              <li key={gateway.id}>
+                <Badge variant={gateway.configModel === 'planned' ? 'pending' : 'ok'}>
+                  {gateway.configModel === 'planned' ? 'Planned' : 'Supported'}
+                </Badge>
+                <strong>{gateway.label}</strong> — {gateway.capabilities.countries.join(', ')} ·{' '}
+                {gateway.capabilities.onlineCheckout && 'online '}
+                {gateway.capabilities.counterCardPresent && 'terminal '}
+                {gateway.capabilities.qrPay && 'QR '}
+                {gateway.notes ? `· ${gateway.notes}` : ''}
+              </li>
+            ))}
+          </ul>
         </GlassCard>
       )}
     </div>

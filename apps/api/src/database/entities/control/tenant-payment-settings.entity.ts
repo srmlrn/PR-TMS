@@ -45,6 +45,21 @@ export class TenantPaymentSettingsEntity {
   @Column({ name: 'stripe_terminal_default_reader_id', length: 64, nullable: true })
   stripeTerminalDefaultReaderId?: string;
 
+  @Column({ name: 'paypal_enabled', default: false })
+  paypalEnabled!: boolean;
+
+  @Column({ name: 'paypal_mode', length: 8, default: 'test' })
+  paypalMode!: 'test' | 'live';
+
+  @Column({ name: 'paypal_client_id', length: 255, nullable: true })
+  paypalClientId?: string;
+
+  @Column({ name: 'paypal_client_secret', length: 255, nullable: true })
+  paypalClientSecret?: string;
+
+  @Column({ name: 'paypal_webhook_id', length: 64, nullable: true })
+  paypalWebhookId?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

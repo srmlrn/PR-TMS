@@ -11,6 +11,7 @@ export type CounterPaymentMethod =
   | 'check'
   | 'card'
   | 'card_terminal'
+  | 'paypal'
   | 'apple_pay'
   | 'google_pay';
 
@@ -19,6 +20,7 @@ export const COUNTER_PAYMENT_METHOD_LABELS: Record<CounterPaymentMethod, string>
   check: 'Check',
   card: 'Card (manual entry)',
   card_terminal: 'Card (Terminal — swipe / tap)',
+  paypal: 'PayPal / Venmo',
   apple_pay: 'Apple Pay',
   google_pay: 'Google Pay',
 };

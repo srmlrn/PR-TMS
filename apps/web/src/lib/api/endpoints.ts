@@ -210,6 +210,11 @@ export function createEndpoints(client: ApiClient) {
     getPaymentSession: (id: string) =>
       client.get<PaymentSession>(`/payments/sessions/${id}`),
 
+    capturePayPalOrder: (sessionId: string, orderId?: string) =>
+      client.post<PaymentSession>(`/payments/paypal/sessions/${sessionId}/capture`, {
+        ...(orderId ? { orderId } : {}),
+      }),
+
     createTerminalCheckoutSession: (body: {
       amount: number;
       currency: string;

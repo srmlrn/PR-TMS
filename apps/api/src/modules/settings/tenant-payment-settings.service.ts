@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import {
   PaymentSettingsSource,
   PaymentTestCapabilities,
+  ResolvedPayPalConfig,
   ResolvedStripeConfig,
   ResolvedStripeTerminalConfig,
   SECRET_FIELD_MASK,
@@ -12,7 +13,13 @@ import {
   UpdateTenantPaymentSettingsInput,
 } from '@tms/types';
 import { TenantPaymentSettingsEntity } from '../../database/entities/control/tenant-payment-settings.entity';
-import { isRazorpayLive, razorpayWebhookSecret, stripeWebhookSecret } from '../payment/payment-config';
+import {
+  isPayPalLive,
+  isRazorpayLive,
+  paypalWebhookSecret,
+  razorpayWebhookSecret,
+  stripeWebhookSecret,
+} from '../payment/payment-config';
 
 export { SECRET_FIELD_MASK };
 
@@ -34,8 +41,9 @@ export class TenantPaymentSettingsService {
 
   async getPublicSettings(tenantId: string): Promise<TenantPaymentSettingsPublic> {
     const record = await this.loadRecord(tenantId);
-    const resolved = this.resolveStripeConfig(record);
-    return this.toPublic(tenantId, record, resolved.source);
+    const stripeResolved = this.resolveStripeConfig(record);
+    const paypalResolved = this.resolvePayPalConfig(record);
+    return this.toPublic(tenantId, record, stripeResolved.source, paypalResolved.source);
   }
 
   async updateSettings(
@@ -44,6 +52,7 @@ export class TenantPaymentSettingsService {
   ): Promise<TenantPaymentSettingsPublic> {
     const existing = (await this.loadRecord(tenantId)) ?? this.emptyRecord(tenantId);
     const stripe = input.stripe;
+    const paypal = input.paypal;
     const terminal = input.terminal;
 
     const updated: TenantPaymentSettingsRecord = {
@@ -59,6 +68,20 @@ export class TenantPaymentSettingsService {
         stripe?.webhookSecret,
         existing.stripeWebhookSecret,
       ),
+      paypalEnabled: paypal?.enabled ?? existing.paypalEnabled,
+      paypalMode: paypal?.mode ?? existing.paypalMode,
+      paypalClientId:
+        paypal?.clientId !== undefined
+          ? paypal.clientId.trim() || undefined
+          : existing.paypalClientId,
+      paypalClientSecret: this.mergeSecretField(
+        paypal?.clientSecret,
+        existing.paypalClientSecret,
+      ),
+      paypalWebhookId:
+        paypal?.webhookId !== undefined
+          ? paypal.webhookId.trim() || undefined
+          : existing.paypalWebhookId,
       stripeTerminalEnabled: terminal?.enabled ?? existing.stripeTerminalEnabled,
       stripeTerminalLocationId:
         terminal?.locationId !== undefined
@@ -75,8 +98,9 @@ export class TenantPaymentSettingsService {
 
     this.logger.log(`Updated payment settings for tenant ${tenantId}`);
 
-    const resolved = this.resolveStripeConfig(updated);
-    return this.toPublic(tenantId, updated, resolved.source);
+    const stripeResolved = this.resolveStripeConfig(updated);
+    const paypalResolved = this.resolvePayPalConfig(updated);
+    return this.toPublic(tenantId, updated, stripeResolved.source, paypalResolved.source);
   }
 
   resolveStripeConfig(record?: TenantPaymentSettingsRecord): ResolvedStripeConfig {
@@ -117,6 +141,49 @@ export class TenantPaymentSettingsService {
   async resolveStripeConfigForTenant(tenantId: string): Promise<ResolvedStripeConfig> {
     const record = await this.loadRecord(tenantId);
     return this.resolveStripeConfig(record);
+  }
+
+  resolvePayPalConfig(record?: TenantPaymentSettingsRecord): ResolvedPayPalConfig {
+    const envClientId = process.env.PAYPAL_CLIENT_ID?.trim();
+    const envClientSecret = process.env.PAYPAL_CLIENT_SECRET?.trim();
+    const envWebhookId = process.env.PAYPAL_WEBHOOK_ID?.trim();
+
+    if (record?.paypalClientSecret?.trim()) {
+      return {
+        enabled: record.paypalEnabled,
+        mode: record.paypalMode,
+        clientId: record.paypalClientId?.trim() || undefined,
+        clientSecret: record.paypalClientSecret.trim(),
+        webhookId: record.paypalWebhookId?.trim() || undefined,
+        source: 'tenant',
+      };
+    }
+
+    if (!this.usePostgres && envClientSecret && envClientId) {
+      return {
+        enabled: true,
+        mode: envClientId.includes('sandbox') || envClientId.startsWith('sb-') ? 'test' : 'live',
+        clientId: envClientId,
+        clientSecret: envClientSecret,
+        webhookId: envWebhookId || undefined,
+        source: 'env',
+      };
+    }
+
+    return {
+      enabled: false,
+      mode: 'test',
+      source: 'none',
+    };
+  }
+
+  async resolvePayPalConfigForTenant(tenantId: string): Promise<ResolvedPayPalConfig> {
+    const record = await this.loadRecord(tenantId);
+    return this.resolvePayPalConfig(record);
+  }
+
+  isPayPalLiveForTenant(config: ResolvedPayPalConfig): boolean {
+    return Boolean(config.enabled && config.clientId?.trim() && config.clientSecret?.trim());
   }
 
   async resolveTerminalConfigForTenant(tenantId: string): Promise<ResolvedStripeTerminalConfig> {
@@ -179,6 +246,11 @@ export class TenantPaymentSettingsService {
         stripeTerminalEnabled: record.stripeTerminalEnabled,
         stripeTerminalLocationId: record.stripeTerminalLocationId,
         stripeTerminalDefaultReaderId: record.stripeTerminalDefaultReaderId,
+        paypalEnabled: record.paypalEnabled,
+        paypalMode: record.paypalMode,
+        paypalClientId: record.paypalClientId,
+        paypalClientSecret: record.paypalClientSecret,
+        paypalWebhookId: record.paypalWebhookId,
       });
       return;
     }
@@ -193,6 +265,11 @@ export class TenantPaymentSettingsService {
       stripeTerminalEnabled: record.stripeTerminalEnabled,
       stripeTerminalLocationId: record.stripeTerminalLocationId,
       stripeTerminalDefaultReaderId: record.stripeTerminalDefaultReaderId,
+      paypalEnabled: record.paypalEnabled,
+      paypalMode: record.paypalMode,
+      paypalClientId: record.paypalClientId,
+      paypalClientSecret: record.paypalClientSecret,
+      paypalWebhookId: record.paypalWebhookId,
     });
   }
 
@@ -202,6 +279,8 @@ export class TenantPaymentSettingsService {
       stripeEnabled: false,
       stripeMode: 'test',
       stripeTerminalEnabled: false,
+      paypalEnabled: false,
+      paypalMode: 'test',
       updatedAt: new Date(),
     };
   }
@@ -217,6 +296,11 @@ export class TenantPaymentSettingsService {
       stripeTerminalEnabled: row.stripeTerminalEnabled,
       stripeTerminalLocationId: row.stripeTerminalLocationId,
       stripeTerminalDefaultReaderId: row.stripeTerminalDefaultReaderId,
+      paypalEnabled: row.paypalEnabled,
+      paypalMode: row.paypalMode,
+      paypalClientId: row.paypalClientId,
+      paypalClientSecret: row.paypalClientSecret,
+      paypalWebhookId: row.paypalWebhookId,
       updatedAt: row.updatedAt,
     };
   }
@@ -224,22 +308,37 @@ export class TenantPaymentSettingsService {
   private toPublic(
     tenantId: string,
     record: TenantPaymentSettingsRecord | undefined,
-    source: PaymentSettingsSource,
+    stripeSource: PaymentSettingsSource,
+    paypalSource: PaymentSettingsSource,
   ): TenantPaymentSettingsPublic {
-    const resolved = this.resolveStripeConfig(record);
-    const terminal = this.buildTerminalPublic(record, resolved);
+    const stripeResolved = this.resolveStripeConfig(record);
+    const paypalResolved = this.resolvePayPalConfig(record);
+    const terminal = this.buildTerminalPublic(record, stripeResolved);
+    const source: PaymentSettingsSource =
+      stripeSource === 'tenant' || paypalSource === 'tenant'
+        ? 'tenant'
+        : stripeSource === 'env' || paypalSource === 'env'
+          ? 'env'
+          : 'none';
     return {
       tenantId,
       stripe: {
-        enabled: resolved.enabled,
-        mode: resolved.mode,
-        publishableKey: resolved.publishableKey,
-        hasSecretKey: Boolean(resolved.secretKey),
-        hasWebhookSecret: Boolean(resolved.webhookSecret),
+        enabled: stripeResolved.enabled,
+        mode: stripeResolved.mode,
+        publishableKey: stripeResolved.publishableKey,
+        hasSecretKey: Boolean(stripeResolved.secretKey),
+        hasWebhookSecret: Boolean(stripeResolved.webhookSecret),
+      },
+      paypal: {
+        enabled: paypalResolved.enabled,
+        mode: paypalResolved.mode,
+        clientId: paypalResolved.clientId,
+        hasClientSecret: Boolean(paypalResolved.clientSecret),
+        hasWebhookId: Boolean(paypalResolved.webhookId),
       },
       terminal,
       source,
-      testCapabilities: this.buildTestCapabilities(resolved, record),
+      testCapabilities: this.buildTestCapabilities(stripeResolved, paypalResolved, record),
       updatedAt: record?.updatedAt.toISOString(),
     };
   }
@@ -263,29 +362,34 @@ export class TenantPaymentSettingsService {
   }
 
   private buildTestCapabilities(
-    resolved: ResolvedStripeConfig,
+    stripeResolved: ResolvedStripeConfig,
+    paypalResolved: ResolvedPayPalConfig,
     record?: TenantPaymentSettingsRecord,
   ): PaymentTestCapabilities {
     return {
-      stripeLive: this.isStripeLiveForTenant(resolved),
+      stripeLive: this.isStripeLiveForTenant(stripeResolved),
       razorpayLive: isRazorpayLive(),
+      paypalLive: this.isPayPalLiveForTenant(paypalResolved),
       stripeTerminalConfigured: Boolean(
         record?.stripeTerminalEnabled &&
           record.stripeTerminalLocationId?.trim() &&
-          this.isStripeLiveForTenant(resolved),
+          this.isStripeLiveForTenant(stripeResolved),
       ),
       applePayDomainConfigured: Boolean(
         process.env.APPLE_PAY_DOMAIN_ASSOCIATION?.trim() ||
           (process.env.WEB_PAY_ORIGIN?.startsWith('https://') &&
-            this.isStripeLiveForTenant(resolved)),
+            this.isStripeLiveForTenant(stripeResolved)),
       ),
       demoUpiVpa: process.env.DEMO_UPI_VPA?.trim() || 'temple.demo@upi',
       webPayOrigin:
         process.env.WEB_PAY_ORIGIN?.trim() ||
         process.env.CORS_ORIGIN?.trim() ||
         'http://localhost:3001',
-      stripeWebhookConfigured: Boolean(resolved.webhookSecret || stripeWebhookSecret()),
+      stripeWebhookConfigured: Boolean(stripeResolved.webhookSecret || stripeWebhookSecret()),
       razorpayWebhookConfigured: Boolean(razorpayWebhookSecret()),
+      paypalWebhookConfigured: Boolean(
+        paypalResolved.webhookId || paypalWebhookSecret() || isPayPalLive(),
+      ),
     };
   }
 }

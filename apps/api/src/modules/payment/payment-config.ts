@@ -10,12 +10,22 @@ export function isRazorpayLive(): boolean {
   );
 }
 
+export function isPayPalLive(): boolean {
+  return Boolean(
+    process.env.PAYPAL_CLIENT_ID?.trim() && process.env.PAYPAL_CLIENT_SECRET?.trim(),
+  );
+}
+
 export function stripeWebhookSecret(): string | undefined {
   return process.env.STRIPE_WEBHOOK_SECRET?.trim() || undefined;
 }
 
 export function razorpayWebhookSecret(): string | undefined {
   return process.env.RAZORPAY_WEBHOOK_SECRET?.trim() || undefined;
+}
+
+export function paypalWebhookSecret(): string | undefined {
+  return process.env.PAYPAL_WEBHOOK_SECRET?.trim() || undefined;
 }
 
 /** Demo UPI VPA shown in test QR codes (INR). */
@@ -43,4 +53,9 @@ export function toRazorpayAmount(amount: number, currency: Currency): number {
     return Math.round(amount * 100);
   }
   return Math.round(amount * 100);
+}
+
+/** PayPal Orders API expects a decimal string with two fractional digits. */
+export function toPayPalAmount(amount: number): string {
+  return amount.toFixed(2);
 }

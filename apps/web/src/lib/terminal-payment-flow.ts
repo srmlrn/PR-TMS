@@ -39,6 +39,7 @@ export async function runTerminalCheckout(
     currency: Currency;
     purpose: string;
     devoteeId?: string;
+    readerId?: string;
   },
   onStatus?: (status: TerminalCheckoutStatus) => void,
 ): Promise<string> {
@@ -48,9 +49,10 @@ export async function runTerminalCheckout(
     status: 'pending',
     amount: session.amount,
     currency: session.currency,
+    readerId: input.readerId,
   });
 
-  const processing = await ep.processTerminalCheckout(session.id);
+  const processing = await ep.processTerminalCheckout(session.id, input.readerId);
   onStatus?.(processing);
 
   await pollTerminalCheckout(ep, session.id, onStatus);

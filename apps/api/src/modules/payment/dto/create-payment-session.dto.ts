@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Currency, PaymentProvider } from '@tms/types';
 
-const PROVIDERS = ['stripe', 'razorpay', 'qr', 'demo', 'cash'] as const satisfies readonly PaymentProvider[];
+const PROVIDERS = ['stripe', 'razorpay', 'paypal', 'qr', 'demo', 'cash'] as const satisfies readonly PaymentProvider[];
 
 export class CreatePaymentSessionDto {
   @ApiProperty({ example: 101 })

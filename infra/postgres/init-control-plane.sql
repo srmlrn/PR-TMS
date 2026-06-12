@@ -101,6 +101,11 @@ CREATE TABLE tenant_payment_settings (
   stripe_terminal_enabled BOOLEAN NOT NULL DEFAULT false,
   stripe_terminal_location_id VARCHAR(64),
   stripe_terminal_default_reader_id VARCHAR(64),
+  paypal_enabled BOOLEAN NOT NULL DEFAULT false,
+  paypal_mode VARCHAR(8) NOT NULL DEFAULT 'test',
+  paypal_client_id VARCHAR(255),
+  paypal_client_secret VARCHAR(255),
+  paypal_webhook_id VARCHAR(64),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

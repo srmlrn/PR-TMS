@@ -1,7 +1,7 @@
 import { Currency, PaymentStatus } from './enums';
 import { TenantScoped, Timestamps } from './common';
 
-export type PaymentProvider = 'stripe' | 'razorpay' | 'qr' | 'demo' | 'cash';
+export type PaymentProvider = 'stripe' | 'razorpay' | 'paypal' | 'qr' | 'demo' | 'cash';
 export type PaymentMode = 'live' | 'demo';
 
 export interface PaymentSession extends TenantScoped, Timestamps {
@@ -19,6 +19,8 @@ export interface PaymentSession extends TenantScoped, Timestamps {
   clientSecret?: string;
   /** Tenant Stripe publishable key for client checkout (live mode only). */
   stripePublishableKey?: string;
+  /** PayPal client id for JS SDK buttons (live mode only). */
+  paypalClientId?: string;
   /** UPI string or pay URL encoded in the QR (qr provider). */
   qrPayload?: string;
   /** Razorpay-hosted QR image URL when live UPI QR is used. */

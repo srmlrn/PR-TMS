@@ -19,12 +19,16 @@ import {
   resolveSevaUnitPrice,
   sevaSupportsOffSite,
 } from '@tms/types';
-import type { PaymentSession, TerminalCheckoutStatus } from '@tms/types';
+import type { PaymentSession, TerminalCheckoutStatus, TerminalReader } from '@tms/types';
 import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney } from '@/lib/api/endpoints';
 import { useLivePaymentGate } from '@/hooks/use-live-payment-gate';
 import { checkoutAndPay } from '@/lib/payment-flow';
 import { runTerminalCheckout } from '@/lib/terminal-payment-flow';
+import {
+  readTerminalReaderPreference,
+  writeTerminalReaderPreference,
+} from '@/lib/terminal-reader-storage';
 import { PaymentScanQrModal } from '@/components/PaymentScanQrModal';
 import { TerminalPaymentModal } from '@/components/TerminalPaymentModal';
 import { resolvePosQuickLinkProducts, resolvePosQuickLinkServices } from '@/lib/pos-quick-links';
@@ -75,11 +79,18 @@ function mapPaymentMethod(method: CounterPaymentMethod): PaymentProvider {
   if (method === 'card' || method === 'apple_pay' || method === 'google_pay') {
     return 'stripe';
   }
+  if (method === 'paypal') {
+    return 'paypal';
+  }
   return 'cash';
 }
 
 function isStripeCounterPayment(method: CounterPaymentMethod): boolean {
   return method === 'card';
+}
+
+function isPayPalCounterPayment(method: CounterPaymentMethod): boolean {
+  return method === 'paypal';
 }
 
 function isTerminalCounterPayment(method: CounterPaymentMethod): boolean {
@@ -180,6 +191,9 @@ export function CounterPosForm({
     status: TerminalCheckoutStatus | null;
   } | null>(null);
   const [terminalEnabled, setTerminalEnabled] = useState(false);
+  const [terminalReaders, setTerminalReaders] = useState<TerminalReader[]>([]);
+  const [selectedReaderId, setSelectedReaderId] = useState('');
+  const [readersLoading, setReadersLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,6 +208,42 @@ export function CounterPosForm({
       cancelled = true;
     };
   }, [ep]);
+
+  useEffect(() => {
+    if (!terminalEnabled) {
+      setTerminalReaders([]);
+      setSelectedReaderId('');
+      return;
+    }
+
+    let cancelled = false;
+    setReadersLoading(true);
+    ep.listTerminalReaders()
+      .then((readers) => {
+        if (cancelled) return;
+        setTerminalReaders(readers);
+        const saved = readTerminalReaderPreference(tenantId);
+        const preferred =
+          (saved && readers.some((r) => r.id === saved) ? saved : undefined) ||
+          readers.find((r) => r.status === 'online')?.id ||
+          readers[0]?.id ||
+          '';
+        setSelectedReaderId(preferred);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTerminalReaders([]);
+          setSelectedReaderId('');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setReadersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [terminalEnabled, ep, tenantId]);
 
   function waitForWalletQr(session: PaymentSession): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -365,6 +415,7 @@ export function CounterPosForm({
               currency,
               purpose: `Counter POS — ${devotee.name}`,
               devoteeId: devotee.id,
+              readerId: selectedReaderId || undefined,
             },
             (status) => {
               setTerminalPay((prev) => ({
@@ -387,7 +438,9 @@ export function CounterPosForm({
             devoteeId: devotee.id,
             provider,
           },
-          isStripeCounterPayment(paymentMethod) ? gate : undefined,
+          isStripeCounterPayment(paymentMethod) || isPayPalCounterPayment(paymentMethod)
+            ? gate
+            : undefined,
         );
       }
 
@@ -861,11 +914,49 @@ export function CounterPosForm({
                   supported on this device.
                 </p>
               )}
-              {isTerminalCounterPayment(paymentMethod) && (
+              {isPayPalCounterPayment(paymentMethod) && (
                 <p className={styles.hint}>
-                  Click Submit to charge on your Stripe Terminal reader — swipe, insert chip, or tap
-                  contactless (phone wallets work on the reader).
+                  Click Submit to open PayPal or Venmo checkout (US sandbox supports Venmo when
+                  enabled in your PayPal app settings).
                 </p>
+              )}
+              {isTerminalCounterPayment(paymentMethod) && (
+                <>
+                  <div className={`formGroup ${styles.checkoutField}`}>
+                    <label htmlFor="posTerminalReader">Card reader (this counter)</label>
+                    <select
+                      id="posTerminalReader"
+                      value={selectedReaderId}
+                      disabled={readersLoading || terminalReaders.length === 0}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setSelectedReaderId(next);
+                        if (next) writeTerminalReaderPreference(tenantId, next);
+                      }}
+                    >
+                      {readersLoading ? (
+                        <option value="">Loading readers…</option>
+                      ) : terminalReaders.length === 0 ? (
+                        <option value="">Auto — first available reader</option>
+                      ) : (
+                        terminalReaders.map((reader) => (
+                          <option key={reader.id} value={reader.id}>
+                            {reader.label} · {reader.deviceType.replace(/^simulated_/, 'sim ')}
+                            {reader.status !== 'online' ? ` (${reader.status})` : ''}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    <p className={styles.hint}>
+                      Each counter PC remembers its reader. Register devices in Stripe, then Admin →
+                      Load readers. Leave empty to auto-pick in test mode.
+                    </p>
+                  </div>
+                  <p className={styles.hint}>
+                    Click Submit to charge on the selected reader — swipe, insert chip, or tap
+                    contactless.
+                  </p>
+                </>
               )}
               {isWalletQrPayment(paymentMethod) && (
                 <p className={styles.hint}>

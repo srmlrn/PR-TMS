@@ -20,7 +20,9 @@ import {
 } from '@nestjs/swagger';
 import {
   FxRates,
+  PAYMENT_GATEWAY_CATALOG,
   PaymentProvidersResponse,
+  PaymentProvider,
   PaymentSession,
   TenantContext,
   TenantEnvironment,
@@ -40,6 +42,7 @@ import {
 } from './dto/terminal-checkout.dto';
 import { PaymentService } from './payment.service';
 import { razorpayWebhookSecret } from './payment-config';
+import { PayPalProvider } from './paypal.provider';
 import { RazorpayProvider } from './razorpay.provider';
 import { StripeProvider } from './stripe.provider';
 import { StripeTerminalService } from './stripe-terminal.service';
@@ -54,6 +57,7 @@ export class PaymentController {
     private readonly stripeProvider: StripeProvider,
     private readonly stripeTerminalService: StripeTerminalService,
     private readonly razorpayProvider: RazorpayProvider,
+    private readonly paypalProvider: PayPalProvider,
     private readonly paymentSettings: TenantPaymentSettingsService,
     @Optional() private readonly tenantResolver?: TenantResolverService,
   ) {}
@@ -82,6 +86,19 @@ export class PaymentController {
   @ApiResponse({ status: 200, description: 'Provider map by currency' })
   getProviders(): PaymentProvidersResponse {
     return this.paymentService.getProvidersByCurrency();
+  }
+
+  @Get('gateways/catalog')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Payment gateway catalog and implementation status' })
+  getGatewayCatalog(): {
+    catalog: typeof PAYMENT_GATEWAY_CATALOG;
+    implemented: PaymentProvider[];
+  } {
+    return {
+      catalog: PAYMENT_GATEWAY_CATALOG,
+      implemented: ['stripe', 'razorpay', 'paypal', 'qr', 'demo', 'cash'],
+    };
   }
 
   @Post('sessions')
@@ -116,6 +133,18 @@ export class PaymentController {
     @Param('id') id: string,
   ): Promise<PaymentSession> {
     return this.paymentService.getSession(tenantId, id);
+  }
+
+  @Post('paypal/sessions/:id/capture')
+  @Roles(UserRole.ADMIN, UserRole.DEVOTEE, UserRole.FRONT_DESK)
+  @ApiOperation({ summary: 'Capture an approved PayPal order for a checkout session' })
+  @ApiParam({ name: 'id', description: 'Payment session UUID' })
+  capturePayPalOrder(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body?: { orderId?: string },
+  ): Promise<PaymentSession> {
+    return this.paymentService.capturePayPalOrder(tenantId, id, body?.orderId);
   }
 
   @Get('terminal/config')
@@ -315,6 +344,92 @@ export class PaymentController {
     }
 
     return { received: true };
+  }
+
+  @Public()
+  @Post('webhooks/paypal')
+  @ApiOperation({ summary: 'PayPal webhook (PAYMENT.CAPTURE.COMPLETED)' })
+  @ApiResponse({ status: 200, description: 'Webhook acknowledged' })
+  async handlePayPalWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('paypal-transmission-id') transmissionId?: string,
+    @Headers('paypal-transmission-sig') transmissionSig?: string,
+    @Headers('paypal-transmission-time') transmissionTime?: string,
+    @Headers('paypal-cert-url') certUrl?: string,
+    @Headers('paypal-auth-algo') authAlgo?: string,
+    @Body()
+    body?: {
+      event_type?: string;
+      resource?: {
+        id?: string;
+        custom_id?: string;
+        supplementary_data?: {
+          related_ids?: { order_id?: string };
+        };
+      };
+    },
+  ): Promise<{ received: boolean; sessionId?: string }> {
+    const customId = body?.resource?.custom_id;
+    const parsed = this.parsePayPalCustomId(customId);
+    const tenantId = parsed?.tenantId;
+    const sessionId = parsed?.sessionId;
+
+    if (tenantId) {
+      const config = await this.paymentSettings.resolvePayPalConfigForTenant(tenantId);
+      if (config.webhookId) {
+        if (!transmissionId || !transmissionSig) {
+          throw new UnauthorizedException('Missing PayPal webhook signature headers');
+        }
+        await this.paypalProvider.verifyWebhookSignature({
+          tenantId,
+          headers: {
+            'paypal-transmission-id': transmissionId,
+            'paypal-transmission-sig': transmissionSig,
+            'paypal-transmission-time': transmissionTime,
+            'paypal-cert-url': certUrl,
+            'paypal-auth-algo': authAlgo,
+          },
+          body: req.body ?? body,
+        });
+      }
+    }
+
+    if (
+      body?.event_type === 'PAYMENT.CAPTURE.COMPLETED' ||
+      body?.event_type === 'CHECKOUT.ORDER.COMPLETED'
+    ) {
+      const orderId =
+        body.resource?.supplementary_data?.related_ids?.order_id ?? body.resource?.id;
+      if (tenantId && orderId) {
+        const session = await this.runInTenantContext(tenantId, () =>
+          this.paymentService.markSessionPaidByProviderRef(tenantId, orderId),
+        );
+        if (session) {
+          return { received: true, sessionId: session.id };
+        }
+      }
+      if (tenantId && sessionId) {
+        const byId = await this.runInTenantContext(tenantId, () =>
+          this.paymentService.markSessionPaidBySessionId(tenantId, sessionId),
+        );
+        return { received: true, sessionId: byId?.id };
+      }
+    }
+
+    return { received: true };
+  }
+
+  private parsePayPalCustomId(
+    customId?: string,
+  ): { tenantId: string; sessionId: string } | undefined {
+    if (!customId?.includes('|')) {
+      return undefined;
+    }
+    const [tenantId, sessionId] = customId.split('|', 2);
+    if (!tenantId || !sessionId) {
+      return undefined;
+    }
+    return { tenantId, sessionId };
   }
 
   private async markStripePaid(intent: {

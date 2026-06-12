@@ -4,6 +4,7 @@ import type { Endpoints } from './api/endpoints';
 export const PAYMENT_PROVIDER_LABELS: Record<PaymentProvider, string> = {
   stripe: 'Card · Apple Pay · Google Pay',
   razorpay: 'Razorpay (INR · UPI in checkout)',
+  paypal: 'PayPal · Venmo',
   qr: 'QR / UPI scan',
   demo: 'Demo / test',
   cash: 'Cash (counter)',
@@ -11,9 +12,9 @@ export const PAYMENT_PROVIDER_LABELS: Record<PaymentProvider, string> = {
 
 export function availablePaymentProviders(channel?: string): PaymentProvider[] {
   if (channel === 'counter') {
-    return ['cash', 'stripe', 'razorpay', 'demo'];
+    return ['cash', 'stripe', 'paypal', 'razorpay', 'demo'];
   }
-  return ['stripe', 'razorpay', 'demo'];
+  return ['stripe', 'paypal', 'razorpay', 'demo'];
 }
 
 export function defaultPaymentProvider(
@@ -30,7 +31,9 @@ export function requiresLiveClientPayment(session: PaymentSession): boolean {
   }
   return (
     session.paymentMode === 'live' &&
-    (session.provider === 'stripe' || session.provider === 'razorpay')
+    (session.provider === 'stripe' ||
+      session.provider === 'razorpay' ||
+      session.provider === 'paypal')
   );
 }
 
