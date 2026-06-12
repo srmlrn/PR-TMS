@@ -461,36 +461,62 @@ export default function VolunteerShiftsPage() {
     const filled = confirmedCount(shift);
     const pct = capacityPercent(shift);
     const waitlistCount = shift.signups.filter((s) => signupStatus(s) === 'waitlisted').length;
+    const past = isShiftPast(shift);
+    const signedUp = isSignedUp(shift, user?.id);
 
     return (
-      <article key={shift.id} className={styles.shiftCard}>
-        <div className={styles.shiftCardMain}>
-          <strong className={styles.shiftCardTitle}>{shift.title}</strong>
-          <p className={styles.shiftCardTime}>
-            {formatShortDate(shift.date)} · {shiftHours(shift)}
-            {shift.eventName ? ` · ${shift.eventName}` : ''}
-          </p>
-          <div className={styles.shiftMeta}>
-            {shift.role && <Badge variant="info">{ROLE_LABELS[shift.role]}</Badge>}
-            {shift.category && <Badge variant="pending">{CATEGORY_LABELS[shift.category]}</Badge>}
-            {shift.location && <Badge variant="pending">{shift.location}</Badge>}
-            {shift.isRecurringTemplate && <Badge variant="info">Weekly seva</Badge>}
-            {shift.coordinator && (
-              <span className="tms-t3">Coord: {shift.coordinator}</span>
+      <article
+        key={shift.id}
+        className={[
+          styles.shiftCard,
+          past ? styles.shiftCardPast : '',
+          signedUp ? styles.shiftCardMine : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        data-category={shift.category ?? 'general'}
+      >
+        <div className={styles.shiftCardAccent} aria-hidden />
+        <div className={styles.shiftCardBody}>
+          <div className={styles.shiftCardMain}>
+            <div className={styles.shiftCardHeader}>
+              <strong className={styles.shiftCardTitle}>{shift.title}</strong>
+              <time className={styles.shiftDateChip} dateTime={shift.date}>
+                {formatShortDate(shift.date)}
+              </time>
+            </div>
+            <p className={styles.shiftCardTime}>
+              {shiftHours(shift)}
+              {shift.eventName ? ` · ${shift.eventName}` : ''}
+            </p>
+            <div className={styles.shiftMeta}>
+              {shift.role && (
+                <span className={styles.tagRole}>{ROLE_LABELS[shift.role]}</span>
+              )}
+              {shift.category && (
+                <span className={styles.tagCategory}>{CATEGORY_LABELS[shift.category]}</span>
+              )}
+              {shift.location && <span className={styles.tagLocation}>{shift.location}</span>}
+              {shift.isRecurringTemplate && (
+                <span className={styles.tagRecurring}>Weekly seva</span>
+              )}
+              {shift.coordinator && (
+                <span className={styles.shiftCoord}>Coord · {shift.coordinator}</span>
+              )}
+            </div>
+            {shift.description && (
+              <p className={styles.shiftDesc}>{shift.description}</p>
             )}
+            <div className={styles.capacity}>
+              <span className={styles.capacityLabel}>
+                {filled}/{shift.slots} filled
+                {waitlistCount > 0 ? ` · ${waitlistCount} waitlisted` : ''}
+              </span>
+              <ProgressBar value={pct} color={pct >= 100 ? 'amber' : 'blue'} />
+            </div>
           </div>
-          {shift.description && (
-            <p className={styles.shiftDesc}>{shift.description}</p>
-          )}
-          <div className={styles.capacity}>
-            <span className={styles.capacityLabel}>
-              {filled}/{shift.slots} filled
-              {waitlistCount > 0 ? ` · ${waitlistCount} waitlisted` : ''}
-            </span>
-            <ProgressBar value={pct} color={pct >= 100 ? 'amber' : 'blue'} />
-          </div>
+          <div className={styles.shiftCardActions}>{renderShiftActions(shift)}</div>
         </div>
-        {renderShiftActions(shift)}
       </article>
     );
   }
@@ -499,24 +525,25 @@ export default function VolunteerShiftsPage() {
     const pct =
       opp.slotsTotal > 0 ? Math.round((opp.slotsFilled / opp.slotsTotal) * 100) : 0;
     return (
-      <div key={opp.eventId} className={styles.eventRow}>
+      <div key={opp.eventId} className={styles.eventRow} data-category={opp.category}>
         <div className={styles.oppHeader}>
-          <strong>{opp.eventName}</strong>
-          <Badge variant="info">{CATEGORY_LABELS[opp.category]}</Badge>
+          <strong className={styles.oppTitle}>{opp.eventName}</strong>
+          <span className={styles.tagCategory}>{CATEGORY_LABELS[opp.category]}</span>
         </div>
-        <p className="tms-t3">
+        <p className={styles.oppMeta}>
           {formatShortDate(opp.startDate)}
           {opp.startDate !== opp.endDate ? ` – ${formatShortDate(opp.endDate)}` : ''}
-          {' · '}
-          {opp.slotsRemaining} slots open across {opp.shiftsOpen} shifts
+        </p>
+        <p className={styles.oppSlots}>
+          {opp.slotsRemaining} slots open · {opp.shiftsOpen} shifts
         </p>
         <ProgressBar value={pct} color="amber" />
         {opp.roles.length > 0 && (
           <div className={styles.roleChips}>
             {opp.roles.map((r) => (
-              <Badge key={r.role} variant="pending">
+              <span key={r.role} className={styles.tagRole}>
                 {ROLE_LABELS[r.role]} ×{r.slotsNeeded}
-              </Badge>
+              </span>
             ))}
           </div>
         )}
@@ -546,64 +573,110 @@ export default function VolunteerShiftsPage() {
       <ApiBanner loading={loading} error={error} />
 
       <div className={styles.page}>
-        <div className={styles.statsStrip}>
-          <span className={styles.statItem}>
-            ⏱️ <strong>{stats ? stats.hoursThisQuarter : '—'}</strong> hrs this quarter
-          </span>
-          <span className={styles.statDivider}>·</span>
-          <span className={styles.statItem}>
-            📅 <strong>{stats ? stats.upcomingShifts : '—'}</strong> upcoming
-          </span>
-          <span className={styles.statDivider}>·</span>
-          <span className={styles.statItem}>
-            🌟 <strong>{badgeLabel}</strong>
-            {stats ? ` · ${stats.completedShifts} done` : ''}
-          </span>
-          <span className={styles.statDivider}>·</span>
-          <span className={styles.statItem}>
-            ⏳ <strong>{stats ? stats.waitlistedShifts : '—'}</strong> waitlisted
-          </span>
-        </div>
+        <header className={styles.hero}>
+          <div className={styles.heroIntro}>
+            <p className={styles.heroEyebrow}>Your seva journey</p>
+            <p className={styles.heroLead}>
+              Browse open shifts, manage sign-ups, and grow your recognition tier.
+            </p>
+          </div>
+          <div className={styles.statsGrid}>
+            <div className={styles.statCard}>
+              <span className={styles.statIcon} aria-hidden>
+                ⏱
+              </span>
+              <div className={styles.statContent}>
+                <strong>{stats ? stats.hoursThisQuarter : '—'}</strong>
+                <span>Hours this quarter</span>
+              </div>
+            </div>
+            <div className={styles.statCard}>
+              <span className={styles.statIcon} aria-hidden>
+                📅
+              </span>
+              <div className={styles.statContent}>
+                <strong>{stats ? stats.upcomingShifts : '—'}</strong>
+                <span>Upcoming shifts</span>
+              </div>
+            </div>
+            <div className={styles.statCard} data-tier={stats?.badgeTier ?? 'bronze'}>
+              <span className={styles.statIcon} aria-hidden>
+                🌟
+              </span>
+              <div className={styles.statContent}>
+                <strong>{badgeLabel}</strong>
+                <span>
+                  {stats ? `${stats.completedShifts} shifts completed` : 'Recognition tier'}
+                </span>
+              </div>
+            </div>
+            <div className={styles.statCard}>
+              <span className={styles.statIcon} aria-hidden>
+                ⏳
+              </span>
+              <div className={styles.statContent}>
+                <strong>{stats ? stats.waitlistedShifts : '—'}</strong>
+                <span>On waitlist</span>
+              </div>
+            </div>
+          </div>
+        </header>
 
-        <div className={styles.toolbar}>
-          <div className={styles.toolbarGroup}>
+        <nav className={styles.toolbar} aria-label="Shift filters">
+          <div className={styles.toolbarRow}>
             <span className={styles.toolbarLabel}>Seva type</span>
-            {(
-              ['all', 'festival', 'pooja', 'annadanam', 'setup', 'cultural', 'general'] as const
-            ).map((cat) => (
-              <Button
-                key={cat}
-                size="sm"
-                variant={categoryFilter === cat ? 'primary' : 'outline'}
-                onClick={() => setCategoryFilter(cat)}
-              >
-                {cat === 'all' ? 'All' : CATEGORY_LABELS[cat]}
-              </Button>
-            ))}
+            <div className={styles.toolbarFilters}>
+              {(
+                ['all', 'festival', 'pooja', 'annadanam', 'setup', 'cultural', 'general'] as const
+              ).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={[
+                    styles.filterChip,
+                    categoryFilter === cat ? styles.filterChipActive : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => setCategoryFilter(cat)}
+                  aria-pressed={categoryFilter === cat}
+                >
+                  {cat === 'all' ? 'All' : CATEGORY_LABELS[cat]}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className={styles.toolbarDivider} aria-hidden />
-          <div className={styles.toolbarGroup}>
+          <div className={styles.toolbarRowDivider} aria-hidden />
+          <div className={styles.toolbarRow}>
             <span className={styles.toolbarLabel}>Show</span>
-            {(
-              [
-                ['all', 'All'],
-                ['open', 'Open'],
-                ['my', 'My shifts'],
-                ['waitlist', 'Waitlist'],
-                ['past', 'Past'],
-              ] as const
-            ).map(([key, label]) => (
-              <Button
-                key={key}
-                size="sm"
-                variant={filter === key ? 'primary' : 'outline'}
-                onClick={() => setFilter(key)}
-              >
-                {label}
-              </Button>
-            ))}
+            <div className={styles.toolbarFilters}>
+              {(
+                [
+                  ['all', 'All'],
+                  ['open', 'Open'],
+                  ['my', 'My shifts'],
+                  ['waitlist', 'Waitlist'],
+                  ['past', 'Past'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={[
+                    styles.filterChip,
+                    filter === key ? styles.filterChipActive : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => setFilter(key)}
+                  aria-pressed={filter === key}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </nav>
 
         <div className={styles.workspace}>
           <section className={styles.shiftsColumn}>
@@ -648,32 +721,43 @@ export default function VolunteerShiftsPage() {
           </section>
 
           <aside className={styles.sidebar}>
-            <GlassCard title="Recognition" className={styles.sidebarCompact}>
+            <GlassCard title="Recognition" className={styles.sidebarCard}>
               {stats ? (
-                <>
-                  <p className={styles.recognitionHours}>
-                    🌟 {stats.hoursThisQuarter} hours this quarter
-                  </p>
-                  <p className={styles.recognitionDetail}>
-                    {badgeLabel} badge · {recognitionDetail}
-                  </p>
+                <div className={styles.recognitionBlock}>
+                  <div className={styles.recognitionHeader}>
+                    <span
+                      className={styles.tierBadge}
+                      data-tier={stats.badgeTier}
+                    >
+                      {badgeLabel}
+                    </span>
+                    <p className={styles.recognitionHours}>
+                      {stats.hoursThisQuarter}
+                      <span> hrs this quarter</span>
+                    </p>
+                  </div>
+                  <p className={styles.recognitionDetail}>{recognitionDetail}</p>
                   <ProgressBar
                     value={stats.progressToNextBadge}
                     color={stats.badgeTier === 'platinum' ? 'green' : 'silver'}
                   />
-                  <p className={styles.recognitionYtd}>{stats.hoursYtd} hours year-to-date</p>
-                  {stats.completedShifts > 0 && (
-                    <Link href="/volunteer/certificates" className="tms-t3 mt1">
-                      📜 Download seva certificates →
-                    </Link>
-                  )}
-                </>
+                  <div className={styles.recognitionFooter}>
+                    <span className={styles.recognitionYtd}>
+                      {stats.hoursYtd} hrs year-to-date
+                    </span>
+                    {stats.completedShifts > 0 && (
+                      <Link href="/volunteer/certificates" className={styles.certLink}>
+                        Certificates →
+                      </Link>
+                    )}
+                  </div>
+                </div>
               ) : (
                 <p className={styles.emptyState}>Loading recognition stats…</p>
               )}
             </GlassCard>
 
-            <GlassCard title="Upcoming events" className={styles.sidebarCompact}>
+            <GlassCard title="Upcoming events" className={styles.sidebarCard}>
               {opportunities.length === 0 ? (
                 <p className={styles.emptyState}>
                   No confirmed events with volunteer needs right now.
@@ -685,7 +769,7 @@ export default function VolunteerShiftsPage() {
 
             <GlassCard
               title="Notifications"
-              className={styles.sidebarCompact}
+              className={styles.sidebarCard}
               headerRight={
                 unreadCount > 0 ? (
                   <Badge variant="info">{unreadCount} new</Badge>

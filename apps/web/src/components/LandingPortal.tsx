@@ -47,23 +47,33 @@ export function LandingPortal() {
   useEffect(() => {
     const images: string[] = [];
     if (landing?.heroImage) images.push(landing.heroImage);
-    if (landing?.deityImage) images.push(landing.deityImage);
     if (images.length === 0) {
       setBgReady(true);
       return;
     }
+    let cancelled = false;
     let loaded = 0;
     const onDone = () => {
       loaded += 1;
-      if (loaded >= images.length) setBgReady(true);
+      if (!cancelled && loaded >= images.length) setBgReady(true);
     };
     for (const src of images) {
       const img = new window.Image();
-      img.onload = onDone;
-      img.onerror = onDone;
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        onDone();
+      };
+      img.onload = finish;
+      img.onerror = finish;
       img.src = src;
+      if (img.complete) finish();
     }
-  }, [landing?.heroImage, landing?.deityImage]);
+    return () => {
+      cancelled = true;
+    };
+  }, [landing?.heroImage]);
 
   const pickTenant = useCallback((next: TenantBranding) => {
     setTenantId(next.id);
@@ -92,75 +102,95 @@ export function LandingPortal() {
         style={{ background: landing?.overlay ?? DEFAULT_OVERLAY }}
         aria-hidden
       />
+      <div className={styles.overlayLight} aria-hidden />
       <div className={styles.veil} aria-hidden />
 
-      <Link href={`/login?tenant=${tenantId}`} className={styles.signInLink}>
-        Sign in
-      </Link>
-      <PublicThemeBar />
+      <header className={styles.pageHeader}>
+        <Link href={`/login?tenant=${tenantId}`} className={styles.signInLink}>
+          Sign in
+        </Link>
+        <TenantPicker tenantId={tenantId} onSelect={pickTenant} />
+        <PublicThemeBar />
+      </header>
 
       <main className={styles.shell}>
-        <TenantPicker tenantId={tenantId} onSelect={pickTenant} />
+        <section className={styles.heroCard}>
+          <div className={styles.mainStage}>
+            <div className={styles.welcomePanel}>
+              <p className={styles.heroEyebrow}>{landing?.welcome ?? tenant.subtitle}</p>
 
-        <div className={styles.mainStage}>
-          <section className={styles.welcomePanel}>
-            <p className={styles.heroEyebrow}>{landing?.welcome ?? tenant.subtitle}</p>
+              {tenant.logoSrc ? (
+                <div
+                  className={styles.logoFrame}
+                  style={tenant.logoBg ? { ['--tenant-logo-bg' as string]: tenant.logoBg } : undefined}
+                >
+                  <Image
+                    src={tenant.logoSrc}
+                    alt={`${tenant.name} logo`}
+                    width={320}
+                    height={64}
+                    className={styles.medallionLogo}
+                    priority
+                  />
+                </div>
+              ) : (
+                <div className={styles.brandRow}>
+                  <div className={styles.medallion} aria-hidden>
+                    {tenant.icon}
+                  </div>
+                  <div className={styles.brandCopy}>
+                    <h1 className={styles.templeName}>
+                      <span className={styles.templeNameShine}>{tenant.name}</span>
+                    </h1>
+                    <p className={styles.deityLine}>{tenant.deity}</p>
+                  </div>
+                </div>
+              )}
 
-            <div className={styles.deityBadge}>
-              <span className={styles.deityIcon} aria-hidden>
-                {tenant.icon}
-              </span>
-              <span>{tenant.deity}</span>
+              {tenant.logoSrc ? (
+                <>
+                  <p className={styles.deityLine}>{tenant.deity}</p>
+                </>
+              ) : null}
+
+              <div className={styles.metaRow}>
+                <span className={styles.metaPill}>{tenant.subtitle}</span>
+                <span className={styles.metaDot} aria-hidden>
+                  ·
+                </span>
+                <span className={styles.metaLocation}>{tenant.location}</span>
+              </div>
             </div>
 
-            {tenant.logoSrc ? (
-              <div
-                className={styles.logoFrame}
-                style={tenant.logoBg ? { ['--tenant-logo-bg' as string]: tenant.logoBg } : undefined}
-              >
-                <Image
-                  src={tenant.logoSrc}
-                  alt={`${tenant.name} logo`}
-                  width={320}
-                  height={64}
-                  className={styles.medallionLogo}
-                  priority
+            {landing?.deityImage ? (
+              <figure className={styles.showcase}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={landing.deityImage}
+                  alt={`${tenant.deity} at ${tenant.name}`}
+                  className={styles.deityArt}
+                  loading="eager"
+                  decoding="async"
                 />
-              </div>
-            ) : (
-              <>
-                <div className={styles.medallion} aria-hidden>
-                  {tenant.icon}
-                </div>
-                <h1 className={styles.templeName}>
-                  <span className={styles.templeNameShine}>{tenant.name}</span>
-                </h1>
-              </>
-            )}
+              </figure>
+            ) : null}
+          </div>
+        </section>
 
-            <p className={styles.tagline}>{tenant.subtitle}</p>
-            <p className={styles.location}>{tenant.location}</p>
-          </section>
-
-          {landing?.deityImage ? (
-            <section
-              className={[styles.showcase, bgReady ? styles.showcaseReady : ''].filter(Boolean).join(' ')}
-              aria-hidden
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={landing.deityImage}
-                alt=""
-                className={styles.deityArt}
-                width={480}
-                height={640}
-              />
-            </section>
-          ) : null}
-        </div>
-
-        <section className={styles.workspaceDock}>
-          <p className={styles.prompt}>Choose a workspace</p>
+        <section className={styles.workspaceDock} aria-labelledby="workspace-heading">
+          <div className={styles.workspaceHead}>
+            <div>
+              <h2 id="workspace-heading" className={styles.prompt}>
+                Choose a workspace
+              </h2>
+              <p className={styles.workspaceSub}>
+                Select your role to sign in to {tenant.name}
+              </p>
+            </div>
+            <p className={styles.hintInline}>
+              Demo password <code>demo123</code>
+            </p>
+          </div>
 
           <div className={styles.grid}>
             {roles.map((role) => (
@@ -176,10 +206,6 @@ export function LandingPortal() {
               </Link>
             ))}
           </div>
-
-          <p className={styles.hint}>
-            Tap a role · password <code>demo123</code>
-          </p>
         </section>
       </main>
     </div>
