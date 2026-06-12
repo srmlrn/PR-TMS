@@ -8,6 +8,7 @@ import { PlatformModule } from '../platform/platform.module';
 import { SettingsModule } from '../settings/settings.module';
 import { FrontDeskController } from './frontdesk.controller';
 import { FrontDeskService } from './frontdesk.service';
+import { CheckoutReceiptService } from './checkout-receipt.service';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { FrontDeskService } from './frontdesk.service';
     SettingsModule,
   ],
   controllers: [FrontDeskController],
-  providers: [FrontDeskService],
-  exports: [FrontDeskService],
+  providers: [FrontDeskService, CheckoutReceiptService],
+  exports: [FrontDeskService, CheckoutReceiptService],
 })
 export class FrontDeskModule {}

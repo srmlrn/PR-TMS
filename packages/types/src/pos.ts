@@ -107,6 +107,7 @@ export interface PosCheckoutInput {
 
 export interface PosCheckoutResult {
   receiptNumber: string;
+  checkoutReceiptId: string;
   bookings: Booking[];
   donations: Donation[];
   grandTotal: number;

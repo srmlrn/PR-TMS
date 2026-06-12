@@ -1,3 +1,4 @@
+export { CheckoutReceiptEntity } from './checkout-receipt.entity';
 export { DevoteeEntity } from './devotee.entity';
 export { SevaServiceEntity } from './seva-service.entity';
 export { BookingEntity } from './booking.entity';
@@ -29,6 +30,7 @@ export { CommitteeMessageEntity } from './committee-message.entity';
 export { CommitteeReportEntity } from './committee-report.entity';
 export { CommitteeLeadershipEntity } from './committee-leadership.entity';
 
+import { CheckoutReceiptEntity } from './checkout-receipt.entity';
 import { DevoteeEntity } from './devotee.entity';
 import { SevaServiceEntity } from './seva-service.entity';
 import { BookingEntity } from './booking.entity';
@@ -82,6 +84,7 @@ export const TENANT_ENTITIES = [
   VolunteerShiftEntity,
   PaymentSessionEntity,
   PosProductEntity,
+  CheckoutReceiptEntity,
   CommitteeEntity,
   CommitteeMemberEntity,
   CommitteeCalendarBlockEntity,

@@ -253,6 +253,87 @@
   color: var(--txt3);
 }
 
+.invoiceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.invoiceCard {
+  border: 1px solid var(--b2);
+  border-radius: var(--r);
+  background: var(--ink3);
+  padding: 0.65rem 0.75rem;
+}
+
+.invoiceHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.invoiceMeta {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--txt2);
+}
+
+.invoiceNumber {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.invoiceTotals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+}
+
+.invoiceActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.expandBtn {
+  border: 0;
+  background: transparent;
+  color: var(--gr);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.invoiceLines {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0.55rem 0 0;
+  border-top: 1px solid var(--b2);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.invoiceLines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.72rem;
+}
+
+.shareToast {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  color: var(--gr);
+}
+
 @media (max-width: 768px) {
   .dl {
     grid-template-columns: 1fr;

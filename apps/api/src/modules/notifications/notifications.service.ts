@@ -43,6 +43,14 @@ const TEMPLATES: NotificationTemplate[] = [
     body: 'Dear {{name}},\n\nWe received your donation of {{amount}}. Receipt: {{receipt}}',
   },
   {
+    id: 'pos-invoice',
+    channel: 'email',
+    name: 'Counter POS invoice',
+    subject: 'Your temple invoice — {{receipt}}',
+    body:
+      'Dear {{name}},\n\nThank you for your visit. Invoice {{receipt}} dated {{date}} totals {{amount}} across {{lines}} line(s).\n\nYou can view and print your invoice from the temple portal.\n\nWith blessings.',
+  },
+  {
     id: 'queue-token',
     channel: 'sms',
     name: 'Queue token',

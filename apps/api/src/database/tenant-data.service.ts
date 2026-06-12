@@ -24,6 +24,7 @@ import {
   StaffLeaveEntity,
   VolunteerShiftEntity,
   PaymentSessionEntity,
+  CheckoutReceiptEntity,
   PosProductEntity,
   CommitteeEntity,
   CommitteeMemberEntity,
@@ -179,6 +180,12 @@ export class TenantDataService {
     await this.ensureSeeded();
     const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
     return ds.getRepository(PaymentSessionEntity);
+  }
+
+  async checkoutReceipts() {
+    await this.ensureSeeded();
+    const ds = await this.requireConnections().getDataSource(TenantContextStorage.get());
+    return ds.getRepository(CheckoutReceiptEntity);
   }
 
   async posProducts() {

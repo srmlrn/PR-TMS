@@ -23,6 +23,9 @@ export class DonationEntity {
   @Column({ name: 'receipt_number', length: 64 })
   receiptNumber!: string;
 
+  @Column({ name: 'checkout_receipt_id', type: 'uuid', nullable: true })
+  checkoutReceiptId?: string;
+
   @Column({ name: 'tax_compliant', default: true })
   taxCompliant!: boolean;
 

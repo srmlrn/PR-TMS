@@ -7,7 +7,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { QueueType, UserRole } from '@tms/types';
+import { CheckoutReceipt, QueueType, ShareCheckoutReceiptResult, UserRole } from '@tms/types';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CheckInBookingDto } from './dto/check-in.dto';
@@ -20,13 +20,17 @@ import {
   QueueTokenResponseDto,
 } from './dto/frontdesk-response.dto';
 import { FrontDeskService } from './frontdesk.service';
+import { CheckoutReceiptService } from './checkout-receipt.service';
 
 @ApiTags('Front Desk')
 @ApiBearerAuth()
 @Roles(UserRole.ADMIN, UserRole.FRONT_DESK)
 @Controller('frontdesk')
 export class FrontDeskController {
-  constructor(private readonly frontDeskService: FrontDeskService) {}
+  constructor(
+    private readonly frontDeskService: FrontDeskService,
+    private readonly checkoutReceiptService: CheckoutReceiptService,
+  ) {}
 
   @Get('lookup')
   @ApiOperation({ summary: 'Look up devotee by phone or name' })
@@ -127,5 +131,24 @@ export class FrontDeskController {
   @ApiOperation({ summary: 'Unified counter POS checkout — mixed bookings, donations, and sales' })
   async posCheckout(@TenantId() tenantId: string, @Body() dto: PosCheckoutDto) {
     return this.frontDeskService.posCheckout(tenantId, dto);
+  }
+
+  @Get('checkout-receipts/:id')
+  @ApiOperation({ summary: 'Itemized checkout invoice with all line items' })
+  async getCheckoutReceipt(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<CheckoutReceipt> {
+    return this.checkoutReceiptService.findOne(tenantId, id);
+  }
+
+  @Post('checkout-receipts/:id/share')
+  @ApiOperation({ summary: 'Email invoice to devotee (or specified address)' })
+  async shareCheckoutReceipt(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { email?: string },
+  ): Promise<ShareCheckoutReceiptResult> {
+    return this.checkoutReceiptService.shareByEmail(tenantId, id, body.email);
   }
 }

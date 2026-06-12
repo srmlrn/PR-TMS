@@ -16,6 +16,7 @@ export * from './frontdesk';
 export * from './pos';
 export * from './payment';
 export * from './payment-qr';
+export * from './invoice';
 export * from './notification';
 export * from './analytics';
 export * from './staff';

@@ -28,6 +28,7 @@ import { PlatformService } from '../platform/platform.service';
 import { SevaCatalogService } from '../booking/seva-catalog.service';
 import { PosCatalogService } from '../settings/pos-catalog.service';
 import { TenantSiteSettingsService } from '../settings/tenant-site-settings.service';
+import { CheckoutReceiptService } from './checkout-receipt.service';
 
 type QueueTokenRecord = QueueToken & TenantEntity;
 
@@ -73,6 +74,7 @@ export class FrontDeskService
     private readonly sevaCatalogService: SevaCatalogService,
     private readonly posCatalogService: PosCatalogService,
     private readonly siteSettings: TenantSiteSettingsService,
+    private readonly checkoutReceiptService: CheckoutReceiptService,
   ) {
     super();
   }
@@ -351,6 +353,37 @@ export class FrontDeskService
     const hydrated = full;
     const addr = hydrated.address;
 
+    const allProfileBookings = [...upcomingBookings, ...bookingHistory];
+    const recentDonations = donations.map(
+      (d: {
+        id: string;
+        amount: number;
+        currency: string;
+        purpose: string;
+        createdAt: Date;
+        receiptNumber?: string;
+        paymentStatus?: string;
+      }) => ({
+        id: d.id,
+        amount: d.amount,
+        currency: d.currency,
+        purpose: d.purpose,
+        createdAt: d.createdAt.toISOString(),
+        receiptNumber: d.receiptNumber,
+        paymentStatus: d.paymentStatus,
+      }),
+    );
+
+    const catalogServices = await this.sevaCatalogService.findAll(tenantId);
+    const serviceNames = new Map(catalogServices.map((s) => [s.id, s.name]));
+    const invoices = await this.checkoutReceiptService.buildProfileInvoices(
+      tenantId,
+      devoteeId,
+      allProfileBookings,
+      recentDonations,
+      serviceNames,
+    );
+
     return {
       id: hydrated.id,
       firstName: hydrated.firstName,
@@ -394,25 +427,8 @@ export class FrontDeskService
       todayBookings,
       upcomingBookings,
       bookingHistory,
-      recentDonations: donations.map(
-        (d: {
-          id: string;
-          amount: number;
-          currency: string;
-          purpose: string;
-          createdAt: Date;
-          receiptNumber?: string;
-          paymentStatus?: string;
-        }) => ({
-          id: d.id,
-          amount: d.amount,
-          currency: d.currency,
-          purpose: d.purpose,
-          createdAt: d.createdAt.toISOString(),
-          receiptNumber: d.receiptNumber,
-          paymentStatus: d.paymentStatus,
-        }),
-      ),
+      recentDonations,
+      invoices,
     };
   }
 
@@ -799,6 +815,16 @@ export class FrontDeskService
     }
     const posNotes = notesParts.length > 0 ? notesParts.join(' · ') : undefined;
 
+    const checkoutReceipt = await this.checkoutReceiptService.createForCheckout(tenantId, {
+      devoteeId: input.devoteeId,
+      paymentSessionId: input.paymentSessionId,
+      grandTotal,
+      currency: input.currency,
+      channel: 'counter',
+      paymentMethod: input.paymentMethod,
+      notes: posNotes,
+    });
+
     const createdBookings = [];
     for (const line of services) {
       const service = await this.sevaCatalogService.findOne(tenantId, line.serviceId);
@@ -818,6 +844,8 @@ export class FrontDeskService
         quantity: line.quantity,
         location: line.location,
         lineAmount,
+        receiptNumber: checkoutReceipt.receiptNumber,
+        checkoutReceiptId: checkoutReceipt.id,
         sankalpa: {
           sponsorName,
           deity: line.deity?.trim() || service.deity,
@@ -843,6 +871,8 @@ export class FrontDeskService
         currency: input.currency,
         purpose: posNotes ? `${purpose} (${posNotes})` : purpose,
         paymentSessionId: input.paymentSessionId,
+        receiptNumber: checkoutReceipt.receiptNumber,
+        checkoutReceiptId: checkoutReceipt.id,
       });
       createdDonations.push(donation);
     }
@@ -857,17 +887,15 @@ export class FrontDeskService
         currency: input.currency,
         purpose: posNotes ? `${purpose} (${posNotes})` : purpose,
         paymentSessionId: input.paymentSessionId,
+        receiptNumber: checkoutReceipt.receiptNumber,
+        checkoutReceiptId: checkoutReceipt.id,
       });
       createdDonations.push(donation);
     }
 
-    const receiptNumber =
-      createdBookings[0]?.receiptNumber ??
-      createdDonations[0]?.receiptNumber ??
-      `POS-${Date.now()}`;
-
     return {
-      receiptNumber,
+      receiptNumber: checkoutReceipt.receiptNumber,
+      checkoutReceiptId: checkoutReceipt.id,
       bookings: createdBookings,
       donations: createdDonations,
       grandTotal,

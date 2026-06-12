@@ -1,5 +1,6 @@
 import type {
   Booking,
+  CheckoutReceipt,
   CreateBookingInput,
   CreateDonationInput,
   DashboardAnalytics,
@@ -39,6 +40,7 @@ import type {
   Sponsor,
   SponsorPipelineStage,
   SponsorTier,
+  ShareCheckoutReceiptResult,
   TaxComplianceStatus,
   TaxReceipt,
   DevoteeTaxStatement,
@@ -472,6 +474,14 @@ export function createEndpoints(client: ApiClient) {
 
     posCheckout: (body: PosCheckoutInput) =>
       client.post<PosCheckoutResult>('/frontdesk/pos-checkout', body),
+
+    getCheckoutReceipt: (id: string) =>
+      client.get<CheckoutReceipt>(`/frontdesk/checkout-receipts/${id}`),
+
+    shareCheckoutReceipt: (id: string, email?: string) =>
+      client.post<ShareCheckoutReceiptResult>(`/frontdesk/checkout-receipts/${id}/share`, {
+        email,
+      }),
 
     listTenants: () => client.get<Tenant[]>('/platform/tenants'),
 

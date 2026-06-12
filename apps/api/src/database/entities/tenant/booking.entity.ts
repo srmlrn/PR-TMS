@@ -32,6 +32,9 @@ export class BookingEntity {
   @Column({ name: 'receipt_number', length: 64, nullable: true })
   receiptNumber?: string;
 
+  @Column({ name: 'checkout_receipt_id', type: 'uuid', nullable: true })
+  checkoutReceiptId?: string;
+
   @Column({ length: 16, default: 'app' })
   channel!: string;
 

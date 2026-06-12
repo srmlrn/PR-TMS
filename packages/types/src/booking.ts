@@ -76,6 +76,7 @@ export interface Booking extends TenantScoped, Timestamps {
   currency: Currency;
   sankalpa?: Sankalpa;
   receiptNumber?: string;
+  checkoutReceiptId?: string;
   channel: 'app' | 'counter' | 'online' | 'kiosk';
   paymentStatus?: PaymentStatus;
   honorariumAmount?: number;

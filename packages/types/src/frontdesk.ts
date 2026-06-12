@@ -1,3 +1,4 @@
+import type { DevoteeProfileInvoice } from './invoice';
 import { TenantScoped, Timestamps } from './common';
 import type {
   DevoteeAddressEntry,
@@ -114,6 +115,8 @@ export interface DevoteeProfile {
   upcomingBookings: DevoteeProfileBooking[];
   bookingHistory: DevoteeProfileBooking[];
   recentDonations: DevoteeProfileDonation[];
+  /** Grouped checkout invoices (counter POS + online). */
+  invoices?: DevoteeProfileInvoice[];
 }
 
 export interface QueueStats {

@@ -10,11 +10,13 @@ import type {
   DevoteeProfile,
   DevoteeProfileBooking,
   DevoteeProfileDonation,
+  DevoteeProfileInvoice,
   SevaService,
 } from '@tms/types';
 import { IN_LANGUAGES, IN_STATES } from '@tms/types';
 import type { Endpoints } from '@/lib/api/endpoints';
 import { formatMoney, formatShortDate, formatTime } from '@/lib/api/endpoints';
+import { InvoiceShareActions } from '@/components/InvoiceShareActions';
 import styles from './DevoteeProfilePanel.module.css';
 
 interface Props {
@@ -116,6 +118,73 @@ function channelLabel(channel: string): string {
     default:
       return channel;
   }
+}
+
+function InvoiceCard({
+  invoice,
+  devoteeId,
+  devoteeEmail,
+  devoteeName,
+  ep,
+  onMessage,
+}: {
+  invoice: DevoteeProfileInvoice;
+  devoteeId: string;
+  devoteeEmail?: string;
+  devoteeName?: string;
+  ep: Endpoints;
+  onMessage?: (text: string, kind?: 'ok' | 'error') => void;
+}) {
+  const pay = paymentBadge(invoice.paymentStatus);
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <article className={styles.invoiceCard}>
+      <div className={styles.invoiceHead}>
+        <div>
+          <p className={styles.invoiceMeta}>
+            {formatShortDate(invoice.issuedAt)} · {channelLabel(invoice.channel)} ·{' '}
+            {invoice.lineCount} item{invoice.lineCount === 1 ? '' : 's'}
+          </p>
+          <p className={styles.invoiceNumber}>#{invoice.receiptNumber}</p>
+        </div>
+        <div className={styles.invoiceTotals}>
+          <strong>{formatMoney(invoice.grandTotal, invoice.currency)}</strong>
+          <Badge variant={pay.variant}>{pay.label}</Badge>
+        </div>
+      </div>
+
+      <div className={styles.invoiceActions}>
+        <button
+          type="button"
+          className={styles.expandBtn}
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          {expanded ? 'Hide line items' : 'Show line items'}
+        </button>
+        <InvoiceShareActions
+          invoice={invoice}
+          devoteeId={devoteeId}
+          devoteeEmail={devoteeEmail}
+          devoteeName={devoteeName}
+          ep={ep}
+          onMessage={onMessage}
+        />
+      </div>
+
+      {expanded && (
+        <ul className={styles.invoiceLines}>
+          {invoice.lines.map((line) => (
+            <li key={`${line.kind}-${line.id}`}>
+              <span>{line.description}</span>
+              <span>{formatMoney(line.amount, line.currency)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </article>
+  );
 }
 
 function donationTypeLabel(purpose: string): string {
@@ -235,6 +304,7 @@ export function DevoteeProfilePanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<ProfileTab>('history');
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -255,28 +325,6 @@ export function DevoteeProfilePanel({
     };
   }, [ep, devoteeId, refreshToken]);
 
-  const historyRows = useMemo((): HistoryRow[] => {
-    if (!profile) return [];
-    const rows: HistoryRow[] = [];
-    for (const b of [...profile.upcomingBookings, ...profile.bookingHistory]) {
-      rows.push({
-        key: `b-${b.id}`,
-        kind: 'booking',
-        date: b.scheduledAt,
-        booking: b,
-      });
-    }
-    for (const d of profile.recentDonations) {
-      rows.push({
-        key: `d-${d.id}`,
-        kind: 'donation',
-        date: d.createdAt,
-        donation: d,
-      });
-    }
-    return rows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [profile]);
-
   if (loading) {
     return <p className={styles.muted}>Loading devotee profile…</p>;
   }
@@ -284,9 +332,11 @@ export function DevoteeProfilePanel({
     return <p className={styles.error}>{error ?? 'Profile unavailable'}</p>;
   }
 
+  const invoices = profile.invoices ?? [];
+
   const totalBookings = profile.upcomingBookings.length + profile.bookingHistory.length;
   const tabs: { id: ProfileTab; label: string }[] = [
-    { id: 'history', label: `History & receipts (${historyRows.length})` },
+    { id: 'history', label: `History & invoices (${invoices.length})` },
     { id: 'overview', label: 'Details' },
     { id: 'family', label: `Family (${profile.familyMembers.length})` },
     { id: 'bookings', label: `Seva (${totalBookings})` },
@@ -363,37 +413,25 @@ export function DevoteeProfilePanel({
 
       {tab === 'history' && (
         <div className={styles.section}>
-          {historyRows.length === 0 ? (
-            <p className={styles.muted}>No bookings, donations, or receipts on file yet.</p>
+          {shareMessage && <p className={styles.shareToast}>{shareMessage}</p>}
+          {invoices.length === 0 ? (
+            <p className={styles.muted}>No invoices on file yet.</p>
           ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Payment</th>
-                    <th>Receipt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historyRows.map((row) =>
-                    row.kind === 'booking' ? (
-                      <BookingRow
-                        key={row.key}
-                        booking={row.booking}
-                        services={services}
-                        onCheckIn={onCheckIn}
-                        checkInBusy={checkInBusy}
-                      />
-                    ) : (
-                      <DonationRow key={row.key} donation={row.donation} />
-                    ),
-                  )}
-                </tbody>
-              </table>
+            <div className={styles.invoiceList}>
+              {invoices.map((invoice) => (
+                <InvoiceCard
+                  key={invoice.id}
+                  invoice={invoice}
+                  devoteeId={profile.id}
+                  devoteeEmail={profile.email ?? profile.emails?.[0]?.address}
+                  devoteeName={`${profile.firstName} ${profile.lastName}`.trim()}
+                  ep={ep}
+                  onMessage={(text) => {
+                    setShareMessage(text);
+                    window.setTimeout(() => setShareMessage(null), 4000);
+                  }}
+                />
+              ))}
             </div>
           )}
         </div>

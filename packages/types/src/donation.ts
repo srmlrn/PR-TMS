@@ -9,6 +9,7 @@ export interface Donation extends TenantScoped, Timestamps {
   purpose: string;
   frequency: DonationFrequency;
   receiptNumber: string;
+  checkoutReceiptId?: string;
   taxCompliant: boolean;
   taxDocType?: 'irs_501c3' | '80g' | 'cra';
   taxId?: string;
@@ -57,4 +58,7 @@ export interface CreateDonationInput {
   isAnonymous?: boolean;
   isInKind?: boolean;
   inKindDescription?: string;
+  /** Shared invoice receipt number (counter POS). */
+  receiptNumber?: string;
+  checkoutReceiptId?: string;
 }

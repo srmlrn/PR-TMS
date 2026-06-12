@@ -175,7 +175,11 @@ export class BookingService
   /** POS checkout — payment verified once at session level; skip per-line amount check. */
   async createFromPosCheckout(
     tenantId: string,
-    input: CreateBookingInput & { lineAmount: number },
+    input: CreateBookingInput & {
+      lineAmount: number;
+      receiptNumber?: string;
+      checkoutReceiptId?: string;
+    },
   ): Promise<BookingRecord> {
     if (!(await this.devoteeService.exists(tenantId, input.devoteeId))) {
       throw new NotFoundException(`Devotee ${input.devoteeId} not found`);
@@ -192,6 +196,8 @@ export class BookingService
     await this.assertNoConflict(tenantId, input.serviceId, scheduledAt, service.durationMinutes);
 
     const sankalpa = this.buildSankalpa(input, quantity);
+    const receiptNumber =
+      input.receiptNumber ?? (await this.generateReceiptNumber(tenantId));
 
     if (this.usePostgres) {
       const repo = await this.tenantData.bookings();
@@ -203,7 +209,8 @@ export class BookingService
         amount: input.lineAmount,
         currency: service.currency,
         sankalpa: sankalpa as Record<string, string | number> | undefined,
-        receiptNumber: await this.generateReceiptNumber(tenantId),
+        receiptNumber,
+        checkoutReceiptId: input.checkoutReceiptId,
         channel: input.channel ?? 'counter',
         paymentStatus: PaymentStatus.PAID,
       });
@@ -219,7 +226,8 @@ export class BookingService
       amount: input.lineAmount,
       currency: service.currency,
       sankalpa,
-      receiptNumber: this.generateReceiptNumberSync(tenantId),
+      receiptNumber: input.receiptNumber ?? this.generateReceiptNumberSync(tenantId),
+      checkoutReceiptId: input.checkoutReceiptId,
       channel: input.channel ?? 'counter',
       paymentStatus: PaymentStatus.PAID,
     });
@@ -529,6 +537,7 @@ export class BookingService
       currency: row.currency as Currency,
       sankalpa: row.sankalpa as Booking['sankalpa'],
       receiptNumber: row.receiptNumber,
+      checkoutReceiptId: row.checkoutReceiptId,
       channel: row.channel as Booking['channel'],
       paymentStatus: row.paymentStatus as PaymentStatus,
       honorariumAmount: row.honorariumAmount

@@ -385,11 +385,9 @@ export function CounterPosForm({
         `POS checkout complete · ${summary} · Receipt ${result.receiptNumber} · ${formatMoney(result.grandTotal, result.currency)}`,
       );
 
-      const guestName = encodeURIComponent(devotee.name);
       router.push(
-        `/frontdesk/receipt-print?amount=${result.grandTotal}&currency=${result.currency}` +
-          `&receipt=${encodeURIComponent(result.receiptNumber)}` +
-          `&name=${guestName}&purpose=${encodeURIComponent('Counter POS checkout')}`,
+        `/frontdesk/invoice-print?devoteeId=${encodeURIComponent(devotee.id)}` +
+          `&invoiceId=${encodeURIComponent(result.checkoutReceiptId)}`,
       );
 
       handleCancel();

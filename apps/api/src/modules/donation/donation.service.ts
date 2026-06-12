@@ -304,6 +304,8 @@ export class DonationService
 
     validateTaxId(input.currency, input.taxId);
     const tax = this.resolveTaxDoc(input.currency);
+    const receiptNumber =
+      input.receiptNumber ?? (await this.generateReceiptNumber(tenantId));
 
     if (this.usePostgres) {
       const repo = await this.tenantData.donations();
@@ -313,7 +315,8 @@ export class DonationService
         currency: input.currency,
         purpose: input.purpose,
         frequency: input.frequency ?? DonationFrequency.ONE_TIME,
-        receiptNumber: await this.generateReceiptNumber(tenantId),
+        receiptNumber,
+        checkoutReceiptId: input.checkoutReceiptId,
         taxCompliant: tax.taxCompliant,
         taxId: input.taxId,
         paymentStatus: PaymentStatus.PAID,
@@ -335,7 +338,8 @@ export class DonationService
       currency: input.currency,
       purpose: input.purpose,
       frequency: input.frequency ?? DonationFrequency.ONE_TIME,
-      receiptNumber: this.generateReceiptNumberSync(tenantId),
+      receiptNumber: input.receiptNumber ?? this.generateReceiptNumberSync(tenantId),
+      checkoutReceiptId: input.checkoutReceiptId,
       taxCompliant: tax.taxCompliant,
       taxDocType: tax.taxDocType,
       taxId: input.taxId,
@@ -526,6 +530,7 @@ export class DonationService
       purpose: row.purpose,
       frequency: row.frequency as DonationFrequency,
       receiptNumber: row.receiptNumber,
+      checkoutReceiptId: row.checkoutReceiptId,
       taxCompliant: row.taxCompliant,
       taxDocType: tax.taxDocType,
       taxId: row.taxId,
