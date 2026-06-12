@@ -169,7 +169,7 @@ export class StripeProvider {
     }
 
     const reader = await stripe.terminal.readers.create({
-      registration_code: 'simulated-wisepos-e',
+      registration_code: 'simulated-wpe',
       label: 'Simulated WisePOS E (demo)',
       location: locationId,
     });
